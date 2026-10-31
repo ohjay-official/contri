@@ -1,0 +1,75 @@
+name: contract
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - contract/**
+      - .github/workflows/contract.yml
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contract
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the pinned Rust toolchain
+        run: |
+          rustup toolchain install || true
+          rustup show
+
+      - name: Unit tests
+        id: test
+        continue-on-error: true
+        run: |
+          mkdir -p ../ci-out
+          set -o pipefail
+          cargo test 2>&1 | tee ../ci-out/test.log
+
+      - name: Install cargo-near
+        id: install
+        continue-on-error: true
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+
+      - name: Build wasm
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          cargo near build non-reproducible-wasm 2>&1 | tee ../ci-out/build.log
+          cp target/near/contri.wasm ../ci-out/contri.wasm
+          ls -l ../ci-out/contri.wasm | tee -a ../ci-out/build.log
+
+      - name: Write status
+        if: always()
+        run: |
+          mkdir -p ../ci-out
+          cat > ../ci-out/status.json <<EOF
+          {"commit":"${GITHUB_SHA}","test":"${{ steps.test.outcome }}","install":"${{ steps.install.outcome }}","build":"${{ steps.build.outcome }}"}
+          EOF
+          cat ../ci-out/status.json
+
+      - name: Publish results to the ci-results branch
+        if: always()
+        working-directory: .
+        run: |
+          mkdir -p /tmp/publish && cp -r ci-out /tmp/publish/
+          cd /tmp/publish
+          git init -q
+          git checkout -q -b ci-results
+          git config user.name "contri-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "ci results ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ci-results
+
+      - name: Fail the job if tests or build failed
+        if: steps.test.outcome != 'success' || steps.build.outcome != 'success'
+        run: exit 1
