@@ -52,6 +52,25 @@ Stretch: pay straight to a Tron address with `ft_withdraw` to the PoA token and 
 ### 5. Cash out
 The member cashes out from their Intents balance to any chain with a 1Click quote (`depositType: INTENTS`, `recipientType: DESTINATION_CHAIN`), signed with their passkey through `/v0/generate-intent` and `/v0/submit-intent` (`standard: webauthn`).
 
+## Signing with a passkey
+
+A passkey-signed intent is a `webauthn` payload (`contracts/defuse/core/src/payload/webauthn.rs`, test vector included there):
+
+```json
+{
+  "standard": "webauthn",
+  "payload": "{\"signer_id\":\"0x…\",\"verifying_contract\":\"intents.near\",\"deadline\":\"<ISO time>\",\"nonce\":\"<base64 32 bytes>\",\"intents\":[{\"intent\":\"transfer\",\"receiver_id\":\"contri.<owner>.near\",\"tokens\":{\"nep141:usdt.tether-token.near\":\"5000000\"},\"msg\":\"{\\\"op\\\":\\\"contribute\\\",\\\"circle\\\":0,\\\"round\\\":0}\",\"min_gas\":\"100000000000000\"}]}",
+  "public_key": "p256:<base58>",
+  "signature": "p256:<base58 r||s>",
+  "client_data_json": "…",
+  "authenticator_data": "<base64url>"
+}
+```
+
+- The WebAuthn challenge is `base64url(sha256(payload))`.
+- `signer_id` is the passkey's implicit account (`0x` + keccak256("p256" || pubkey) last 20 bytes).
+- Nonces: legacy random 32-byte nonces are still accepted; the newer versioned nonce (magic prefix `5628f6c6` + salted, expirable nonce) uses `intents.near`'s current salt. Contri will use versioned nonces.
+
 ## Missed payments
 Each member's deposit equals one contribution. After a round deadline, anyone can call `settle_round`. If a member has not paid, the contract takes the missing amount from their deposit, marks them as having defaulted, and pays out. A defaulting member loses their completed-circle record.
 
