@@ -1,0 +1,36 @@
+name: probe-1click
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/probe-1click.mjs
+      - .github/workflows/probe.yml
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run read-only 1Click probe
+        env:
+          ONECLICK_API_KEY: ${{ secrets.ONECLICK_API_KEY }}
+        run: node scripts/probe-1click.mjs
+      - name: Publish results to the probe-results branch
+        run: |
+          mkdir -p /tmp/publish && cp -r probe-out /tmp/publish/
+          cd /tmp/publish
+          git init -q
+          git checkout -q -b probe-results
+          git config user.name "contri-probe"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "probe results ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" probe-results
