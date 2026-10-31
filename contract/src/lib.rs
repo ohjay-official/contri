@@ -334,7 +334,7 @@ impl Contri {
             "round_settled",
             json!({ "circle": c.id, "round": c.round, "covered_from_deposit": defaulted }),
         );
-        self.start_payout(c);
+        self.start_payout(c).detach();
     }
 
     /// Anyone can call this if every member has paid but the payout did not start
@@ -344,7 +344,7 @@ impl Contri {
         require!(c.status == CircleStatus::Active, "circle is not active");
         require!(!c.paying, "payout already in progress");
         require!(c.all_paid(), "not every member has paid this round");
-        self.start_payout(c);
+        self.start_payout(c).detach();
     }
 
     /// Anyone can call this once a circle has finished or was cancelled.
@@ -663,7 +663,7 @@ impl Contri {
         let ready = c.all_paid();
         let gas_left = env::prepaid_gas().saturating_sub(env::used_gas());
         if ready && gas_left.as_gas() >= GAS_FOR_PAYOUT.as_gas() {
-            self.start_payout(c);
+            self.start_payout(c).detach();
         } else {
             self.circles.insert(circle_id, c);
         }
@@ -772,7 +772,7 @@ impl Contri {
     /// Sends `amount` of the circle token from this contract's NEAR Intents
     /// balance to `to`. If the transfer fails, the amount becomes a claimable credit.
     fn send(&self, to: AccountId, amount: u128, memo: String) {
-        let _ = ext_intents::ext(self.intents_id.clone())
+        ext_intents::ext(self.intents_id.clone())
             .with_attached_deposit(ONE_YOCTO)
             .with_static_gas(GAS_MT_TRANSFER)
             .mt_transfer(to.clone(), self.token_id.clone(), U128(amount), None, Some(memo))
@@ -780,7 +780,8 @@ impl Contri {
                 Self::ext(env::current_account_id())
                     .with_static_gas(GAS_CALLBACK)
                     .on_sent(to, U128(amount)),
-            );
+            )
+            .detach();
     }
 
     fn start_payout(&mut self, mut c: Circle) -> Promise {
