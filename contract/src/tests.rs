@@ -1031,7 +1031,7 @@ fn invite_only_circle_needs_a_signed_invite() {
     let mut c = setup();
     let key = invite_key(7);
     let public = hexs(key.verifying_key().as_bytes());
-    organize(&mut c, ADA, &format!("create:{CONTRIBUTION}:2:{DAY}:join:{public}:c2VhbGVkIG5hbWU"), 1);
+    organize(&mut c, "coop.near", &format!("create:{CONTRIBUTION}:2:{DAY}:join:{public}:c2VhbGVkIG5hbWU"), 1);
     assert_eq!(c.circle_of(0).unwrap().invite_key, Some(*key.verifying_key().as_bytes()));
 
     // No invite, an invite made for someone else, or one from another key: refunded.
@@ -1533,4 +1533,16 @@ fn invite_can_ask_a_stranger_to_cover_their_future_rounds() {
     assert_eq!(circle.members[2].deposit, U128(0));
     assert_eq!(circle.members[2].missed, 2);
     assert!(circle.payouts.iter().all(|p| p.shortfall == U128(0)), "later members got full pots");
+}
+
+#[test]
+fn the_organizer_needs_no_invite_but_pays_one_contribution() {
+    let mut c = setup();
+    let public = hexs(invite_key(7).verifying_key().as_bytes());
+    organize(&mut c, ADA, &format!("create:{CONTRIBUTION}:3:{DAY}:join:{public}:sealed"), 1);
+    assert_eq!(transfer(&mut c, ADA, 2 * CONTRIBUTION, "join:0", 2), 2 * CONTRIBUTION);
+    assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, "join:0", 2), 0);
+    // Through Intents, creating an invite-only circle seats the organizer the same way.
+    assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, &format!("create:{CONTRIBUTION}:3:{DAY}:join:{public}:mine"), 3), 0);
+    assert_eq!(c.circle_of(1).unwrap().members[0].account_id, acc(BAYO));
 }
