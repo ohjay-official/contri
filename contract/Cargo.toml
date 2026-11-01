@@ -10,7 +10,9 @@ repository = "https://github.com/ohjay-official/contri"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-near-sdk = "5"
+# No default features: the default is the wee_alloc allocator, and the contract
+# brings its own smaller one (src/bump.rs).
+near-sdk = { version = "5", default-features = false }
 
 [dev-dependencies]
 near-sdk = { version = "5", features = ["unit-testing"] }

@@ -24,6 +24,8 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::{env, near, require, AccountId, Gas, NearToken, PanicOnDefault, PromiseError};
 
+#[cfg(target_arch = "wasm32")]
+mod bump;
 mod json;
 
 #[cfg(test)]

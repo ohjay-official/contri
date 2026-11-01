@@ -303,7 +303,7 @@
       },
       {
         "name": "mt_on_transfer",
-        "doc": " NEP-245 receiver, called only by NEAR Intents for a member's `Transfer`\n intent. `msg` is `join:<circle>`, `join:<circle>:<invite signature>`,\n `contribute:<circle>:<round>` or `buy_seat:<circle>:<seat>`. Returns the\n amounts to refund; a wrong token, amount, message or invite is refunded in full.",
+        "doc": " NEP-245 receiver, called only by NEAR Intents: for a signed `Transfer`\n intent, or an account's own `mt_transfer_call` (how a DAO treasury backs\n a circle). `msg` is `join:<circle>`, `join:<circle>:<invite signature>`,\n `contribute:<circle>:<round>`, `buy_seat:<circle>:<seat>`,\n `refill:<circle>` or `back:<circle>`. Returns the amounts to refund; a\n wrong token, amount, message or invite is refunded in full.",
         "kind": "call",
         "params": {
           "serialization_type": "json",
@@ -718,9 +718,34 @@
       "title": "String",
       "type": "string",
       "definitions": {
+        "Backer": {
+          "description": "Money a community put behind a circle. It covers missed payments a deposit can't; what is left is split back in proportion when the circle ends.",
+          "type": "object",
+          "required": [
+            "account_id",
+            "amount",
+            "due"
+          ],
+          "properties": {
+            "account_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+              "type": "string"
+            },
+            "amount": {
+              "type": "string"
+            },
+            "due": {
+              "description": "Share of the leftover backing not yet sent back.",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
         "Circle": {
           "type": "object",
           "required": [
+            "backers",
+            "backing",
             "contribution",
             "created_at",
             "id",
@@ -739,6 +764,16 @@
             "status"
           ],
           "properties": {
+            "backers": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Backer"
+              }
+            },
+            "backing": {
+              "description": "Community backing not yet used.",
+              "type": "string"
+            },
             "contribution": {
               "description": "Amount each member pays per round, in the token's smallest unit.",
               "type": "string"
@@ -973,6 +1008,7 @@
             "amount",
             "at",
             "round",
+            "shortfall",
             "to"
           ],
           "properties": {
@@ -987,6 +1023,10 @@
               "type": "integer",
               "format": "uint32",
               "minimum": 0.0
+            },
+            "shortfall": {
+              "description": "How much less than a full pot (contribution x size) was paid.",
+              "type": "string"
             },
             "to": {
               "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
