@@ -33,16 +33,13 @@ fn setup() -> Contri {
 /// Returns the amount refunded to the member.
 fn transfer(c: &mut Contri, from: &str, amount: u128, msg: &str, secs: u64) -> u128 {
     set(INTENTS, secs);
-    match c.mt_on_transfer(
+    c.internal_on_transfer(
         acc(from),
         vec![acc(from)],
         vec![TOKEN.to_string()],
         vec![U128(amount)],
         msg.to_string(),
-    ) {
-        PromiseOrValue::Value(v) => v[0].0,
-        PromiseOrValue::Promise(_) => panic!("expected a value"),
-    }
+    )[0]
 }
 
 /// Simulates NEAR Intents delivering a member's AuthCall intent.
@@ -90,9 +87,9 @@ fn circle_starts_when_full() {
     let id = create(&mut c, 3);
     join(&mut c, ADA, id);
     join(&mut c, BAYO, id);
-    assert_eq!(c.get_circle(id).unwrap().status, CircleStatus::Open);
+    assert_eq!(c.circle_of(id).unwrap().status, CircleStatus::Open);
     join(&mut c, CHIOMA, id);
-    let circle = c.get_circle(id).unwrap();
+    let circle = c.circle_of(id).unwrap();
     assert_eq!(circle.status, CircleStatus::Active);
     assert_eq!(circle.members.len(), 3);
     assert_eq!(circle.members[0].account_id, acc(ADA));
@@ -106,7 +103,7 @@ fn wrong_deposit_is_refunded() {
     let id = create(&mut c, 3);
     let refund = transfer(&mut c, ADA, CONTRIBUTION - 1, &format!("join:{id}"), 10);
     assert_eq!(refund, CONTRIBUTION - 1);
-    assert!(c.get_circle(id).unwrap().members.is_empty());
+    assert!(c.circle_of(id).unwrap().members.is_empty());
 }
 
 #[test]
@@ -114,17 +111,14 @@ fn unreadable_message_is_refunded() {
     let mut c = setup();
     create(&mut c, 3);
     set(INTENTS, 10);
-    let r = c.mt_on_transfer(
+    let r = c.internal_on_transfer(
         acc(ADA),
         vec![acc(ADA)],
         vec![TOKEN.to_string()],
         vec![U128(CONTRIBUTION)],
         "hello".to_string(),
     );
-    match r {
-        PromiseOrValue::Value(v) => assert_eq!(v[0].0, CONTRIBUTION),
-        _ => panic!(),
-    }
+    assert_eq!(r[0], CONTRIBUTION);
 }
 
 #[test]
@@ -132,17 +126,14 @@ fn other_tokens_are_refunded() {
     let mut c = setup();
     let id = create(&mut c, 3);
     set(INTENTS, 10);
-    let r = c.mt_on_transfer(
+    let r = c.internal_on_transfer(
         acc(ADA),
         vec![acc(ADA)],
         vec!["nep141:wrap.near".to_string()],
         vec![U128(CONTRIBUTION)],
         format!("join:{id}"),
     );
-    match r {
-        PromiseOrValue::Value(v) => assert_eq!(v[0].0, CONTRIBUTION),
-        _ => panic!(),
-    }
+    assert_eq!(r[0], CONTRIBUTION);
 }
 
 #[test]
@@ -171,9 +162,9 @@ fn last_contribution_starts_the_payout() {
     let mut c = full_circle_of_three();
     assert_eq!(contribute(&mut c, ADA, 0, 0, 100), 0);
     assert_eq!(contribute(&mut c, BAYO, 0, 0, 100), 0);
-    assert!(!c.get_circle(0).unwrap().paying);
+    assert!(!c.circle_of(0).unwrap().paying);
     assert_eq!(contribute(&mut c, CHIOMA, 0, 0, 100), 0);
-    let circle = c.get_circle(0).unwrap();
+    let circle = c.circle_of(0).unwrap();
     assert!(circle.paying);
     assert_eq!(circle.pot, U128(3 * CONTRIBUTION));
 
@@ -182,7 +173,7 @@ fn last_contribution_starts_the_payout() {
 
     set("contri.near", 101);
     assert!(c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true));
-    let circle = c.get_circle(0).unwrap();
+    let circle = c.circle_of(0).unwrap();
     assert!(!circle.paying);
     assert_eq!(circle.round, 1);
     assert_eq!(circle.pot, U128(0));
@@ -208,7 +199,7 @@ fn failed_payout_keeps_the_pot() {
     }
     set("contri.near", 101);
     assert!(!c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), false));
-    let circle = c.get_circle(0).unwrap();
+    let circle = c.circle_of(0).unwrap();
     assert!(!circle.paying);
     assert_eq!(circle.round, 0);
     assert_eq!(circle.pot, U128(3 * CONTRIBUTION));
@@ -216,7 +207,7 @@ fn failed_payout_keeps_the_pot() {
     // Anyone can retry.
     set("anyone.near", 200);
     c.pay_out(0);
-    assert!(c.get_circle(0).unwrap().paying);
+    assert!(c.circle_of(0).unwrap().paying);
 }
 
 #[test]
@@ -226,7 +217,7 @@ fn missed_payment_is_covered_by_deposit() {
     contribute(&mut c, BAYO, 0, 0, 100);
     set("anyone.near", 10 + DAY + 1);
     c.settle_round(0);
-    let circle = c.get_circle(0).unwrap();
+    let circle = c.circle_of(0).unwrap();
     assert!(circle.paying);
     assert_eq!(circle.pot, U128(3 * CONTRIBUTION));
     assert_eq!(circle.members[2].deposit, U128(0));
@@ -246,7 +237,7 @@ fn cannot_settle_early() {
 fn seat_can_be_sold_to_a_later_member() {
     let mut c = full_circle_of_three();
     auth(&mut c, ADA, "list_seat:0:0:1000000", 50);
-    assert_eq!(c.get_circle(0).unwrap().listings[0], Some(U128(1_000_000)));
+    assert_eq!(c.circle_of(0).unwrap().listings[0], Some(U128(1_000_000)));
 
     // Wrong price is refunded.
     assert_eq!(
@@ -258,15 +249,14 @@ fn seat_can_be_sold_to_a_later_member() {
         transfer(&mut c, CHIOMA, 1_000_000, "buy_seat:0:0", 60),
         0
     );
-    let circle = c.get_circle(0).unwrap();
+    let circle = c.circle_of(0).unwrap();
     assert_eq!(circle.members[0].account_id, acc(CHIOMA));
     assert_eq!(circle.members[2].account_id, acc(ADA));
     assert_eq!(circle.listings[0], None);
 
     // Seats show up as tokens owned by the new holder.
-    let t = c.nft_token("0:0".to_string()).unwrap();
-    assert_eq!(t.owner_id, acc(CHIOMA));
-    assert_eq!(c.nft_tokens_for_owner(acc(ADA), None, None)[0].token_id, "0:2");
+    assert_eq!(c.seats_of(&acc(CHIOMA)), vec![(0, 0)]);
+    assert_eq!(c.seats_of(&acc(ADA)), vec![(0, 2)]);
 }
 
 #[test]
@@ -311,18 +301,18 @@ fn full_run_updates_records() {
     set("contri.near", 10 + 2 * DAY + 2);
     c.finalize_payout(id, 1, U128(2 * CONTRIBUTION), true);
 
-    let circle = c.get_circle(id).unwrap();
+    let circle = c.circle_of(id).unwrap();
     assert_eq!(circle.status, CircleStatus::Finished);
     assert_eq!(circle.payouts[1].to, acc(BAYO));
-    assert_eq!(c.get_record(acc(ADA)).completed, 1);
-    assert_eq!(c.get_record(acc(BAYO)).defaults, 1);
-    assert_eq!(c.get_record(acc(BAYO)).missed_payments, 1);
+    assert_eq!(c.record_of(&acc(ADA)).completed, 1);
+    assert_eq!(c.record_of(&acc(BAYO)).defaults, 1);
+    assert_eq!(c.record_of(&acc(BAYO)).missed_payments, 1);
 
     // Ada's deposit is still held and can be released.
     assert_eq!(circle.members[0].deposit, U128(CONTRIBUTION));
     set("anyone.near", 10 + 2 * DAY + 3);
-    assert_eq!(c.release_deposits(id), 1);
-    assert_eq!(c.get_circle(id).unwrap().members[0].deposit, U128(0));
+    assert_eq!(c.internal_release(id), 1);
+    assert_eq!(c.circle_of(id).unwrap().members[0].deposit, U128(0));
 }
 
 #[test]
@@ -331,10 +321,10 @@ fn organizer_can_cancel_unfilled_circle() {
     let id = create(&mut c, 3);
     join(&mut c, ADA, id);
     auth(&mut c, ADA, &format!("cancel:{id}"), 20);
-    assert_eq!(c.get_circle(id).unwrap().status, CircleStatus::Cancelled);
+    assert_eq!(c.circle_of(id).unwrap().status, CircleStatus::Cancelled);
     assert_eq!(join(&mut c, BAYO, id), CONTRIBUTION);
     set("anyone.near", 30);
-    assert_eq!(c.release_deposits(id), 1);
+    assert_eq!(c.internal_release(id), 1);
 }
 
 #[test]
@@ -345,7 +335,7 @@ fn failed_send_becomes_a_credit() {
     let owed = c.credits.get(&acc(ADA)).map(|v| v.0).unwrap_or(0);
     assert_eq!(owed, 0);
     c.credits.insert(acc(ADA), U128(7));
-    assert_eq!(c.get_credit(acc(ADA)), U128(7));
+    assert_eq!(c.credit_of(&acc(ADA)), U128(7));
 }
 
 #[test]
@@ -399,4 +389,38 @@ fn messages_parse_strictly() {
 fn unreadable_auth_message_panics() {
     let mut c = setup();
     auth(&mut c, ADA, "make_me_rich", 1);
+}
+
+#[test]
+fn views_return_valid_json() {
+    use near_sdk::serde_json::{self, Value};
+    let mut c = full_circle_of_three();
+    auth(&mut c, ADA, "create:1000000:2:3600:Mama \"Tolu\" \\ circle", 1);
+    let circle: Value = serde_json::from_str(&c.circle_of(0).unwrap().to_json()).unwrap();
+    assert_eq!(circle["status"], "Active");
+    assert_eq!(circle["contribution"], "5000000");
+    assert_eq!(circle["members"][1]["account_id"], BAYO);
+    assert_eq!(circle["members"].as_array().unwrap().len(), 3);
+    assert!(circle["round_deadline"].is_string());
+    assert_eq!(circle["listings"][0], Value::Null);
+
+    let quoted: Value = serde_json::from_str(&c.circle_of(1).unwrap().to_json()).unwrap();
+    assert_eq!(quoted["name"], "Mama \"Tolu\" \\ circle");
+    assert_eq!(quoted["round_deadline"], Value::Null);
+
+    let record: Value = serde_json::from_str(&c.record_of(&acc(ADA)).to_json()).unwrap();
+    assert_eq!(record["completed"], 0);
+
+    let seat: Value = serde_json::from_str(&seat_token_json(&c.circle_of(0).unwrap(), 2, &acc(CHIOMA))).unwrap();
+    assert_eq!(seat["token_id"], "0:2");
+    assert_eq!(seat["owner_id"], CHIOMA);
+    assert!(seat["metadata"]["title"].as_str().unwrap().contains("turn 3"));
+}
+
+#[test]
+fn jstr_escapes_control_characters() {
+    use near_sdk::serde_json::{self, Value};
+    let raw = "line\nbreak\ttab\u{1}end";
+    let v: Value = serde_json::from_str(&jstr(raw)).unwrap();
+    assert_eq!(v, raw);
 }

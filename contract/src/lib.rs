@@ -17,8 +17,8 @@
 use near_sdk::json_types::U128;
 use near_sdk::store::LookupMap;
 use near_sdk::{
-    env, ext_contract, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault,
-    Promise, PromiseOrValue, PromiseResult,
+    env, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise,
+    PromiseResult,
 };
 
 #[cfg(test)]
@@ -36,6 +36,7 @@ const GAS_CALLBACK: Gas = Gas::from_tgas(15);
 /// Gas needed to start a payout from inside another call.
 const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(35);
 const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
+const ZERO: NearToken = NearToken::from_yoctonear(0);
 
 #[near(serializers = [borsh])]
 #[derive(BorshStorageKey)]
@@ -45,7 +46,7 @@ enum StorageKey {
     Credits,
 }
 
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh])]
 #[derive(Clone, Debug, PartialEq)]
 pub enum CircleStatus {
     /// Waiting for members to join and pay their deposit.
@@ -58,7 +59,7 @@ pub enum CircleStatus {
     Cancelled,
 }
 
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh])]
 #[derive(Clone, Debug)]
 pub struct Member {
     pub account_id: AccountId,
@@ -69,7 +70,7 @@ pub struct Member {
     pub missed: u32,
 }
 
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh])]
 #[derive(Clone, Debug)]
 pub struct PayoutRecord {
     pub round: u32,
@@ -79,7 +80,7 @@ pub struct PayoutRecord {
     pub at: u64,
 }
 
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh])]
 #[derive(Clone, Debug)]
 pub struct Circle {
     pub id: u64,
@@ -103,7 +104,72 @@ pub struct Circle {
     pub payouts: Vec<PayoutRecord>,
 }
 
+impl CircleStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            CircleStatus::Open => "Open",
+            CircleStatus::Active => "Active",
+            CircleStatus::Finished => "Finished",
+            CircleStatus::Cancelled => "Cancelled",
+        }
+    }
+}
+
+impl Record {
+    pub fn to_json(&self) -> String {
+        format!(
+            r#"{{"completed":{},"defaults":{},"missed_payments":{}}}"#,
+            self.completed, self.defaults, self.missed_payments
+        )
+    }
+}
+
 impl Circle {
+    /// JSON for views. Written by hand so the contract does not carry serde_json's
+    /// serializer. Big numbers (amounts, nanosecond timestamps) are strings.
+    pub fn to_json(&self) -> String {
+        let members = join(self.members.iter().map(|m| {
+            format!(
+                r#"{{"account_id":"{}","deposit":"{}","paid_this_round":{},"defaulted":{},"missed":{}}}"#,
+                m.account_id, m.deposit.0, m.paid_this_round, m.defaulted, m.missed
+            )
+        }));
+        let listings = join(self.listings.iter().map(|l| match l {
+            Some(p) => format!("\"{}\"", p.0),
+            None => "null".to_string(),
+        }));
+        let payouts = join(self.payouts.iter().map(|p| {
+            format!(
+                r#"{{"round":{},"to":"{}","amount":"{}","at":"{}"}}"#,
+                p.round, p.to, p.amount.0, p.at
+            )
+        }));
+        let deadline = if self.status == CircleStatus::Active {
+            format!("\"{}\"", self.round_deadline())
+        } else {
+            "null".to_string()
+        };
+        format!(
+            r#"{{"id":{},"name":{},"organizer":"{}","contribution":"{}","size":{},"period_secs":{},"members":[{}],"listings":[{}],"status":"{}","created_at":"{}","started_at":"{}","round":{},"pot":"{}","paying":{},"payouts":[{}],"round_deadline":{}}}"#,
+            self.id,
+            jstr(&self.name),
+            self.organizer,
+            self.contribution.0,
+            self.size,
+            self.period_secs,
+            members,
+            listings,
+            self.status.as_str(),
+            self.created_at,
+            self.started_at,
+            self.round,
+            self.pot.0,
+            self.paying,
+            payouts,
+            deadline
+        )
+    }
+
     /// Deadline for the current round, in nanoseconds.
     pub fn round_deadline(&self) -> u64 {
         self.started_at + (self.round as u64 + 1) * self.period_secs * NS_PER_SEC
@@ -119,7 +185,7 @@ impl Circle {
 }
 
 /// A member's track record across circles.
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh])]
 #[derive(Clone, Debug, Default)]
 pub struct Record {
     pub completed: u32,
@@ -200,45 +266,6 @@ pub fn parse_auth(msg: &str) -> Option<AuthMsg> {
     p.next().is_none().then_some(m)
 }
 
-#[near(serializers = [json])]
-pub struct Config {
-    pub owner_id: AccountId,
-    pub intents_id: AccountId,
-    pub token_id: String,
-}
-
-#[near(serializers = [json])]
-pub struct SeatToken {
-    pub token_id: String,
-    pub owner_id: AccountId,
-    pub metadata: SeatMetadata,
-}
-
-#[near(serializers = [json])]
-pub struct SeatMetadata {
-    pub title: String,
-    pub description: String,
-}
-
-#[near(serializers = [json])]
-pub struct NftContractMetadata {
-    pub spec: String,
-    pub name: String,
-    pub symbol: String,
-}
-
-#[ext_contract(ext_intents)]
-pub trait IntentsMultiToken {
-    fn mt_transfer(
-        &mut self,
-        receiver_id: AccountId,
-        token_id: String,
-        amount: U128,
-        approval: Option<(AccountId, u64)>,
-        memo: Option<String>,
-    );
-}
-
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Contri {
@@ -280,34 +307,17 @@ impl Contri {
         token_ids: Vec<String>,
         amounts: Vec<U128>,
         msg: String,
-    ) -> PromiseOrValue<Vec<U128>> {
-        self.assert_intents();
-        let _ = previous_owner_ids;
-        if token_ids.len() != 1 || amounts.len() != 1 || token_ids[0] != self.token_id {
-            env::log_str("contri: unsupported token, refunding");
-            return PromiseOrValue::Value(amounts);
-        }
-        let amount = amounts[0].0;
-        let result = match parse_transfer(&msg) {
-            Some(m) => self.handle_transfer(&sender_id, amount, m),
-            None => Err("unreadable message".to_string()),
-        };
-        match result {
-            Ok(()) => PromiseOrValue::Value(vec![U128(0)]),
-            Err(e) => {
-                env::log_str(&format!("contri: refunding {amount}: {e}"));
-                PromiseOrValue::Value(vec![U128(amount)])
-            }
-        }
+    ) {
+        let refunds = self.internal_on_transfer(sender_id, previous_owner_ids, token_ids, amounts, msg);
+        ret(&format!("[{}]", join(refunds.iter().map(|r| format!("\"{r}\"")))));
     }
 
     /// Called by NEAR Intents for a member's signed `AuthCall` intent.
-    pub fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
+    pub fn on_auth(&mut self, signer_id: AccountId, msg: String) {
         self.assert_intents();
         let m = parse_auth(&msg).unwrap_or_else(|| env::panic_str("unreadable message"));
         self.handle_auth(&signer_id, m)
             .unwrap_or_else(|e| env::panic_str(&e));
-        PromiseOrValue::Value(())
     }
 
     // ------------------------------------------------------------------
@@ -357,7 +367,171 @@ impl Contri {
 
     /// Anyone can call this once a circle has finished or was cancelled.
     /// Returns remaining deposits to members, as many as the attached gas allows.
-    pub fn release_deposits(&mut self, circle_id: u64) -> u32 {
+    pub fn release_deposits(&mut self, circle_id: u64) {
+        let sent = self.internal_release(circle_id);
+        ret(&sent.to_string());
+    }
+
+    // ------------------------------------------------------------------
+    // Callbacks
+    // ------------------------------------------------------------------
+
+    #[private]
+    #[allow(deprecated)]
+    pub fn on_payout(&mut self, circle_id: u64, round: u32, amount: U128) {
+        let ok = matches!(env::promise_result(0), PromiseResult::Successful(_));
+        self.finalize_payout(circle_id, round, amount, ok);
+    }
+
+    #[private]
+    #[allow(deprecated)]
+    pub fn on_sent(&mut self, to: AccountId, amount: U128) {
+        let ok = matches!(env::promise_result(0), PromiseResult::Successful(_));
+        if !ok {
+            let owed = self.credits.get(&to).map(|c| c.0).unwrap_or(0);
+            self.credits.insert(to.clone(), U128(owed + amount.0));
+            emit("credit_added", format!(r#"{{"account":"{}","amount":"{}"}}"#, to, amount.0));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Views. JSON is written by hand (see `Circle::to_json`).
+    // ------------------------------------------------------------------
+
+    pub fn get_config(&self) {
+        ret(&format!(
+            r#"{{"owner_id":"{}","intents_id":"{}","token_id":{}}}"#,
+            self.owner_id,
+            self.intents_id,
+            jstr(&self.token_id)
+        ));
+    }
+
+    pub fn get_circle(&self, circle_id: u64) {
+        ret(&self.circles.get(&circle_id).map(|c| c.to_json()).unwrap_or_else(|| "null".into()));
+    }
+
+    pub fn get_circles(&self, from_index: Option<u64>, limit: Option<u64>) {
+        let from = from_index.unwrap_or(0);
+        let to = self.next_circle_id.min(from + limit.unwrap_or(50).min(100));
+        let items = join((from..to).filter_map(|id| self.circles.get(&id).map(|c| c.to_json())));
+        ret(&format!("[{items}]"));
+    }
+
+    pub fn get_circles_for(&self, account_id: AccountId) {
+        let ids = join(
+            (0..self.next_circle_id)
+                .filter(|id| {
+                    self.circles.get(id).is_some_and(|c| {
+                        c.organizer == account_id || c.seat_of(&account_id).is_some()
+                    })
+                })
+                .map(|id| id.to_string()),
+        );
+        ret(&format!("[{ids}]"));
+    }
+
+    pub fn get_record(&self, account_id: AccountId) {
+        ret(&self.record_of(&account_id).to_json());
+    }
+
+    pub fn get_credit(&self, account_id: AccountId) {
+        ret(&format!("\"{}\"", self.credit_of(&account_id).0));
+    }
+
+    // NEP-171 style views: each seat is a token "<circle>:<seat>".
+
+    pub fn nft_metadata(&self) {
+        ret(r#"{"spec":"nft-1.0.0","name":"Contri Seats","symbol":"SEAT"}"#);
+    }
+
+    pub fn nft_token(&self, token_id: String) {
+        let json = parse_seat_token(&token_id)
+            .and_then(|(id, seat)| {
+                let c = self.circles.get(&id)?;
+                let m = c.members.get(seat as usize)?;
+                Some(seat_token_json(c, seat, &m.account_id))
+            })
+            .unwrap_or_else(|| "null".into());
+        ret(&json);
+    }
+
+    pub fn nft_tokens_for_owner(
+        &self,
+        account_id: AccountId,
+        from_index: Option<U128>,
+        limit: Option<u32>,
+    ) {
+        let items = join(
+            self.seats_of(&account_id)
+                .into_iter()
+                .skip(from_index.map(|i| i.0 as usize).unwrap_or(0))
+                .take(limit.unwrap_or(50) as usize)
+                .filter_map(|(id, seat)| {
+                    self.circles.get(&id).map(|c| seat_token_json(c, seat, &account_id))
+                }),
+        );
+        ret(&format!("[{items}]"));
+    }
+}
+
+// ----------------------------------------------------------------------
+// Internal logic
+// ----------------------------------------------------------------------
+
+impl Contri {
+    /// Returns the amount to refund for each transferred token.
+    pub(crate) fn internal_on_transfer(
+        &mut self,
+        sender_id: AccountId,
+        previous_owner_ids: Vec<AccountId>,
+        token_ids: Vec<String>,
+        amounts: Vec<U128>,
+        msg: String,
+    ) -> Vec<u128> {
+        self.assert_intents();
+        let _ = previous_owner_ids;
+        if token_ids.len() != 1 || amounts.len() != 1 || token_ids[0] != self.token_id {
+            env::log_str("contri: unsupported token, refunding");
+            return amounts.iter().map(|a| a.0).collect();
+        }
+        let amount = amounts[0].0;
+        let result = match parse_transfer(&msg) {
+            Some(m) => self.handle_transfer(&sender_id, amount, m),
+            None => Err("unreadable message".to_string()),
+        };
+        match result {
+            Ok(()) => vec![0],
+            Err(e) => {
+                env::log_str(&format!("contri: refunding {amount}: {e}"));
+                vec![amount]
+            }
+        }
+    }
+
+    pub(crate) fn circle_of(&self, circle_id: u64) -> Option<Circle> {
+        self.circles.get(&circle_id).cloned()
+    }
+
+    pub(crate) fn record_of(&self, account_id: &AccountId) -> Record {
+        self.records.get(account_id).cloned().unwrap_or_default()
+    }
+
+    pub(crate) fn credit_of(&self, account_id: &AccountId) -> U128 {
+        self.credits.get(account_id).cloned().unwrap_or(U128(0))
+    }
+
+    /// (circle id, seat) for every seat this account holds.
+    pub(crate) fn seats_of(&self, account_id: &AccountId) -> Vec<(u64, u32)> {
+        (0..self.next_circle_id)
+            .filter_map(|id| {
+                let c = self.circles.get(&id)?;
+                c.seat_of(account_id).map(|seat| (id, seat as u32))
+            })
+            .collect()
+    }
+
+    pub(crate) fn internal_release(&mut self, circle_id: u64) -> u32 {
         let mut c = self.get_circle_or_panic(circle_id);
         require!(
             c.status == CircleStatus::Finished || c.status == CircleStatus::Cancelled,
@@ -382,112 +556,6 @@ impl Contri {
         sent
     }
 
-    // ------------------------------------------------------------------
-    // Callbacks
-    // ------------------------------------------------------------------
-
-    #[private]
-    #[allow(deprecated)]
-    pub fn on_payout(&mut self, circle_id: u64, round: u32, amount: U128) -> bool {
-        let ok = matches!(env::promise_result(0), PromiseResult::Successful(_));
-        self.finalize_payout(circle_id, round, amount, ok)
-    }
-
-    #[private]
-    #[allow(deprecated)]
-    pub fn on_sent(&mut self, to: AccountId, amount: U128) -> bool {
-        let ok = matches!(env::promise_result(0), PromiseResult::Successful(_));
-        if !ok {
-            let owed = self.credits.get(&to).map(|c| c.0).unwrap_or(0);
-            self.credits.insert(to.clone(), U128(owed + amount.0));
-            emit("credit_added", format!(r#"{{"account":"{}","amount":"{}"}}"#, to, amount.0));
-        }
-        ok
-    }
-
-    // ------------------------------------------------------------------
-    // Views
-    // ------------------------------------------------------------------
-
-    pub fn get_config(&self) -> Config {
-        Config {
-            owner_id: self.owner_id.clone(),
-            intents_id: self.intents_id.clone(),
-            token_id: self.token_id.clone(),
-        }
-    }
-
-    pub fn get_circle(&self, circle_id: u64) -> Option<Circle> {
-        self.circles.get(&circle_id).cloned()
-    }
-
-    pub fn get_circles(&self, from_index: Option<u64>, limit: Option<u64>) -> Vec<Circle> {
-        let from = from_index.unwrap_or(0);
-        let to = self.next_circle_id.min(from + limit.unwrap_or(50).min(100));
-        (from..to).filter_map(|id| self.circles.get(&id).cloned()).collect()
-    }
-
-    pub fn get_circles_for(&self, account_id: AccountId) -> Vec<u64> {
-        (0..self.next_circle_id)
-            .filter(|id| {
-                self.circles.get(id).is_some_and(|c| {
-                    c.organizer == account_id || c.seat_of(&account_id).is_some()
-                })
-            })
-            .collect()
-    }
-
-    pub fn get_record(&self, account_id: AccountId) -> Record {
-        self.records.get(&account_id).cloned().unwrap_or_default()
-    }
-
-    pub fn get_credit(&self, account_id: AccountId) -> U128 {
-        self.credits.get(&account_id).cloned().unwrap_or(U128(0))
-    }
-
-    // NEP-171 style views: each seat is a token "<circle>:<seat>".
-
-    pub fn nft_metadata(&self) -> NftContractMetadata {
-        NftContractMetadata {
-            spec: "nft-1.0.0".into(),
-            name: "Contri Seats".into(),
-            symbol: "SEAT".into(),
-        }
-    }
-
-    pub fn nft_token(&self, token_id: String) -> Option<SeatToken> {
-        let (circle_id, seat) = parse_seat_token(&token_id)?;
-        let c = self.circles.get(&circle_id)?;
-        let m = c.members.get(seat as usize)?;
-        Some(seat_token(c, seat, &m.account_id))
-    }
-
-    pub fn nft_tokens_for_owner(
-        &self,
-        account_id: AccountId,
-        from_index: Option<U128>,
-        limit: Option<u32>,
-    ) -> Vec<SeatToken> {
-        let mut out = vec![];
-        for id in 0..self.next_circle_id {
-            if let Some(c) = self.circles.get(&id) {
-                if let Some(seat) = c.seat_of(&account_id) {
-                    out.push(seat_token(c, seat as u32, &account_id));
-                }
-            }
-        }
-        out.into_iter()
-            .skip(from_index.map(|i| i.0 as usize).unwrap_or(0))
-            .take(limit.unwrap_or(50) as usize)
-            .collect()
-    }
-}
-
-// ----------------------------------------------------------------------
-// Internal logic
-// ----------------------------------------------------------------------
-
-impl Contri {
     fn assert_intents(&self) {
         require!(
             env::predecessor_account_id() == self.intents_id,
@@ -774,16 +842,30 @@ impl Contri {
     /// Sends `amount` of the circle token from this contract's NEAR Intents
     /// balance to `to`. If the transfer fails, the amount becomes a claimable credit.
     fn send(&self, to: AccountId, amount: u128, memo: String) {
-        ext_intents::ext(self.intents_id.clone())
-            .with_attached_deposit(ONE_YOCTO)
-            .with_static_gas(GAS_MT_TRANSFER)
-            .mt_transfer(to.clone(), self.token_id.clone(), U128(amount), None, Some(memo))
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(GAS_CALLBACK)
-                    .on_sent(to, U128(amount)),
-            )
+        self.mt_transfer(&to, amount, &memo)
+            .then(callback(
+                "on_sent",
+                format!(r#"{{"to":"{to}","amount":"{amount}"}}"#),
+            ))
             .detach();
+    }
+
+    /// `intents.near` `mt_transfer` of this contract's own balance. Arguments are
+    /// written by hand to keep serde_json's serializer out of the contract.
+    fn mt_transfer(&self, to: &AccountId, amount: u128, memo: &str) -> Promise {
+        let args = format!(
+            r#"{{"receiver_id":"{}","token_id":{},"amount":"{}","memo":{}}}"#,
+            to,
+            jstr(&self.token_id),
+            amount,
+            jstr(memo)
+        );
+        Promise::new(self.intents_id.clone()).function_call(
+            "mt_transfer".to_string(),
+            args.into_bytes(),
+            ONE_YOCTO,
+            GAS_MT_TRANSFER,
+        )
     }
 
     fn start_payout(&mut self, mut c: Circle) -> Promise {
@@ -793,15 +875,11 @@ impl Contri {
         c.paying = true;
         let id = c.id;
         self.circles.insert(id, c);
-        ext_intents::ext(self.intents_id.clone())
-            .with_attached_deposit(ONE_YOCTO)
-            .with_static_gas(GAS_MT_TRANSFER)
-            .mt_transfer(to, self.token_id.clone(), amount, None, Some(format!("contri:{id}:{round}")))
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(GAS_CALLBACK)
-                    .on_payout(id, round, amount),
-            )
+        self.mt_transfer(&to, amount.0, &format!("contri:{id}:{round}"))
+            .then(callback(
+                "on_payout",
+                format!(r#"{{"circle_id":{id},"round":{round},"amount":"{}"}}"#, amount.0),
+            ))
     }
 
     pub(crate) fn finalize_payout(
@@ -861,21 +939,60 @@ fn parse_seat_token(token_id: &str) -> Option<(u64, u32)> {
     Some((a.parse().ok()?, b.parse().ok()?))
 }
 
-fn seat_token(c: &Circle, seat: u32, owner: &AccountId) -> SeatToken {
-    SeatToken {
-        token_id: format!("{}:{}", c.id, seat),
-        owner_id: owner.clone(),
-        metadata: SeatMetadata {
-            title: format!("{} - turn {}", c.name, seat + 1),
-            description: format!(
-                "Turn {} of {} in Contri circle #{}. Receives the pot in round {}.",
-                seat + 1,
-                c.size,
-                c.id,
-                seat + 1
-            ),
-        },
+fn seat_token_json(c: &Circle, seat: u32, owner: &AccountId) -> String {
+    let title = format!("{} - turn {}", c.name, seat + 1);
+    let description = format!(
+        "Turn {} of {} in Contri circle #{}. Receives the pot in round {}.",
+        seat + 1,
+        c.size,
+        c.id,
+        seat + 1
+    );
+    format!(
+        r#"{{"token_id":"{}:{}","owner_id":"{}","metadata":{{"title":{},"description":{}}}}}"#,
+        c.id,
+        seat,
+        owner,
+        jstr(&title),
+        jstr(&description)
+    )
+}
+
+fn callback(method: &str, args: String) -> Promise {
+    Promise::new(env::current_account_id()).function_call(
+        method.to_string(),
+        args.into_bytes(),
+        ZERO,
+        GAS_CALLBACK,
+    )
+}
+
+/// Returns a raw JSON value from a view or call.
+fn ret(json: &str) {
+    env::value_return(json.as_bytes());
+}
+
+fn join(items: impl Iterator<Item = String>) -> String {
+    items.collect::<Vec<_>>().join(",")
+}
+
+/// JSON string literal with escaping.
+pub(crate) fn jstr(s: &str) -> String {
+    let mut o = String::with_capacity(s.len() + 2);
+    o.push('"');
+    for ch in s.chars() {
+        match ch {
+            '"' => o.push_str("\\\""),
+            '\\' => o.push_str("\\\\"),
+            '\n' => o.push_str("\\n"),
+            '\r' => o.push_str("\\r"),
+            '\t' => o.push_str("\\t"),
+            c if (c as u32) < 0x20 => o.push_str(&format!("\\u{:04x}", c as u32)),
+            c => o.push(c),
+        }
     }
+    o.push('"');
+    o
 }
 
 /// NEP-297 event log.
