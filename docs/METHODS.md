@@ -33,10 +33,11 @@ For members who have a NEAR account and want to call the contract from their wal
 
 | Method | Arguments | Returns |
 | --- | --- | --- |
-| `create_circle` | `name`, `contribution`, `size`, `period_secs`, `invite_key` (optional, 64 hex) | The new circle's id |
+| `create_circle` | `name`, `contribution`, `size`, `period_secs`, `order` (optional: `join` or `random`), `invite_key` (optional, 64 hex) | The new circle's id |
+| `leave_circle` | `circle_id` | Nothing. Leaves a circle that has not started; the deposit comes back. |
 | `list_seat` | `circle_id`, `seat`, `price` | Nothing |
 | `unlist_seat` | `circle_id`, `seat` | Nothing |
-| `cancel_circle` | `circle_id` | Nothing. Organizer only, before the circle starts. |
+| `cancel_circle` | `circle_id` | Nothing. Cancels a circle that has not started: the organizer at any time, anyone once it has stayed unfilled past `fill_by` (14 days). |
 | `claim_credit` | none | Nothing. Sends what the caller is owed after a failed transfer. |
 
 Example with near-cli (replace `contri.testnet` with the contract id in the README, and `alice.testnet` with your account):
@@ -52,6 +53,7 @@ near contract call-function as-transaction contri.testnet create_circle json-arg
 | `settle_round` | `circle_id` | Nothing. After the round deadline, takes each missed contribution from the member's deposit, then from the circle's backing, and pays the pot. |
 | `pay_out` | `circle_id` | Nothing. Pays the pot when every member has paid, for example after a failed payout. |
 | `release_deposits` | `circle_id` | Number of transfers sent. After a circle finishes or is cancelled, sends members' remaining deposits and backers' shares of the leftover backing, as many as the attached gas allows; call again for the rest. |
+| `close_circle` | `circle_id` | Nothing. Deletes a finished or cancelled circle once all its money has gone back, freeing its storage. Members' records stay. |
 
 ## Callbacks
 
@@ -91,6 +93,8 @@ A circle:
   ],
   "listings": [null, "1000000", null],
   "invite_only": true,
+  "random_order": true,
+  "fill_by": "1209600000000000",
   "backing": "6000000",
   "backers": [{"account_id": "lagos-coop.sputnik-dao.near", "amount": "6000000", "due": "0"}],
   "status": "Active",
@@ -104,7 +108,7 @@ A circle:
 }
 ```
 
-`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight. `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
+`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. With `random_order`, the contract draws the turn order from NEAR's per-block random seed when the circle fills. After `fill_by`, anyone can cancel the circle if it is still open. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight. `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
 
 A member's `deposit` is one contribution in an open circle. In an invite-only circle the invite sets it, up to one contribution, so an organizer can ask less of someone they trust.
 
@@ -130,10 +134,13 @@ A token:
   "metadata": {
     "title": "Contri seat - turn 2 of 3",
     "description": "Receives the pot in round 2 of Contri circle #0.",
+    "media": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' …",
     "extra": "{\"circle\":0,\"seat\":1,\"payout_round\":1,\"price\":\"1000000\"}"
   }
 }
 ```
+
+`media` is a picture the contract draws from the circle's live state: a ring that fills round by round, the turn (`2/3`), and where the seat stands (`PAYS THIS ROUND`, `PAID OUT`, `FOR SALE`, `PAYS IN ROUND 3`). Seats become tokens when the circle fills and the turn order is final.
 
 ## Events
 
@@ -141,7 +148,7 @@ Logged as NEP-297 `EVENT_JSON`.
 
 | Standard | Event | Data |
 | --- | --- | --- |
-| `contri` | `circle_created` | `circle`, `organizer`, `contribution`, `size`, `period_secs`, `invite_only` |
+| `contri` | `circle_created` | `circle`, `organizer`, `contribution`, `size`, `period_secs`, `invite_only`, `random_order` |
 | `contri` | `joined` | `circle`, `member`, `seat`, `deposit` |
 | `contri` | `circle_started` | `circle`, `first_deadline` |
 | `contri` | `contributed` | `circle`, `round`, `member`, `amount` |
@@ -151,13 +158,14 @@ Logged as NEP-297 `EVENT_JSON`.
 | `contri` | `deposit_refilled` | `circle`, `member`, `deposit` |
 | `contri` | `payout_failed` | `circle`, `round` |
 | `contri` | `circle_finished` | `circle` |
-| `contri` | `circle_cancelled` | `circle` |
+| `contri` | `circle_cancelled` | `circle`, `by` |
+| `contri` | `left` | `circle`, `member` |
+| `contri` | `circle_closed` | `circle` |
 | `contri` | `seat_listed`, `seat_unlisted` | `circle`, `seat`, `price` |
 | `contri` | `seat_sold` | `circle`, `seat`, `buyer`, `seller`, `price`, `seller_new_seat` |
 | `contri` | `credit_added` | `account`, `amount` |
-| `nep171` | `nft_mint` | `owner_id`, `token_ids` |
+| `nep171` | `nft_mint` | One entry per seat, in turn order, when the circle starts: `owner_id`, `token_ids` |
 | `nep171` | `nft_transfer` | `old_owner_id`, `new_owner_id`, `token_ids` |
-| `nep171` | `nft_burn` | `owner_id`, `token_ids` |
 
 ## Storage layout
 

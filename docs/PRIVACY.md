@@ -12,38 +12,56 @@ Contri keeps **who you are**, **where your money comes from and goes**, and **wh
 | The circle's name and members' names | Public, or in the app's database | Encrypted. The key is only in the invite link |
 | The exchange account or wallet you paid from | Traceable from the chain | Hidden: top-ups land in a confidential balance |
 | Where your payout went | Traceable from the chain | Hidden: cash-outs leave from a confidential balance |
-| Your other circles and total savings | Linked by your wallet address | Each circle uses its own account |
+| Your other circles and total savings | Linked by your wallet address | Each circle uses its own account, derived from one passkey |
 | Your track record | Public and tied to your wallet | Shown only to an organizer you choose |
 | Who can join | Anyone who finds the circle | Only people with the invite link |
 | That an account paid 5 USDT into circle #3 in round 2 | Public | Public, from an account tied to nothing else |
 
+## Who could be watching, and what each learns
+
+| Who | What they learn |
+| --- | --- |
+| A stranger with a block explorer | That some accounts run a circle with a given amount and schedule. Not who they are, where their money came from or went, what the circle is called, or anyone's other circles. |
+| Someone who knows one of your circle accounts | Your activity in that one circle. Your other circles use accounts they can't connect to it. |
+| Your exchange | That you withdrew USDT to a 1Click deposit address. Not that it went to Contri, or which circle. |
+| Contri's relayer | The signed intents it submits, which are public anyway. No names, phone numbers or IP logs, and it can't read circle names or nicknames. |
+| Your fellow members | What an ajo always shows its members: who is in, who paid, who got the pot, under the nicknames members chose. |
+| Confidential Intents' operators | Confidential balances live on NEAR's private shard, run by permissioned validators with each user's data encrypted, and deposits are screened on the way in. Contri relies on that the same way near.com does. NEAR plans user-held view keys for selective disclosure; they are not live yet. |
+
 ## The layers
 
 ### 1. Confidential money in and out
-Top-ups and cash-outs go through **Confidential Intents**, NEAR Intents' private execution layer on a private shard.
+Top-ups and cash-outs go through **Confidential Intents**, NEAR Intents' private execution layer. Its balances sit on a private shard (`intents.far`) that has no public RPC or explorer; moving between the public `intents.near` and the private side goes through NEAR's bridge.
 
 - **Top up:** the 1Click quote uses `recipientType: CONFIDENTIAL_INTENTS`, so money from an exchange withdrawal or a wallet lands in the member's confidential balance. The public chain shows a deposit to a 1Click address and nothing that links it to the member.
-- **Contribute:** the member moves the contribution from their confidential balance to their circle account (`depositType: CONFIDENTIAL_INTENTS`). Publicly this shows an anonymous sender. The contribution itself is the usual signed `Transfer` to the contract.
+- **Contribute:** the member moves one contribution from their confidential balance to their circle account (`depositType: CONFIDENTIAL_INTENTS`, `recipientType: INTENTS`). Publicly this shows an anonymous sender. The contribution itself is the usual signed `Transfer` to the contract.
 - **Cash out:** the payout moves into the member's confidential balance, then out to any chain. The explorer shows an anonymous sender.
 
-Confidential operations need a user session with 1Click. The member gets it by signing an empty intent with their passkey (`POST /v0/auth/authenticate`).
+Confidential operations need a user session with 1Click: the member's key signs an empty intent (`POST /v0/auth/authenticate`), and the access token reads balances and authorizes quotes. 1Click's `generate-intent` accepts `nep413`, `raw_ed25519` and `webauthn` signatures among others.
 
-### 2. One account per circle
-Each circle uses its own NEAR Intents account, derived from a key the member's passkey controls. Two circles of the same person share nothing on chain, so nobody can add up someone's savings or follow them from circle to circle.
+### 2. One passkey, a separate account for every circle
+A member has one passkey. When they open the app, it asks the passkey for a secret through the WebAuthn **PRF extension**. The passkey never reveals its private key, and only that passkey on that site can produce the secret. From it the app derives keys with HKDF:
+
+- a **circle key** per circle, `HKDF(secret, "contri/circle/<contract>/<circle id>")`. It is an ed25519 key, so its account is a plain NEAR implicit account (64 hex characters), and it signs intents with the `raw_ed25519` or `nep413` standard;
+- a **vault key**, `HKDF(secret, "contri/vault")`, which holds the member's confidential balance and never appears on the public chain.
+
+Circle accounts share nothing on chain: not a key, not a funding source, not a name. Nobody can add up a member's savings or follow them from circle to circle. On a new phone, the same synced passkey gives the same secret, so every circle comes back without any server holding a list.
+
+Where PRF isn't available (older iPhones), the app falls back to one passkey per circle, signing with the `webauthn` standard.
 
 ### 3. Invite-only circles (in the contract)
-The organizer's app makes an ed25519 **invite key**. Its public half is stored with the circle; its secret half lives only in the invite link. To join, the joiner's app signs `contri-join:<contract>:<circle>:<joiner account>` with the invite key, and the contract checks the signature (`env::ed25519_verify`) before taking the seat. Because the signature names the joiner, a signature seen on chain can't be reused by anyone else. Without a valid invite, the deposit is refunded.
+The organizer's app makes an ed25519 **invite key**. Its public half is stored with the circle; its secret half lives only in the invite link. To join, the joiner's app signs `contri-join:<contract>:<circle>:<joiner account>:<deposit>` with the invite key, and the contract checks the signature (`env::ed25519_verify`) before taking the seat. Because the signature names the joiner, a signature seen on chain can't be reused by anyone else. The invite also sets the deposit, so an organizer can privately ask less of someone they trust. Without a valid invite, the money is refunded.
 
 ### 4. End-to-end encrypted circle details
 The invite link carries a secret after `#`, which browsers never send to any server. The app derives two keys from it: the invite signing key and an AES-GCM key. The AES-GCM key encrypts:
 
 - the circle's name, stored on chain as ciphertext (the contract stores names as given, up to 256 bytes, and seat NFTs never show them);
-- members' display names and notes, stored as ciphertext by the relayer.
+- members' nicknames and notes, stored as ciphertext by the relayer.
 
-Only people with the link can read them. That includes us: we never see them.
+Only people with the link can read them. That includes us.
 
 ### 5. Private track record
-A member's record (circles completed, payments missed) lives on chain per account. Since every circle has its own account, a member proves their history only when they choose to. Their app signs a challenge with each past circle account and sends the proofs, encrypted, to the organizer of the circle they want to join. The organizer's app checks those accounts' records on chain. Nothing public ever links the accounts together.
+A member's record (circles completed, payments missed) lives on chain per account. Because every circle has its own account, nobody can see a member's history unless the member shows it. To show it, their app signs a challenge with each past circle key and sends the proofs, encrypted, to the organizer of the circle they want to join. The organizer's app checks those accounts' records on chain. Nothing public ever links the accounts together.
 
 ### 6. Nothing personal on our side
 - No phone numbers, emails or names are collected.
@@ -53,21 +71,29 @@ A member's record (circles completed, payments missed) lives on chain per accoun
 The code is open source, so all of this can be checked.
 
 ## What stays public, and why
-The contract replaces the person who used to hold the money, and anyone can check it does that honestly because its rules and state are public: circle ids, contribution amounts, schedules, the member accounts in each seat, who has paid this round, payouts, deposits, seat listings and sales. All of it is tied to accounts that lead nowhere.
+The contract replaces the person who used to hold the money, and anyone can check it does that honestly because its rules and state are public: circle ids, contribution amounts, schedules, the account in each seat, who has paid this round, payouts, deposits, backing, seat listings and sales. All of it is tied to accounts that lead nowhere.
 
-Timing can still hint at links. If someone moves exactly one contribution out of their confidential balance a second before contributing, the two transactions sit side by side. The app reduces this by moving money ahead of time and in round amounts.
+Timing can still hint at links. If someone moves exactly one contribution out of their confidential balance a second before contributing, the two transactions sit side by side. The app moves each contribution to the circle account well ahead of the deadline, at a random moment, so the two steps don't line up.
 
-## What we chose not to hide
-We looked at keeping the pot itself in a confidential balance. A contract can own one through NEAR Chain Signatures, the way Trezu runs confidential DAO treasuries. It would not hide more, because the contract's public rules already show who is paid in which round. Hiding the circle's state too would mean running the rules in a trusted enclave and trusting its hardware instead of a public contract. That is a possible next step ("sealed circles"), not part of this version.
+## What we researched and set aside
+
+| Idea | What we found | Decision |
+| --- | --- | --- |
+| Keep the pot itself in a confidential balance, signed by the contract through Chain Signatures | Works for DAO treasuries (Trezu signs 1Click intents with `v1.signer`). But the contract would sign intents built by 1Click without being able to check where they route, and the circle's public rules already show who is paid each round, so it hides nothing more | Not used |
+| Each circle as its own contract account (NEP-616 deterministic accounts on a NEP-591 global contract) | Isolates every pot and deletes itself when done. Publishing a global contract burns 10× normal storage, about 10 NEAR for this contract | Later |
+| NEAR's passkey smart wallets (`0s…` accounts on the WebAuthn wallet contract, NEAR Connect Passkey) | Real NEAR accounts from one passkey, with sub-wallets. But every sub-wallet keeps the same passkey public key in its state, which links them | Fine for members who want a NEAR account; not used for circle accounts |
+| Cash out to shielded Zcash | NEAR Intents can't quote unified (shielded) Zcash addresses yet | Not available |
+| Zero-knowledge membership and stealth payouts | Would hide payers even inside a circle, but members are meant to see each other, and one account per circle already makes every account lead nowhere | Not needed |
+| Sealed circles: the rules run in a TEE that holds a confidential pot (NEAR AI Cloud, Shade Agents) | Would hide the circle itself from the public, at the cost of trusting hardware attestation instead of a public contract | Later |
 
 ## Status
 
 | Layer | Status |
 | --- | --- |
-| Invite-only circles | In the contract, unit-tested (`invite_only_circle_needs_a_signed_invite`) |
+| Invite-only circles, trust deposits | In the contract, unit-tested (`invite_only_circle_needs_a_signed_invite`, `invite_can_lower_the_deposit_for_someone_trusted`) |
 | Encrypted names, none in NFT metadata | In the contract, unit-tested |
-| Confidential top-up, contribute, cash-out | To verify in the first $1 mainnet test (passkey sign-in to 1Click's confidential API) |
-| One account per circle | App, in progress |
+| Confidential top-up, contribute, cash-out | To verify in the first $1 mainnet test |
+| One passkey, one account per circle (PRF) | App, in progress |
 | End-to-end encrypted details | App, in progress |
 | Private track record | App, in progress |
 | No personal data | App and relayer, in progress |

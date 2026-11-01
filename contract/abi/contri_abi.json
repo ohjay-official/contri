@@ -8,7 +8,7 @@
     "functions": [
       {
         "name": "cancel_circle",
-        "doc": " Direct call: the organizer cancels a circle that has not started.",
+        "doc": " Cancels a circle that has not started: the organizer at any time, or\n anyone once the circle has stayed unfilled past its `fill_by`.",
         "kind": "call",
         "params": {
           "serialization_type": "json",
@@ -30,12 +30,30 @@
         "kind": "call"
       },
       {
+        "name": "close_circle",
+        "doc": " Anyone: deletes a finished or cancelled circle once all its money has\n gone back, freeing its storage. Members' records stay.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        }
+      },
+      {
         "name": "contract_source_metadata",
         "kind": "view"
       },
       {
         "name": "create_circle",
-        "doc": " Direct call: creates a circle organized by the caller. Returns its id.\n `invite_key` (64 hex characters, ed25519) makes the circle invite-only.",
+        "doc": " Direct call: creates a circle organized by the caller. Returns its id.\n `order` is `join` (default) or `random`. `invite_key` (64 hex\n characters, ed25519) makes the circle invite-only.",
         "kind": "call",
         "params": {
           "serialization_type": "json",
@@ -66,6 +84,15 @@
                 "type": "integer",
                 "format": "uint64",
                 "minimum": 0.0
+              }
+            },
+            {
+              "name": "order",
+              "type_schema": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             {
@@ -267,6 +294,24 @@
               "null"
             ]
           }
+        }
+      },
+      {
+        "name": "leave_circle",
+        "doc": " Direct call: leave a circle that has not started; the deposit comes back.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
         }
       },
       {
@@ -542,7 +587,7 @@
       },
       {
         "name": "on_auth",
-        "doc": " Called only by NEAR Intents for a member's signed `AuthCall` intent.\n `msg` is `create:<contribution>:<size>:<period_secs>:<invite key or ->:<name>`,\n `list_seat:<circle>:<seat>:<price>`, `unlist_seat:<circle>:<seat>`,\n `cancel:<circle>` or `claim_credit`.",
+        "doc": " Called only by NEAR Intents for a member's signed `AuthCall` intent.\n `msg` is `create:<contribution>:<size>:<period_secs>:<join|random>:<invite key or ->:<name>`,\n `leave:<circle>`, `list_seat:<circle>:<seat>:<price>`,\n `unlist_seat:<circle>:<seat>`, `cancel:<circle>` or `claim_credit`.",
         "kind": "call",
         "params": {
           "serialization_type": "json",
@@ -748,6 +793,7 @@
             "backing",
             "contribution",
             "created_at",
+            "fill_by",
             "id",
             "invite_only",
             "listings",
@@ -758,6 +804,7 @@
             "payouts",
             "period_secs",
             "pot",
+            "random_order",
             "round",
             "size",
             "started_at",
@@ -780,6 +827,10 @@
             },
             "created_at": {
               "description": "Nanoseconds.",
+              "type": "string"
+            },
+            "fill_by": {
+              "description": "Nanoseconds. After this, anyone can cancel the circle if it is still open.",
               "type": "string"
             },
             "id": {
@@ -833,6 +884,10 @@
             },
             "pot": {
               "type": "string"
+            },
+            "random_order": {
+              "description": "Turns are drawn at random when the circle fills.",
+              "type": "boolean"
             },
             "round": {
               "description": "The round being paid now, from 0.",
@@ -1095,6 +1150,13 @@
               ]
             },
             "extra": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "media": {
+              "description": "SVG data URL drawn by the contract from the circle's live state.",
               "type": [
                 "string",
                 "null"

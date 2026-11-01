@@ -84,10 +84,11 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 | `Transfer` notification | `refill:<circle>` | Top up your own deposit, to at most one contribution |
 | `Transfer` notification | `contribute:<circle>:<round>` | Pay this round |
 | `Transfer` notification | `buy_seat:<circle>:<seat>` | Buy a listed, earlier seat |
-| `AuthCall` | `create:<contribution>:<size>:<period_secs>:<invite key>:<name>` | Create a circle. Invite key: 64 hex (ed25519 public key) or `-` for an open circle. The name is encrypted by the app |
+| `AuthCall` | `create:<contribution>:<size>:<period_secs>:<order>:<invite key>:<name>` | Create a circle. Order: `join` or `random` (drawn when the circle fills). Invite key: 64 hex (ed25519 public key) or `-` for an open circle. The name is encrypted by the app |
+| `AuthCall` | `leave:<circle>` | Leave a circle that has not started; the deposit comes back |
 | `AuthCall` | `list_seat:<circle>:<seat>:<price>` | List your seat for sale |
 | `AuthCall` | `unlist_seat:<circle>:<seat>` | Take it off sale |
-| `AuthCall` | `cancel:<circle>` | Organizer cancels a circle that has not started |
+| `AuthCall` | `cancel:<circle>` | Cancel a circle that has not started: the organizer, or anyone after `fill_by` |
 | `AuthCall` | `claim_credit` | Claim money from a transfer that failed |
 
 ## Missed payments
@@ -96,8 +97,13 @@ A member's deposit is one contribution, or less if their invite says so. After a
 ## Community-backed circles
 Any account can put money behind a circle with `back:<circle>`: a cooperative's DAO treasury, a church, an employer. A Trezu or Sputnik DAO does it with one proposal that calls `mt_transfer_call` on `intents.near` (template in [integrations/trezu](../integrations/trezu)). The backing covers missed payments after deposits. When the circle ends or is cancelled, what is left is split back between the backers in proportion to what each put in, and `release_deposits` sends it.
 
+## Fair turns, and circles that never fill
+Who goes first is a classic ajo argument. An organizer can choose `random`, and when the circle fills the contract draws the turn order from NEAR's per-block random seed (`env::random_seed`), so nobody, the organizer included, picks it. Members who want a different turn can then trade seats.
+
+Before a circle starts, a member can leave and get their deposit back. If a circle hasn't filled 14 days after it was created (`fill_by`), anyone can cancel it, so deposits never get stuck behind an organizer who disappeared. Once a finished or cancelled circle has paid everything back, anyone can call `close_circle` to delete it and free its storage.
+
 ## Seats as NFTs
-Each turn is a seat token `<circle>:<turn>`, owned by the member's Intents account. The contract has the NEP-171 core views, NEP-177 metadata and NEP-181 enumeration (`nft_token`, `nft_tokens`, `nft_tokens_for_owner`, `nft_total_supply`, `nft_supply_for_owner`, `nft_metadata`), and logs NEP-171 `nft_mint`, `nft_transfer` and `nft_burn` events so NFT indexers can follow the seats. Seats change hands only through the contract: the seller lists with an `AuthCall`, the buyer pays the price with a `Transfer` (`buy_seat:<circle>:<seat>`), and the contract swaps the two turns and forwards the price to the seller. See [METHODS.md](METHODS.md#seats-as-nfts).
+Each turn is a seat token `<circle>:<turn>`, owned by the member's Intents account. Seats become tokens when the circle fills and the turn order is final. The contract has the NEP-171 core views, NEP-177 metadata and NEP-181 enumeration (`nft_token`, `nft_tokens`, `nft_tokens_for_owner`, `nft_total_supply`, `nft_supply_for_owner`, `nft_metadata`), and logs NEP-171 `nft_mint` and `nft_transfer` events so NFT indexers can follow the seats. Each token's picture (`media`) is drawn by the contract from live state, so it changes as the circle runs: a ring that fills round by round and a line saying whether the seat pays this round, has been paid, is for sale, or which round it pays in. Seats change hands only through the contract: the seller lists with an `AuthCall`, the buyer pays the price with a `Transfer` (`buy_seat:<circle>:<seat>`), and the contract swaps the two turns and forwards the price to the seller. See [METHODS.md](METHODS.md#seats-as-nfts).
 
 ## Verified against source vs still to test
 

@@ -33,13 +33,17 @@ Join the public practice circle with a passkey, top up $0.50 from any supported 
 
 ## How NEAR is used
 
-- **NEAR Intents accounts from passkeys and wallets.** A member's Intents account is derived from their passkey or wallet public key, so members never create a NEAR account.
+- **NEAR Intents accounts from one passkey.** The app derives a separate ed25519 key for every circle from the member's passkey (WebAuthn PRF), and each key is its own Intents account. Members never create a NEAR account, and their circles can't be linked to each other.
 - **1Click API.** Members top up from Tron, BNB Chain, Ethereum, Solana and other supported chains, including straight from an exchange withdrawal.
 - **Signed intents with notification.** A contribution is a `Transfer` intent to the Contri contract that triggers `mt_on_transfer`, so the contract knows exactly who paid without trusting a server.
 - **`AuthCall` intents.** Creating a circle and listing a seat are authenticated calls from the member's own signature. Members with a NEAR account can also call these directly.
 - **Contract-held pot.** The pot sits in the Contri contract's NEAR Intents balance. Only the contract can move it, and only to members in the agreed order.
 - **Confidential Intents.** Top-ups land in the member's confidential balance and cash-outs leave from it, so the public chain never links a member to their exchange account or wallet.
-- **Invite-only circles.** Joining needs the invite key's ed25519 signature over the joiner's account, checked by the contract.
+- **Invite-only circles.** Joining needs the invite key's ed25519 signature over the joiner's account and deposit, checked by the contract (`env::ed25519_verify`).
+- **Fair draws.** An organizer can have the contract draw the turn order from NEAR's per-block random seed when the circle fills.
+- **Seats as live NFTs.** NEP-171/177/181 views and events; each seat's picture is drawn by the contract from the circle's live state.
+- **Community backing from DAOs.** A Trezu or Sputnik DAO treasury can back a circle with one `mt_transfer_call` proposal; the backing covers missed payments.
+- **Standards and tooling.** NEP-245 receiver, NEP-297 events, NEP-330 source metadata, and an embedded ABI generated from typed declarations.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full money path, [docs/METHODS.md](docs/METHODS.md) for every contract method, view and event, and [DEMO.md](DEMO.md) for the 60-second demo script.
 
