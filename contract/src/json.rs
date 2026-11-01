@@ -6,6 +6,7 @@
 //! single part of the contract. Arguments here are small, flat objects, so a
 //! strict recursive-descent reader is enough.
 
+#[allow(dead_code)]
 pub enum Json {
     Null,
     Bool(bool),

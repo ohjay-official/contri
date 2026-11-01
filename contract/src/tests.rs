@@ -20,9 +20,10 @@ fn set_with_input(predecessor: &str, secs: u64, input: &str) {
     b.current_account_id(acc("contri.near"))
         .predecessor_account_id(acc(predecessor))
         .block_timestamp(secs * 1_000_000_000)
-        .prepaid_gas(Gas::from_tgas(300))
-        .input(input.as_bytes().to_vec());
-    testing_env!(b.build());
+        .prepaid_gas(Gas::from_tgas(300));
+    let mut ctx = b.build();
+    ctx.input = std::rc::Rc::from(input.as_bytes());
+    testing_env!(ctx);
 }
 
 fn set(predecessor: &str, secs: u64) {
@@ -506,8 +507,8 @@ fn json_reader() {
     assert!(v.get("missing").is_none());
 
     // Unicode escapes, including a surrogate pair.
-    let u = parse(br#""é😀""#).unwrap();
-    assert_eq!(u.as_str(), Some("é😀"));
+    let u = parse(br#""\u00e9\ud83d\ude00""#).unwrap();
+    assert_eq!(u.as_str(), Some("\u{e9}\u{1f600}"));
 
     // Strictness.
     assert!(parse(br#"{"a":1} x"#).is_none());
