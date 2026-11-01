@@ -20,6 +20,8 @@ NEAR Intents derives an account id from the signer's public key (`contracts/defu
 
 So a member who signs in with a phone passkey already has an Intents account. They never create a NEAR account or hold NEAR for gas.
 
+Members who do have a NEAR account can use it too: it signs intents with its own key, and it can also call `create_circle`, `list_seat`, `unlist_seat`, `cancel_circle` and `claim_credit` directly (see [METHODS.md](METHODS.md#called-directly-by-a-near-account)).
+
 ## Money path
 
 ### 1. Top up (any chain, any wallet, any exchange)

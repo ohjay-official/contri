@@ -817,3 +817,159 @@ fn source_metadata_names_the_repo_and_standards() {
         .collect();
     assert!(standards.contains(&"nep297") && standards.contains(&"nep330"), "{standards:?}");
 }
+
+#[test]
+fn near_accounts_can_call_directly() {
+    let mut c = setup();
+    set_with_input(
+        "alice.near",
+        1,
+        r#"{"name":"Direct","contribution":"2000000","size":2,"period_secs":3600}"#,
+    );
+    c.create_circle();
+    assert_eq!(returned(), json!(0));
+    assert_eq!(c.circle_of(0).unwrap().organizer, acc("alice.near"));
+
+    // Money still comes through NEAR Intents, from the same accounts.
+    assert_eq!(transfer(&mut c, "alice.near", 2_000_000, "join:0", 2), 0);
+    assert_eq!(transfer(&mut c, "bob.near", 2_000_000, "join:0", 2), 0);
+
+    set_with_input("bob.near", 3, r#"{"circle_id":0,"seat":1,"price":"500000"}"#);
+    c.list_seat();
+    assert_eq!(c.circle_of(0).unwrap().listings[1], Some(U128(500_000)));
+    set_with_input("bob.near", 4, r#"{"circle_id":0,"seat":1}"#);
+    c.unlist_seat();
+    assert_eq!(c.circle_of(0).unwrap().listings[1], None);
+
+    set("contri.near", 5);
+    c.add_credit(acc("bob.near"), 9);
+    set_with_input("bob.near", 6, "");
+    c.claim_credit();
+    assert_eq!(c.credit_of(&acc("bob.near")), U128(0));
+    assert_eq!(get_created_receipts()[0].receiver_id, acc(INTENTS));
+
+    set_with_input(
+        "alice.near",
+        7,
+        r#"{"name":"Second","contribution":"1","size":3,"period_secs":60}"#,
+    );
+    c.create_circle();
+    assert_eq!(returned(), json!(1));
+    set_with_input("alice.near", 8, r#"{"circle_id":1}"#);
+    c.cancel_circle();
+    assert_eq!(c.circle_of(1).unwrap().status, CircleStatus::Cancelled);
+}
+
+#[test]
+#[should_panic(expected = "only the seat's owner can do this")]
+fn direct_calls_act_only_for_the_caller() {
+    let mut c = full_circle_of_three();
+    set_with_input("mallory.near", 1, r#"{"circle_id":0,"seat":0,"price":"1"}"#);
+    c.list_seat();
+}
+
+#[test]
+#[should_panic(expected = "only the organizer can cancel")]
+fn only_the_organizer_cancels_directly() {
+    let mut c = setup();
+    create(&mut c, 3);
+    set_with_input("mallory.near", 1, r#"{"circle_id":0}"#);
+    c.cancel_circle();
+}
+
+#[test]
+#[should_panic(expected = "missing or invalid argument: size")]
+fn sizes_past_u32_are_rejected_not_truncated() {
+    let mut c = setup();
+    // 2^32 + 3 would wrap to 3 if it were cast.
+    set_with_input(
+        "alice.near",
+        1,
+        r#"{"name":"x","contribution":"1","size":4294967299,"period_secs":3600}"#,
+    );
+    c.create_circle();
+}
+
+/// Every value the contract returns must parse into the typed interface that
+/// the ABI is generated from. Those types reject missing and unknown fields.
+#[test]
+fn views_match_the_typed_interface() {
+    use contri_interface as typed;
+    use near_sdk::json_types::U64;
+    use near_sdk::serde::de::DeserializeOwned;
+
+    fn parse<T: DeserializeOwned>(what: &str, v: Value) -> T {
+        serde_json::from_value(v.clone()).unwrap_or_else(|e| panic!("{what} does not match the interface: {e}\n{v}"))
+    }
+
+    // A circle with a finished round, a listed seat and a default, a finished
+    // circle with records, and a cancelled one.
+    let mut c = full_circle_of_three();
+    for who in [ADA, BAYO, CHIOMA] {
+        contribute(&mut c, who, 0, 0, 100);
+    }
+    set("contri.near", 101);
+    c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true);
+    auth(&mut c, CHIOMA, "list_seat:0:2:700000", 102);
+
+    auth(&mut c, BAYO, &format!("create:{CONTRIBUTION}:2:3600:Short"), 200);
+    transfer(&mut c, ADA, CONTRIBUTION, "join:1", 201);
+    transfer(&mut c, BAYO, CONTRIBUTION, "join:1", 201);
+    for round in 0..2u32 {
+        contribute(&mut c, ADA, 1, round, 300 + round as u64 * 3600);
+        set("anyone.near", 201 + (round as u64 + 1) * 3600);
+        c.internal_settle(1);
+        set("contri.near", 202 + (round as u64 + 1) * 3600);
+        c.finalize_payout(1, round, U128(2 * CONTRIBUTION), true);
+    }
+    auth(&mut c, ADA, &format!("create:{CONTRIBUTION}:3:3600:Cancelled"), 9_000);
+    auth(&mut c, ADA, "cancel:2", 9_001);
+    set("contri.near", 9_002);
+    c.add_credit(acc(ADA), 5);
+
+    let ada = format!(r#"{{"account_id":"{ADA}"}}"#);
+    let config: typed::Config = parse("get_config", view(&c, "", Contri::get_config));
+    assert_eq!(config.circle_count, 3);
+    let circle: typed::Circle = parse("get_circle", view(&c, r#"{"circle_id":0}"#, Contri::get_circle));
+    assert_eq!(circle.payouts.len(), 1);
+    assert_eq!(circle.listings[2], Some(U128(700_000)));
+    assert_eq!(circle.status, typed::CircleStatus::Active);
+    let short: typed::Circle = parse("get_circle", view(&c, r#"{"circle_id":1}"#, Contri::get_circle));
+    assert_eq!(short.status, typed::CircleStatus::Finished);
+    assert!(short.members[1].defaulted && short.round_deadline.is_none());
+    let none: Option<typed::Circle> = parse("get_circle", view(&c, r#"{"circle_id":7}"#, Contri::get_circle));
+    assert!(none.is_none());
+    let all: Vec<typed::Circle> = parse("get_circles", view(&c, "", Contri::get_circles));
+    assert_eq!(all.len(), 3);
+    let _: Option<U64> = parse("get_round_deadline", view(&c, r#"{"circle_id":0}"#, Contri::get_round_deadline));
+    let _: Option<U64> = parse("get_round_deadline", view(&c, r#"{"circle_id":1}"#, Contri::get_round_deadline));
+    let _: Vec<u64> = parse("get_circles_for", view(&c, &ada, Contri::get_circles_for));
+    let record: typed::Record = parse("get_record", view(&c, &ada, Contri::get_record));
+    assert_eq!(record.completed, 1);
+    let credit: U128 = parse("get_credit", view(&c, &ada, Contri::get_credit));
+    assert_eq!(credit, U128(5));
+
+    let _: typed::NftContractMetadata = parse("nft_metadata", view(&c, "", Contri::nft_metadata));
+    let token: Option<typed::Token> = parse("nft_token", view(&c, r#"{"token_id":"0:2"}"#, Contri::nft_token));
+    assert!(token.unwrap().metadata.extra.unwrap().contains("700000"));
+    let _: Option<typed::Token> = parse("nft_token", view(&c, r#"{"token_id":"2:0"}"#, Contri::nft_token));
+    let _: U128 = parse("nft_total_supply", view(&c, "", Contri::nft_total_supply));
+    let _: Vec<typed::Token> = parse("nft_tokens", view(&c, "", Contri::nft_tokens));
+    let _: U128 = parse("nft_supply_for_owner", view(&c, &ada, Contri::nft_supply_for_owner));
+    let _: Vec<typed::Token> = parse("nft_tokens_for_owner", view(&c, &ada, Contri::nft_tokens_for_owner));
+
+    // Calls that return a value.
+    set_with_input("alice.near", 9_100, r#"{"name":"N","contribution":"1","size":2,"period_secs":60}"#);
+    c.create_circle();
+    let _: u64 = parse("create_circle", returned());
+    set_with_input(
+        INTENTS,
+        9_101,
+        &format!(r#"{{"sender_id":"{ADA}","previous_owner_ids":[],"token_ids":["{TOKEN}"],"amounts":["1"],"msg":"join:3"}}"#),
+    );
+    c.mt_on_transfer();
+    let _: Vec<U128> = parse("mt_on_transfer", returned());
+    set_with_input("anyone.near", 9_102, r#"{"circle_id":2}"#);
+    c.release_deposits();
+    let _: u32 = parse("release_deposits", returned());
+}

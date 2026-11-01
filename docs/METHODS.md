@@ -1,6 +1,8 @@
 # Contract methods
 
-Every method takes JSON arguments and returns JSON, like any near-sdk contract. The contract reads and writes that JSON itself instead of using serde (see `contract/src/json.rs`), which keeps the code under 100 KB, so no ABI is embedded. This page is the reference instead.
+Every method takes JSON arguments and returns JSON, like any near-sdk contract. The contract reads and writes that JSON itself instead of using serde (see `contract/src/json.rs`), which keeps the code under 100 KB.
+
+The same reference in machine-readable form is the contract's ABI: [`contract/abi/contri_abi.json`](../contract/abi/contri_abi.json), also returned on chain by the `__contract_abi` view (zstd-compressed, as cargo-near embeds it). It is generated from typed declarations of these methods in `contract/interface`, and tests check that every value the contract returns matches those types.
 
 Conventions:
 
@@ -24,6 +26,24 @@ Only `intents_id` can call these. Members never call them directly: they sign an
 | --- | --- | --- |
 | `mt_on_transfer` | `sender_id`, `previous_owner_ids`, `token_ids`, `amounts`, `msg` | Amounts to refund, for example `["0"]`. NEP-245 receiver for a `Transfer` intent with a notification. A wrong token, amount or message is refunded in full, with the reason in the log. |
 | `on_auth` | `signer_id`, `msg` | Nothing. Runs an `AuthCall` intent. Fails with the reason if the action is not allowed. |
+
+## Called directly by a NEAR account
+
+For members who have a NEAR account and want to call the contract from their wallet or the CLI. The caller is the member. Money still moves through NEAR Intents: joining, contributing and buying a seat are `Transfer` intents, which a NEAR account can sign with its own key.
+
+| Method | Arguments | Returns |
+| --- | --- | --- |
+| `create_circle` | `name`, `contribution`, `size`, `period_secs` | The new circle's id |
+| `list_seat` | `circle_id`, `seat`, `price` | Nothing |
+| `unlist_seat` | `circle_id`, `seat` | Nothing |
+| `cancel_circle` | `circle_id` | Nothing. Organizer only, before the circle starts. |
+| `claim_credit` | none | Nothing. Sends what the caller is owed after a failed transfer. |
+
+Example with near-cli (replace `contri.testnet` with the contract id in the README, and `alice.testnet` with your account):
+
+```
+near contract call-function as-transaction contri.testnet create_circle json-args '{"name":"Lagos Ajo","contribution":"5000000","size":5,"period_secs":86400}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as alice.testnet network-config testnet sign-with-keychain send
+```
 
 ## Anyone can call
 
@@ -54,6 +74,7 @@ Private: only the contract itself can call them.
 | `get_record` | `account_id` | `{"completed","defaults","missed_payments"}` |
 | `get_credit` | `account_id` | Amount the account can claim, for example `"0"` |
 | `contract_source_metadata` | none | NEP-330 source metadata: version, repository link, standards |
+| `__contract_abi` | none | The ABI, zstd-compressed JSON |
 
 A circle:
 

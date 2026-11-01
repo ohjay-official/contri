@@ -34,7 +34,7 @@ Join the public practice circle with a passkey, top up $0.50 from any supported 
 - **NEAR Intents accounts from passkeys and wallets.** A member's Intents account is derived from their passkey or wallet public key, so members never create a NEAR account.
 - **1Click API.** Members top up from Tron, BNB Chain, Ethereum, Solana and other supported chains, including straight from an exchange withdrawal.
 - **Signed intents with notification.** A contribution is a `Transfer` intent to the Contri contract that triggers `mt_on_transfer`, so the contract knows exactly who paid without trusting a server.
-- **`AuthCall` intents.** Joining a circle and listing a seat are authenticated calls from the member's own signature.
+- **`AuthCall` intents.** Creating a circle and listing a seat are authenticated calls from the member's own signature. Members with a NEAR account can also call these directly.
 - **Contract-held pot.** The pot sits in the Contri contract's NEAR Intents balance. Only the contract can move it, and only to members in the agreed order.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full money path, [docs/METHODS.md](docs/METHODS.md) for every contract method, view and event, and [DEMO.md](DEMO.md) for the 60-second demo script.

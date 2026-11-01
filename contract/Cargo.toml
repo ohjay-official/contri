@@ -14,6 +14,8 @@ near-sdk = "5"
 
 [dev-dependencies]
 near-sdk = { version = "5", features = ["unit-testing"] }
+# Typed declaration of the same methods. Tests check every view's output against it.
+contri-interface = { path = "interface" }
 
 [profile.release]
 codegen-units = 1

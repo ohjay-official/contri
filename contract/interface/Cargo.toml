@@ -1,0 +1,14 @@
+[package]
+name = "contri-interface"
+version = "0.1.0"
+edition = "2021"
+description = "Typed interface of the Contri contract. Not deployed: CI generates the contract's ABI from it."
+license = "MIT"
+repository = "https://github.com/ohjay-official/contri"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "5"

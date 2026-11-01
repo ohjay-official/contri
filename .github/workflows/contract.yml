@@ -7,6 +7,7 @@ on:
     paths:
       - contract/**
       - .github/workflows/contract.yml
+      - scripts/abi.py
 
 permissions:
   contents: write
@@ -38,6 +39,19 @@ jobs:
         continue-on-error: true
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
 
+      - name: Generate the ABI from the typed interface
+        id: abi
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          (cd interface && cargo near abi) 2>&1 | tee ../ci-out/abi.log
+          python3 ../scripts/abi.py sync interface/target/near/*_abi.json abi/contri_abi.json ../ci-out/abi_drift
+          python3 -c "import json,sys; print(json.dumps(json.load(open('abi/contri_abi.json')),separators=(',',':')),end='')" > ../ci-out/contri_abi.min.json
+          (command -v zstd >/dev/null || sudo apt-get install -y -qq zstd >/dev/null)
+          zstd -q -f --ultra -22 ../ci-out/contri_abi.min.json -o abi/contri_abi.zst
+          cp abi/contri_abi.json abi/contri_abi.zst ../ci-out/
+          ls -l abi | tee -a ../ci-out/abi.log
+
       - name: Build wasm
         id: build
         continue-on-error: true
@@ -46,6 +60,12 @@ jobs:
           (cargo near build non-reproducible-wasm --no-abi || cargo near build non-reproducible-wasm --no-embed-abi) 2>&1 | tee ../ci-out/build.log
           cp target/near/contri.wasm ../ci-out/contri.wasm
           ls -l ../ci-out/contri.wasm | tee -a ../ci-out/build.log
+
+      - name: Check the ABI lists exactly the exported methods
+        id: exports
+        if: steps.build.outcome == 'success' && steps.abi.outcome == 'success'
+        continue-on-error: true
+        run: python3 ../scripts/abi.py exports ../ci-out/contri.wasm abi/contri_abi.json 2>&1 | tee ../ci-out/exports.log
 
       - name: Measure size and storage cost
         if: steps.build.outcome == 'success'
@@ -79,7 +99,7 @@ jobs:
         run: |
           mkdir -p ../ci-out
           cat > ../ci-out/status.json <<EOF
-          {"commit":"${GITHUB_SHA}","test":"${{ steps.test.outcome }}","install":"${{ steps.install.outcome }}","build":"${{ steps.build.outcome }}"}
+          {"commit":"${GITHUB_SHA}","test":"${{ steps.test.outcome }}","install":"${{ steps.install.outcome }}","abi":"${{ steps.abi.outcome }}","abi_drift":"$(cat ../ci-out/abi_drift 2>/dev/null || echo unknown)","build":"${{ steps.build.outcome }}","exports":"${{ steps.exports.outcome }}"}
           EOF
           cat ../ci-out/status.json
 
@@ -97,6 +117,16 @@ jobs:
           git commit -q -m "ci results ${GITHUB_SHA}"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ci-results
 
-      - name: Fail the job if tests or build failed
-        if: steps.test.outcome != 'success' || steps.build.outcome != 'success'
-        run: exit 1
+      - name: Fail the job if tests, ABI or build failed
+        if: steps.test.outcome != 'success' || steps.abi.outcome != 'success' || steps.build.outcome != 'success' || steps.exports.outcome != 'success'
+        run: |
+          echo "A step failed. See the ci-results branch."
+          exit 1
+
+      - name: Fail the job if the committed ABI is out of date
+        run: |
+          if [ "$(cat ci-out/abi_drift 2>/dev/null)" != "false" ]; then
+            echo "contract/abi/contri_abi.json differs from the interface. Copy contri_abi.json and contri_abi.zst from the ci-results branch."
+            exit 1
+          fi
+        working-directory: .
