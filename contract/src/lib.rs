@@ -14,7 +14,7 @@
 
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::serde_json::{self, json};
+use near_sdk::serde_json;
 use near_sdk::store::{IterableMap, LookupMap};
 use near_sdk::{
     env, ext_contract, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault,
@@ -182,6 +182,13 @@ pub struct SeatMetadata {
     pub description: String,
 }
 
+#[near(serializers = [json])]
+pub struct NftContractMetadata {
+    pub spec: String,
+    pub name: String,
+    pub symbol: String,
+}
+
 #[ext_contract(ext_intents)]
 pub trait IntentsMultiToken {
     fn mt_transfer(
@@ -332,7 +339,7 @@ impl Contri {
         }
         emit(
             "round_settled",
-            json!({ "circle": c.id, "round": c.round, "covered_from_deposit": defaulted }),
+            format!(r#"{{"circle":{},"round":{},"covered_from_deposit":[{}]}}"#, c.id, c.round, defaulted.iter().map(|a| format!("\"{a}\"")).collect::<Vec<_>>().join(",")),
         );
         self.start_payout(c).detach();
     }
@@ -392,7 +399,7 @@ impl Contri {
         if !ok {
             let owed = self.credits.get(&to).map(|c| c.0).unwrap_or(0);
             self.credits.insert(to.clone(), U128(owed + amount.0));
-            emit("credit_added", json!({ "account": to, "amount": amount }));
+            emit("credit_added", format!(r#"{{"account":"{}","amount":"{}"}}"#, to, amount.0));
         }
         ok
     }
@@ -447,8 +454,12 @@ impl Contri {
 
     // NEP-171 style views: each seat is a token "<circle>:<seat>".
 
-    pub fn nft_metadata(&self) -> serde_json::Value {
-        json!({ "spec": "nft-1.0.0", "name": "Contri Seats", "symbol": "SEAT" })
+    pub fn nft_metadata(&self) -> NftContractMetadata {
+        NftContractMetadata {
+            spec: "nft-1.0.0".into(),
+            name: "Contri Seats".into(),
+            symbol: "SEAT".into(),
+        }
     }
 
     pub fn nft_token(&self, token_id: String) -> Option<SeatToken> {
@@ -589,7 +600,7 @@ impl Contri {
         };
         emit(
             "circle_created",
-            json!({ "circle": id, "organizer": organizer, "contribution": contribution, "size": size, "period_secs": period_secs }),
+            format!(r#"{{"circle":{},"organizer":"{}","contribution":"{}","size":{},"period_secs":{}}}"#, id, organizer, contribution.0, size, period_secs),
         );
         self.circles.insert(id, c);
         Ok(id)
@@ -617,13 +628,13 @@ impl Contri {
             missed: 0,
         });
         let seat = c.members.len() - 1;
-        emit("joined", json!({ "circle": circle_id, "member": who, "seat": seat }));
+        emit("joined", format!(r#"{{"circle":{},"member":"{}","seat":{}}}"#, circle_id, who, seat));
         if c.members.len() as u32 == c.size {
             c.status = CircleStatus::Active;
             c.started_at = env::block_timestamp();
             emit(
                 "circle_started",
-                json!({ "circle": circle_id, "first_deadline": c.round_deadline().to_string() }),
+                format!(r#"{{"circle":{},"first_deadline":"{}"}}"#, circle_id, c.round_deadline()),
             );
         }
         self.circles.insert(circle_id, c);
@@ -658,7 +669,7 @@ impl Contri {
         c.pot = U128(c.pot.0 + amount);
         emit(
             "contributed",
-            json!({ "circle": circle_id, "round": round, "member": who, "amount": U128(amount) }),
+            format!(r#"{{"circle":{},"round":{},"member":"{}","amount":"{}"}}"#, circle_id, round, who, amount),
         );
         let ready = c.all_paid();
         let gas_left = env::prepaid_gas().saturating_sub(env::used_gas());
@@ -705,7 +716,7 @@ impl Contri {
         c.listings[buyer_seat] = None;
         emit(
             "seat_sold",
-            json!({ "circle": circle_id, "seat": seat, "buyer": buyer, "seller": seller, "price": price, "seller_new_seat": buyer_seat }),
+            format!(r#"{{"circle":{},"seat":{},"buyer":"{}","seller":"{}","price":"{}","seller_new_seat":{}}}"#, circle_id, seat, buyer, seller, price.0, buyer_seat),
         );
         self.circles.insert(circle_id, c);
         self.send(seller, amount, format!("contri:{circle_id}:seat:{seat}"));
@@ -739,7 +750,7 @@ impl Contri {
         c.listings[s] = price;
         emit(
             if price.is_some() { "seat_listed" } else { "seat_unlisted" },
-            json!({ "circle": circle_id, "seat": seat, "price": price }),
+            format!(r#"{{"circle":{},"seat":{},"price":"{}"}}"#, circle_id, seat, price.map(|p| p.0).unwrap_or(0)),
         );
         self.circles.insert(circle_id, c);
         Ok(())
@@ -754,7 +765,7 @@ impl Contri {
             return Err("only a circle that has not started can be cancelled".into());
         }
         c.status = CircleStatus::Cancelled;
-        emit("circle_cancelled", json!({ "circle": circle_id }));
+        emit("circle_cancelled", format!(r#"{{"circle":{}}}"#, circle_id));
         self.circles.insert(circle_id, c);
         Ok(())
     }
@@ -814,7 +825,7 @@ impl Contri {
         };
         c.paying = false;
         if !ok || c.round != round {
-            emit("payout_failed", json!({ "circle": circle_id, "round": round }));
+            emit("payout_failed", format!(r#"{{"circle":{},"round":{}}}"#, circle_id, round));
             self.circles.insert(circle_id, c);
             return false;
         }
@@ -827,7 +838,7 @@ impl Contri {
         });
         emit(
             "paid_out",
-            json!({ "circle": circle_id, "round": round, "to": to, "amount": amount }),
+            format!(r#"{{"circle":{},"round":{},"to":"{}","amount":"{}"}}"#, circle_id, round, to, amount.0),
         );
         c.pot = U128(0);
         for m in c.members.iter_mut() {
@@ -847,7 +858,7 @@ impl Contri {
                 r.missed_payments += m.missed;
                 self.records.insert(m.account_id.clone(), r);
             }
-            emit("circle_finished", json!({ "circle": circle_id }));
+            emit("circle_finished", format!(r#"{{"circle":{}}}"#, circle_id));
         }
         self.circles.insert(circle_id, c);
         true
@@ -877,9 +888,9 @@ fn seat_token(c: &Circle, seat: u32, owner: &AccountId) -> SeatToken {
 }
 
 /// NEP-297 event log.
-fn emit(event: &str, data: serde_json::Value) {
+fn emit(event: &str, data: String) {
     env::log_str(&format!(
         "EVENT_JSON:{}",
-        json!({ "standard": "contri", "version": "1.0.0", "event": event, "data": [data] })
+        format!(r#"{{"standard":"contri","version":"1.0.0","event":"{event}","data":[{data}]}}"#)
     ));
 }

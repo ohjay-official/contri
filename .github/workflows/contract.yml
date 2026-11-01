@@ -47,6 +47,19 @@ jobs:
           cp target/near/contri.wasm ../ci-out/contri.wasm
           ls -l ../ci-out/contri.wasm | tee -a ../ci-out/build.log
 
+      - name: Measure size and storage cost
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y -qq binaryen >/dev/null 2>&1 || true
+          RAW=$(stat -c %s ../ci-out/contri.wasm)
+          OPT=$RAW
+          if command -v wasm-opt >/dev/null; then
+            wasm-opt -Oz --strip-debug --strip-producers --enable-bulk-memory --enable-sign-ext --enable-mutable-globals ../ci-out/contri.wasm -o ../ci-out/contri.opt.wasm && OPT=$(stat -c %s ../ci-out/contri.opt.wasm)
+          fi
+          # NEAR storage staking: 1 NEAR per 100,000 bytes (refundable when storage is freed)
+          echo "{\"raw_bytes\":$RAW,\"opt_bytes\":$OPT,\"raw_near\":$(echo "scale=3; $RAW/100000" | bc),\"opt_near\":$(echo "scale=3; $OPT/100000" | bc)}" | tee ../ci-out/size.json
+
       - name: Write status
         if: always()
         run: |
