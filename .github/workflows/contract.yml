@@ -60,6 +60,20 @@ jobs:
           # NEAR storage staking: 1 NEAR per 100,000 bytes (refundable when storage is freed)
           echo "{\"raw_bytes\":$RAW,\"opt_bytes\":$OPT,\"raw_near\":$(echo "scale=3; $RAW/100000" | bc),\"opt_near\":$(echo "scale=3; $OPT/100000" | bc)}" | tee ../ci-out/size.json
 
+      - name: Size profile (what takes the space)
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          cargo install twiggy --locked -q 2>/dev/null || cargo install twiggy -q
+          CARGO_PROFILE_RELEASE_STRIP=false cargo build --release --target wasm32-unknown-unknown -q 2>&1 | tail -5
+          W=target/wasm32-unknown-unknown/release/contri.wasm
+          ls -l $W | tee ../ci-out/profile.txt
+          twiggy top -n 60 $W >> ../ci-out/profile.txt 2>&1
+          echo "=== garbage ===" >> ../ci-out/profile.txt
+          twiggy garbage -n 10 $W >> ../ci-out/profile.txt 2>&1
+          echo "=== monos ===" >> ../ci-out/profile.txt
+          twiggy monos -n 30 $W >> ../ci-out/profile.txt 2>&1
+
       - name: Write status
         if: always()
         run: |
