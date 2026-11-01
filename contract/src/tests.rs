@@ -1,7 +1,6 @@
 use super::*;
 use near_sdk::test_utils::VMContextBuilder;
 use near_sdk::testing_env;
-use near_sdk::serde_json::json;
 
 const INTENTS: &str = "intents.near";
 const TOKEN: &str = "nep141:usdt.tether-token.near";
@@ -32,7 +31,7 @@ fn setup() -> Contri {
 
 /// Simulates NEAR Intents delivering a member's Transfer intent with a notification.
 /// Returns the amount refunded to the member.
-fn transfer(c: &mut Contri, from: &str, amount: u128, msg: serde_json::Value, secs: u64) -> u128 {
+fn transfer(c: &mut Contri, from: &str, amount: u128, msg: &str, secs: u64) -> u128 {
     set(INTENTS, secs);
     match c.mt_on_transfer(
         acc(from),
@@ -47,7 +46,7 @@ fn transfer(c: &mut Contri, from: &str, amount: u128, msg: serde_json::Value, se
 }
 
 /// Simulates NEAR Intents delivering a member's AuthCall intent.
-fn auth(c: &mut Contri, signer: &str, msg: serde_json::Value, secs: u64) {
+fn auth(c: &mut Contri, signer: &str, msg: &str, secs: u64) {
     set(INTENTS, secs);
     let _ = c.on_auth(acc(signer), msg.to_string());
 }
@@ -56,14 +55,14 @@ fn create(c: &mut Contri, size: u32) -> u64 {
     auth(
         c,
         ADA,
-        json!({ "op": "create", "name": "Lagos Ajo", "contribution": CONTRIBUTION.to_string(), "size": size, "period_secs": DAY }),
+        &format!("create:{CONTRIBUTION}:{size}:{DAY}:Lagos Ajo"),
         0,
     );
     0
 }
 
 fn join(c: &mut Contri, who: &str, circle: u64) -> u128 {
-    transfer(c, who, CONTRIBUTION, json!({ "op": "join", "circle": circle }), 10)
+    transfer(c, who, CONTRIBUTION, &format!("join:{circle}"), 10)
 }
 
 fn contribute(c: &mut Contri, who: &str, circle: u64, round: u32, secs: u64) -> u128 {
@@ -71,7 +70,7 @@ fn contribute(c: &mut Contri, who: &str, circle: u64, round: u32, secs: u64) -> 
         c,
         who,
         CONTRIBUTION,
-        json!({ "op": "contribute", "circle": circle, "round": round }),
+        &format!("contribute:{circle}:{round}"),
         secs,
     )
 }
@@ -105,7 +104,7 @@ fn circle_starts_when_full() {
 fn wrong_deposit_is_refunded() {
     let mut c = setup();
     let id = create(&mut c, 3);
-    let refund = transfer(&mut c, ADA, CONTRIBUTION - 1, json!({ "op": "join", "circle": id }), 10);
+    let refund = transfer(&mut c, ADA, CONTRIBUTION - 1, &format!("join:{id}"), 10);
     assert_eq!(refund, CONTRIBUTION - 1);
     assert!(c.get_circle(id).unwrap().members.is_empty());
 }
@@ -138,7 +137,7 @@ fn other_tokens_are_refunded() {
         vec![acc(ADA)],
         vec!["nep141:wrap.near".to_string()],
         vec![U128(CONTRIBUTION)],
-        json!({ "op": "join", "circle": id }).to_string(),
+        format!("join:{id}"),
     );
     match r {
         PromiseOrValue::Value(v) => assert_eq!(v[0].0, CONTRIBUTION),
@@ -156,7 +155,7 @@ fn only_intents_can_notify() {
         vec![acc(ADA)],
         vec![TOKEN.to_string()],
         vec![U128(CONTRIBUTION)],
-        json!({ "op": "join", "circle": 0 }).to_string(),
+        "join:0".to_string(),
     );
 }
 
@@ -246,17 +245,17 @@ fn cannot_settle_early() {
 #[test]
 fn seat_can_be_sold_to_a_later_member() {
     let mut c = full_circle_of_three();
-    auth(&mut c, ADA, json!({ "op": "list_seat", "circle": 0, "seat": 0, "price": "1000000" }), 50);
+    auth(&mut c, ADA, "list_seat:0:0:1000000", 50);
     assert_eq!(c.get_circle(0).unwrap().listings[0], Some(U128(1_000_000)));
 
     // Wrong price is refunded.
     assert_eq!(
-        transfer(&mut c, CHIOMA, 999_999, json!({ "op": "buy_seat", "circle": 0, "seat": 0 }), 60),
+        transfer(&mut c, CHIOMA, 999_999, "buy_seat:0:0", 60),
         999_999
     );
     // Correct price buys the seat.
     assert_eq!(
-        transfer(&mut c, CHIOMA, 1_000_000, json!({ "op": "buy_seat", "circle": 0, "seat": 0 }), 60),
+        transfer(&mut c, CHIOMA, 1_000_000, "buy_seat:0:0", 60),
         0
     );
     let circle = c.get_circle(0).unwrap();
@@ -274,13 +273,13 @@ fn seat_can_be_sold_to_a_later_member() {
 fn cannot_buy_unlisted_or_later_seat() {
     let mut c = full_circle_of_three();
     assert_eq!(
-        transfer(&mut c, CHIOMA, 1_000_000, json!({ "op": "buy_seat", "circle": 0, "seat": 0 }), 60),
+        transfer(&mut c, CHIOMA, 1_000_000, "buy_seat:0:0", 60),
         1_000_000
     );
-    auth(&mut c, CHIOMA, json!({ "op": "list_seat", "circle": 0, "seat": 2, "price": "1000000" }), 50);
+    auth(&mut c, CHIOMA, "list_seat:0:2:1000000", 50);
     // Ada (seat 0) cannot buy a later turn.
     assert_eq!(
-        transfer(&mut c, ADA, 1_000_000, json!({ "op": "buy_seat", "circle": 0, "seat": 2 }), 60),
+        transfer(&mut c, ADA, 1_000_000, "buy_seat:0:2", 60),
         1_000_000
     );
 }
@@ -289,7 +288,7 @@ fn cannot_buy_unlisted_or_later_seat() {
 #[should_panic(expected = "only the seat's owner can do this")]
 fn only_owner_can_list_a_seat() {
     let mut c = full_circle_of_three();
-    auth(&mut c, BAYO, json!({ "op": "list_seat", "circle": 0, "seat": 0, "price": "1000000" }), 50);
+    auth(&mut c, BAYO, "list_seat:0:0:1000000", 50);
 }
 
 #[test]
@@ -331,7 +330,7 @@ fn organizer_can_cancel_unfilled_circle() {
     let mut c = setup();
     let id = create(&mut c, 3);
     join(&mut c, ADA, id);
-    auth(&mut c, ADA, json!({ "op": "cancel", "circle": id }), 20);
+    auth(&mut c, ADA, &format!("cancel:{id}"), 20);
     assert_eq!(c.get_circle(id).unwrap().status, CircleStatus::Cancelled);
     assert_eq!(join(&mut c, BAYO, id), CONTRIBUTION);
     set("anyone.near", 30);
@@ -359,4 +358,45 @@ fn create_validates_inputs() {
     assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 21, DAY).is_err());
     assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 3, 10).is_err());
     assert_eq!(c.internal_create(&acc(ADA), "x".into(), U128(1), 3, DAY), Ok(0));
+}
+
+#[test]
+fn messages_parse_strictly() {
+    assert!(matches!(parse_transfer("join:3"), Some(TransferMsg::Join { circle: 3 })));
+    assert!(matches!(
+        parse_transfer("contribute:3:2"),
+        Some(TransferMsg::Contribute { circle: 3, round: 2 })
+    ));
+    assert!(matches!(parse_transfer("buy_seat:1:0"), Some(TransferMsg::BuySeat { circle: 1, seat: 0 })));
+    assert!(parse_transfer("join:3:9").is_none());
+    assert!(parse_transfer("contribute:3").is_none());
+    assert!(parse_transfer("join:x").is_none());
+    assert!(parse_transfer("steal:1").is_none());
+    assert!(parse_transfer("").is_none());
+
+    match parse_auth("create:5000000:5:86400:Ada's: Lagos circle") {
+        Some(AuthMsg::Create { name, contribution, size, period_secs }) => {
+            assert_eq!(name, "Ada's: Lagos circle");
+            assert_eq!(contribution, U128(5_000_000));
+            assert_eq!(size, 5);
+            assert_eq!(period_secs, 86_400);
+        }
+        _ => panic!("create did not parse"),
+    }
+    assert!(matches!(
+        parse_auth("list_seat:0:1:700000"),
+        Some(AuthMsg::ListSeat { circle: 0, seat: 1, price: U128(700_000) })
+    ));
+    assert!(matches!(parse_auth("unlist_seat:0:1"), Some(AuthMsg::UnlistSeat { circle: 0, seat: 1 })));
+    assert!(matches!(parse_auth("cancel:4"), Some(AuthMsg::Cancel { circle: 4 })));
+    assert!(matches!(parse_auth("claim_credit"), Some(AuthMsg::ClaimCredit)));
+    assert!(parse_auth("cancel:4:extra").is_none());
+    assert!(parse_auth("create:5:5:86400").is_none());
+}
+
+#[test]
+#[should_panic(expected = "unreadable message")]
+fn unreadable_auth_message_panics() {
+    let mut c = setup();
+    auth(&mut c, ADA, "make_me_rich", 1);
 }

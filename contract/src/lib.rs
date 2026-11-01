@@ -10,12 +10,12 @@
 //! - `on_auth`: a member's signed `AuthCall` intent. Used to create a circle,
 //!   list or unlist a seat, cancel an unfilled circle and claim credits.
 //!
-//! The same actions are also available as direct calls for NEAR accounts.
+//! Messages are compact text, for example `contribute:0:1`. See `parse_transfer`
+//! and `parse_auth`. Plain text keeps the contract small, and storage on NEAR
+//! costs 1 NEAR per 100 KB of code.
 
 use near_sdk::json_types::U128;
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::serde_json;
-use near_sdk::store::{IterableMap, LookupMap};
+use near_sdk::store::LookupMap;
 use near_sdk::{
     env, ext_contract, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault,
     Promise, PromiseOrValue, PromiseResult,
@@ -127,39 +127,77 @@ pub struct Record {
     pub missed_payments: u32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(crate = "near_sdk::serde", tag = "op", rename_all = "snake_case")]
+/// `msg` of a member's `Transfer` intent to this contract.
+#[cfg_attr(test, derive(Debug))]
 pub enum TransferMsg {
-    /// Pay the deposit (one contribution) and take the next free seat.
+    /// `join:<circle>`: pay the deposit (one contribution) and take the next free seat.
     Join { circle: u64 },
-    /// Pay this round's contribution.
+    /// `contribute:<circle>:<round>`: pay this round's contribution.
     Contribute { circle: u64, round: u32 },
-    /// Pay the asking price for a listed seat and swap it with your own later seat.
+    /// `buy_seat:<circle>:<seat>`: pay the asking price for a listed seat and swap it
+    /// with your own later seat.
     BuySeat { circle: u64, seat: u32 },
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(crate = "near_sdk::serde", tag = "op", rename_all = "snake_case")]
+/// `msg` of a member's `AuthCall` intent to this contract.
+#[cfg_attr(test, derive(Debug))]
 pub enum AuthMsg {
+    /// `create:<contribution>:<size>:<period_secs>:<name>` (the name may contain `:`).
     Create {
         name: String,
         contribution: U128,
         size: u32,
         period_secs: u64,
     },
-    ListSeat {
-        circle: u64,
-        seat: u32,
-        price: U128,
-    },
-    UnlistSeat {
-        circle: u64,
-        seat: u32,
-    },
-    Cancel {
-        circle: u64,
-    },
+    /// `list_seat:<circle>:<seat>:<price>`
+    ListSeat { circle: u64, seat: u32, price: U128 },
+    /// `unlist_seat:<circle>:<seat>`
+    UnlistSeat { circle: u64, seat: u32 },
+    /// `cancel:<circle>`
+    Cancel { circle: u64 },
+    /// `claim_credit`
     ClaimCredit,
+}
+
+pub fn parse_transfer(msg: &str) -> Option<TransferMsg> {
+    let mut p = msg.split(':');
+    let op = p.next()?;
+    let circle = p.next()?.parse().ok()?;
+    let m = match op {
+        "join" => TransferMsg::Join { circle },
+        "contribute" => TransferMsg::Contribute { circle, round: p.next()?.parse().ok()? },
+        "buy_seat" => TransferMsg::BuySeat { circle, seat: p.next()?.parse().ok()? },
+        _ => return None,
+    };
+    p.next().is_none().then_some(m)
+}
+
+pub fn parse_auth(msg: &str) -> Option<AuthMsg> {
+    if msg == "claim_credit" {
+        return Some(AuthMsg::ClaimCredit);
+    }
+    let (op, rest) = msg.split_once(':')?;
+    if op == "create" {
+        let mut p = rest.splitn(4, ':');
+        let contribution = U128(p.next()?.parse().ok()?);
+        let size = p.next()?.parse().ok()?;
+        let period_secs = p.next()?.parse().ok()?;
+        let name = p.next()?.to_string();
+        return Some(AuthMsg::Create { name, contribution, size, period_secs });
+    }
+    let mut p = rest.split(':');
+    let circle = p.next()?.parse().ok()?;
+    let m = match op {
+        "list_seat" => AuthMsg::ListSeat {
+            circle,
+            seat: p.next()?.parse().ok()?,
+            price: U128(p.next()?.parse().ok()?),
+        },
+        "unlist_seat" => AuthMsg::UnlistSeat { circle, seat: p.next()?.parse().ok()? },
+        "cancel" => AuthMsg::Cancel { circle },
+        _ => return None,
+    };
+    p.next().is_none().then_some(m)
 }
 
 #[near(serializers = [json])]
@@ -207,7 +245,7 @@ pub struct Contri {
     owner_id: AccountId,
     intents_id: AccountId,
     token_id: String,
-    circles: IterableMap<u64, Circle>,
+    circles: LookupMap<u64, Circle>,
     next_circle_id: u64,
     records: LookupMap<AccountId, Record>,
     /// Money owed to an account after an outgoing transfer failed. Claimable.
@@ -222,7 +260,7 @@ impl Contri {
             owner_id: env::predecessor_account_id(),
             intents_id,
             token_id,
-            circles: IterableMap::new(StorageKey::Circles),
+            circles: LookupMap::new(StorageKey::Circles),
             next_circle_id: 0,
             records: LookupMap::new(StorageKey::Records),
             credits: LookupMap::new(StorageKey::Credits),
@@ -250,9 +288,9 @@ impl Contri {
             return PromiseOrValue::Value(amounts);
         }
         let amount = amounts[0].0;
-        let result = match serde_json::from_str::<TransferMsg>(&msg) {
-            Ok(m) => self.handle_transfer(&sender_id, amount, m),
-            Err(_) => Err("unreadable message".to_string()),
+        let result = match parse_transfer(&msg) {
+            Some(m) => self.handle_transfer(&sender_id, amount, m),
+            None => Err("unreadable message".to_string()),
         };
         match result {
             Ok(()) => PromiseOrValue::Value(vec![U128(0)]),
@@ -266,52 +304,15 @@ impl Contri {
     /// Called by NEAR Intents for a member's signed `AuthCall` intent.
     pub fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
         self.assert_intents();
-        let m: AuthMsg =
-            serde_json::from_str(&msg).unwrap_or_else(|_| env::panic_str("unreadable message"));
+        let m = parse_auth(&msg).unwrap_or_else(|| env::panic_str("unreadable message"));
         self.handle_auth(&signer_id, m)
             .unwrap_or_else(|e| env::panic_str(&e));
         PromiseOrValue::Value(())
     }
 
     // ------------------------------------------------------------------
-    // Direct calls (for members with a NEAR account, and for anyone settling)
+    // Anyone can call these
     // ------------------------------------------------------------------
-
-    pub fn create_circle(
-        &mut self,
-        name: String,
-        contribution: U128,
-        size: u32,
-        period_secs: u64,
-    ) -> u64 {
-        let who = env::predecessor_account_id();
-        self.internal_create(&who, name, contribution, size, period_secs)
-            .unwrap_or_else(|e| env::panic_str(&e))
-    }
-
-    pub fn list_seat(&mut self, circle_id: u64, seat: u32, price: U128) {
-        let who = env::predecessor_account_id();
-        self.internal_list_seat(&who, circle_id, seat, Some(price))
-            .unwrap_or_else(|e| env::panic_str(&e));
-    }
-
-    pub fn unlist_seat(&mut self, circle_id: u64, seat: u32) {
-        let who = env::predecessor_account_id();
-        self.internal_list_seat(&who, circle_id, seat, None)
-            .unwrap_or_else(|e| env::panic_str(&e));
-    }
-
-    pub fn cancel_circle(&mut self, circle_id: u64) {
-        let who = env::predecessor_account_id();
-        self.internal_cancel(&who, circle_id)
-            .unwrap_or_else(|e| env::panic_str(&e));
-    }
-
-    pub fn claim_credit(&mut self) {
-        let who = env::predecessor_account_id();
-        self.internal_claim_credit(&who)
-            .unwrap_or_else(|e| env::panic_str(&e));
-    }
 
     /// Anyone can call this after the round deadline. Missed contributions are
     /// taken from the missing members' deposits, then the pot is paid out.
@@ -420,28 +421,20 @@ impl Contri {
         self.circles.get(&circle_id).cloned()
     }
 
-    pub fn get_circles(&self, from_index: Option<u32>, limit: Option<u32>) -> Vec<Circle> {
-        self.circles
-            .values()
-            .skip(from_index.unwrap_or(0) as usize)
-            .take(limit.unwrap_or(50).min(100) as usize)
-            .cloned()
-            .collect()
+    pub fn get_circles(&self, from_index: Option<u64>, limit: Option<u64>) -> Vec<Circle> {
+        let from = from_index.unwrap_or(0);
+        let to = self.next_circle_id.min(from + limit.unwrap_or(50).min(100));
+        (from..to).filter_map(|id| self.circles.get(&id).cloned()).collect()
     }
 
     pub fn get_circles_for(&self, account_id: AccountId) -> Vec<u64> {
-        self.circles
-            .values()
-            .filter(|c| c.organizer == account_id || c.seat_of(&account_id).is_some())
-            .map(|c| c.id)
+        (0..self.next_circle_id)
+            .filter(|id| {
+                self.circles.get(id).is_some_and(|c| {
+                    c.organizer == account_id || c.seat_of(&account_id).is_some()
+                })
+            })
             .collect()
-    }
-
-    pub fn get_round_deadline(&self, circle_id: u64) -> Option<u64> {
-        self.circles
-            .get(&circle_id)
-            .filter(|c| c.status == CircleStatus::Active)
-            .map(|c| c.round_deadline())
     }
 
     pub fn get_record(&self, account_id: AccountId) -> Record {
@@ -476,19 +469,17 @@ impl Contri {
         limit: Option<u32>,
     ) -> Vec<SeatToken> {
         let mut out = vec![];
-        for c in self.circles.values() {
-            if let Some(seat) = c.seat_of(&account_id) {
-                out.push(seat_token(c, seat as u32, &account_id));
+        for id in 0..self.next_circle_id {
+            if let Some(c) = self.circles.get(&id) {
+                if let Some(seat) = c.seat_of(&account_id) {
+                    out.push(seat_token(c, seat as u32, &account_id));
+                }
             }
         }
         out.into_iter()
             .skip(from_index.map(|i| i.0 as usize).unwrap_or(0))
             .take(limit.unwrap_or(50) as usize)
             .collect()
-    }
-
-    pub fn nft_total_supply(&self) -> U128 {
-        U128(self.circles.values().map(|c| c.members.len() as u128).sum())
     }
 }
 
