@@ -50,7 +50,7 @@ Circle accounts share nothing on chain: not a key, not a funding source, not a n
 Where PRF isn't available (older iPhones), the app falls back to one passkey per circle, signing with the `webauthn` standard.
 
 ### 3. Invite-only circles (in the contract)
-The organizer's app makes an ed25519 **invite key**. Its public half is stored with the circle; its secret half lives only in the invite link. To join, the joiner's app signs `contri-join:<contract>:<circle>:<joiner account>:<deposit>` with the invite key, and the contract checks the signature (`env::ed25519_verify`) before taking the seat. Because the signature names the joiner, a signature seen on chain can't be reused by anyone else. The invite also sets the deposit, so an organizer can privately ask less of someone they trust. Without a valid invite, the money is refunded.
+The organizer's app makes an ed25519 **invite key**. Its public half is stored with the circle; its secret half lives only in the invite link. To join, the joiner's app signs `contri-join:<contract>:<circle>:<joiner account>:<deposit>` with the invite key, and the contract checks the signature (`env::ed25519_verify`) before taking the seat. Because the signature names the joiner, a signature seen on chain can't be reused by anyone else. The invite also sets the deposit, so an organizer can privately ask less of someone they trust and more of a stranger. Without a valid invite, the money is refunded.
 
 ### 4. End-to-end encrypted circle details
 The invite link carries a secret after `#`, which browsers never send to any server. The app derives two keys from it: the invite signing key and an AES-GCM key. The AES-GCM key encrypts:
@@ -90,7 +90,8 @@ Timing can still hint at links. If someone moves exactly one contribution out of
 
 | Layer | Status |
 | --- | --- |
-| Invite-only circles, trust deposits | In the contract, unit-tested (`invite_only_circle_needs_a_signed_invite`, `invite_can_lower_the_deposit_for_someone_trusted`) |
+| Invite-only circles, per-person deposits | In the contract, unit-tested (`invite_only_circle_needs_a_signed_invite`, `invite_can_lower_the_deposit_for_someone_trusted`, `invite_can_ask_a_stranger_to_cover_their_future_rounds`) |
+| Key-only members (no NEAR account) signing NEP-413 intents | Tested end to end against NEAR Intents (`contract/sandbox`) |
 | Encrypted names, none in NFT metadata | In the contract, unit-tested |
 | Confidential top-up, contribute, cash-out | To verify in the first $1 mainnet test |
 | One passkey, one account per circle (PRF) | App, in progress |

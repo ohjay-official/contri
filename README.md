@@ -25,7 +25,7 @@ Join the public practice circle with a passkey, top up $0.50 from any supported 
 
 1. An organizer creates a circle: amount per turn, number of members, how often it pays out.
 2. Members join by link and sign in with a passkey. No seed phrase, no NEAR account, no gas token.
-3. Each member puts down a deposit worth one contribution, which covers them if they miss a payment.
+3. Each member puts down a deposit, which covers them if they miss a payment. An organizer can ask a stranger for more, up to all their future rounds, and less of someone they trust.
 4. Each round, members top up from any chain or exchange through NEAR Intents and confirm their contribution with their passkey.
 5. When everyone has paid, or the round deadline passes, the contract pays that round's member.
 6. Turns are seats. A member can list their seat and another member can buy it.

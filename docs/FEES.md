@@ -45,8 +45,27 @@ Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stor
 | Direct calls for NEAR accounts and the embedded ABI added back | 88 KB | 0.88 NEAR |
 | Invite-only circles (ed25519 invites) for privacy | 90 KB | 0.90 NEAR |
 | Community backing, trust deposits, refills; a bump allocator instead of wee_alloc | 95 KB | 0.95 NEAR |
-| Fair random draws, leaving before the start, fill deadlines, cleanup, live seat images | **99.4 KB** | **0.99 NEAR** |
+| Fair random draws, leaving before the start, fill deadlines, cleanup, live seat images | 99.4 KB | 0.99 NEAR |
+| Creating costs a deposit (no free spam), bigger deposits through invites | **99.8 KB** | **1.00 NEAR** (99,827 bytes) |
 
 The 193 KB step removed two things: direct calls for members with a NEAR account, and the embedded ABI. Both are back in the last row (the ABI is generated from typed declarations in `contract/interface`, see `contract/abi/README.md`). Nothing else was removed, and the later steps added NFT enumeration views, NEP-171 events and a round-deadline view. CI measures the size on every push (`ci-results` branch, `size.json`).
 
-Expected total to launch: 0.99 NEAR for the code, up to 0.03 NEAR per circle for its data (a 20-member circle with its full payout history is about 3 KB; a 5-member one under 1 KB), and gas for the relayer. Storage is locked, not spent: it comes back when the data or the contract is deleted.
+Expected total to launch: just under 1 NEAR for the code, up to 0.03 NEAR per circle for its data (a 20-member circle with its full payout history is about 3 KB; a 5-member one under 1 KB), and gas for the relayer. Storage is locked, not spent: it comes back when the data or the contract is deleted. Circles created through NEAR Intents cost the organizer a deposit, and circles created by a NEAR account bring 0.01 NEAR for their own storage, so nobody can fill the contract's storage for free.
+
+## Gas (measured)
+
+Gas burnt per action in the end-to-end tests against NEAR Intents (`contract/sandbox`, results on the `sandbox-results` branch). At NEAR's current gas price, 10 Tgas costs about 0.001 NEAR.
+
+| Action | Gas burnt |
+| --- | --- |
+| Create a circle with the organizer's deposit | 9 Tgas |
+| Join (signed intent or `mt_transfer_call`) | 9–10 Tgas |
+| Contribute | 9 Tgas |
+| Last contribution, which also pays the pot out | 15–17 Tgas |
+| Settle a round after a missed payment (and pay out) | 8 Tgas |
+| Buy a seat (and pay the seller) | 15 Tgas |
+| Leave before the start (and get the deposit back) | 12 Tgas |
+| Release deposits (2 transfers) | 13 Tgas |
+| List a seat, close a circle | 1 Tgas |
+
+A 5-member circle over 5 rounds is about 35 transactions, roughly 0.04 NEAR of relayer gas.

@@ -79,12 +79,12 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 
 | Sent as | Message | Meaning |
 | --- | --- | --- |
+| `Transfer` notification | `create:<contribution>:<size>:<period_secs>:<order>:<invite key>:<name>` | Create a circle and take its first seat, sent with the organizer's deposit (one contribution), so creating costs real money. Order: `join` or `random` (drawn when the circle fills). Invite key: 64 hex (ed25519 public key) or `-` for an open circle. The name is encrypted by the app |
 | `Transfer` notification | `join:<circle>` or `join:<circle>:<invite signature>` | Pay the deposit and take the next seat. An invite-only circle needs the invite key's signature (128 hex) over `contri-join:<contract>:<circle>:<joiner>:<deposit>`; the deposit is the transferred amount, at most one contribution |
 | `Transfer` notification or `mt_transfer_call` | `back:<circle>` | Back a circle with at least one contribution (for example from a DAO treasury) |
-| `Transfer` notification | `refill:<circle>` | Top up your own deposit, to at most one contribution |
+| `Transfer` notification | `refill:<circle>` | Top up your own deposit, to at most every round but your own |
 | `Transfer` notification | `contribute:<circle>:<round>` | Pay this round |
 | `Transfer` notification | `buy_seat:<circle>:<seat>` | Buy a listed, earlier seat |
-| `AuthCall` | `create:<contribution>:<size>:<period_secs>:<order>:<invite key>:<name>` | Create a circle. Order: `join` or `random` (drawn when the circle fills). Invite key: 64 hex (ed25519 public key) or `-` for an open circle. The name is encrypted by the app |
 | `AuthCall` | `leave:<circle>` | Leave a circle that has not started; the deposit comes back |
 | `AuthCall` | `list_seat:<circle>:<seat>:<price>` | List your seat for sale |
 | `AuthCall` | `unlist_seat:<circle>:<seat>` | Take it off sale |
@@ -92,7 +92,7 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 | `AuthCall` | `claim_credit` | Claim money from a transfer that failed |
 
 ## Missed payments
-A member's deposit is one contribution, or less if their invite says so. After a round deadline, anyone can call `settle_round`. For each member who has not paid, the contract takes the missing amount from their deposit, then from the circle's community backing, marks them as having defaulted, and pays out. If both run out, the pot is short and the payout records the shortfall. A member can refill their deposit with `refill:<circle>`. A defaulting member loses their completed-circle record.
+A member's deposit is one contribution in an open circle. In an invite-only circle the organizer sets each person's deposit in their invite: less for someone they trust, or more for a stranger, up to every round but the member's own. A stranger asked for the full amount has prepaid all their future rounds, so the members paid last are protected from someone who takes the pot early and stops paying. After a round deadline, anyone can call `settle_round`. For each member who has not paid, the contract takes the missing amount from their deposit, then from the circle's community backing, marks them as having defaulted, and pays out. If both run out, the pot is short and the payout records the shortfall. A member can refill their deposit with `refill:<circle>`. A defaulting member loses their completed-circle record.
 
 ## Community-backed circles
 Any account can put money behind a circle with `back:<circle>`: a cooperative's DAO treasury, a church, an employer. A Trezu or Sputnik DAO does it with one proposal that calls `mt_transfer_call` on `intents.near` (template in [integrations/trezu](../integrations/trezu)). The backing covers missed payments after deposits. When the circle ends or is cancelled, what is left is split back between the backers in proportion to what each put in, and `release_deposits` sends it.
@@ -110,9 +110,11 @@ Each turn is a seat token `<circle>:<turn>`, owned by the member's Intents accou
 | Claim | Status |
 | --- | --- |
 | Wallet and passkey keys map to Intents accounts | Verified in `near/intents` source |
-| `Transfer` can notify the receiver via `mt_on_transfer` | Verified in source |
-| `AuthCall` passes a verified `signer_id` to `on_auth` | Verified in source |
-| A contract can move its own Intents balance as predecessor | Verified in source |
+| `Transfer` can notify the receiver via `mt_on_transfer` | Tested end to end against NEAR Intents built from source (`contract/sandbox`) |
+| `AuthCall` passes a verified `signer_id` to `on_auth` | Tested end to end |
+| A contract can move its own Intents balance as predecessor | Tested end to end: payouts, seat sales, refunds of deposits |
+| An ed25519 key's implicit account signs NEP-413 intents, no NEAR account | Tested end to end |
+| A whole circle (create, joins, seat sale, payouts, missed payment, release, close) leaves no money behind | Tested end to end |
 | 1Click route Tron USDT to an Intents account, fees and minimums | To test (`scripts/probe-1click.mjs`) |
 | Passkey (`webauthn`) signed `Transfer` accepted end to end | To test with a $1 run |
 | Cash-out quote from Intents balance with a passkey signature | To test with a $1 run |

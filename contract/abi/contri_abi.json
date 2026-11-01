@@ -53,8 +53,11 @@
       },
       {
         "name": "create_circle",
-        "doc": " Direct call: creates a circle organized by the caller. Returns its id.\n `order` is `join` (default) or `random`. `invite_key` (64 hex\n characters, ed25519) makes the circle invite-only.",
+        "doc": " Direct call: creates a circle organized by the caller, who doesn't take\n a seat. Attach 0.01 NEAR for the circle's storage. Returns its id.\n `order` is `join` (default) or `random`. `invite_key` (64 hex\n characters, ed25519) makes the circle invite-only.",
         "kind": "call",
+        "modifiers": [
+          "payable"
+        ],
         "params": {
           "serialization_type": "json",
           "args": [
@@ -348,7 +351,7 @@
       },
       {
         "name": "mt_on_transfer",
-        "doc": " NEP-245 receiver, called only by NEAR Intents: for a signed `Transfer`\n intent, or an account's own `mt_transfer_call` (how a DAO treasury backs\n a circle). `msg` is `join:<circle>`, `join:<circle>:<invite signature>`,\n `contribute:<circle>:<round>`, `buy_seat:<circle>:<seat>`,\n `refill:<circle>` or `back:<circle>`. Returns the amounts to refund; a\n wrong token, amount, message or invite is refunded in full.",
+        "doc": " NEP-245 receiver, called by NEAR Intents (a signed `Transfer` or an\n account's `mt_transfer_call`). `msg`: `create:...` (with the organizer's\n deposit), `join:<c>[:<invite sig>]`, `contribute:<c>:<round>`,\n `buy_seat:<c>:<seat>`, `refill:<c>`, `back:<c>`. Returns refunds; bad\n input is refunded in full.",
         "kind": "call",
         "params": {
           "serialization_type": "json",
@@ -587,7 +590,7 @@
       },
       {
         "name": "on_auth",
-        "doc": " Called only by NEAR Intents for a member's signed `AuthCall` intent.\n `msg` is `create:<contribution>:<size>:<period_secs>:<join|random>:<invite key or ->:<name>`,\n `leave:<circle>`, `list_seat:<circle>:<seat>:<price>`,\n `unlist_seat:<circle>:<seat>`, `cancel:<circle>` or `claim_credit`.",
+        "doc": " Called by NEAR Intents for a signed `AuthCall`. `msg`: `leave:<c>`,\n `list_seat:<c>:<seat>:<price>`, `unlist_seat:<c>:<seat>`, `cancel:<c>`,\n `claim_credit`.",
         "kind": "call",
         "params": {
           "serialization_type": "json",

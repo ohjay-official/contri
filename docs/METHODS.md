@@ -33,7 +33,7 @@ For members who have a NEAR account and want to call the contract from their wal
 
 | Method | Arguments | Returns |
 | --- | --- | --- |
-| `create_circle` | `name`, `contribution`, `size`, `period_secs`, `order` (optional: `join` or `random`), `invite_key` (optional, 64 hex) | The new circle's id |
+| `create_circle` | `name`, `contribution`, `size`, `period_secs`, `order` (optional: `join` or `random`), `invite_key` (optional, 64 hex). Attach 0.01 NEAR for the circle's storage | The new circle's id. The caller organizes without taking a seat (a DAO organizing for its members, say) |
 | `leave_circle` | `circle_id` | Nothing. Leaves a circle that has not started; the deposit comes back. |
 | `list_seat` | `circle_id`, `seat`, `price` | Nothing |
 | `unlist_seat` | `circle_id`, `seat` | Nothing |
@@ -43,7 +43,7 @@ For members who have a NEAR account and want to call the contract from their wal
 Example with near-cli (replace `contri.testnet` with the contract id in the README, and `alice.testnet` with your account):
 
 ```
-near contract call-function as-transaction contri.testnet create_circle json-args '{"name":"Lagos Ajo","contribution":"5000000","size":5,"period_secs":86400}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as alice.testnet network-config testnet sign-with-keychain send
+near contract call-function as-transaction contri.testnet create_circle json-args '{"name":"Lagos Ajo","contribution":"5000000","size":5,"period_secs":86400}' prepaid-gas '30 Tgas' attached-deposit '0.01 NEAR' sign-as alice.testnet network-config testnet sign-with-keychain send
 ```
 
 ## Anyone can call
@@ -110,7 +110,7 @@ A circle:
 
 `name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. With `random_order`, the contract draws the turn order from NEAR's per-block random seed when the circle fills. After `fill_by`, anyone can cancel the circle if it is still open. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight. `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
 
-A member's `deposit` is one contribution in an open circle. In an invite-only circle the invite sets it, up to one contribution, so an organizer can ask less of someone they trust.
+A member's `deposit` is one contribution in an open circle. In an invite-only circle the invite sets it, up to every round but the member's own: less for someone the organizer trusts, more for a stranger. Members creating a circle through NEAR Intents send `create:...` with their deposit and take the first seat.
 
 ## Seats as NFTs
 
