@@ -33,7 +33,7 @@ For members who have a NEAR account and want to call the contract from their wal
 
 | Method | Arguments | Returns |
 | --- | --- | --- |
-| `create_circle` | `name`, `contribution`, `size`, `period_secs` | The new circle's id |
+| `create_circle` | `name`, `contribution`, `size`, `period_secs`, `invite_key` (optional, 64 hex) | The new circle's id |
 | `list_seat` | `circle_id`, `seat`, `price` | Nothing |
 | `unlist_seat` | `circle_id`, `seat` | Nothing |
 | `cancel_circle` | `circle_id` | Nothing. Organizer only, before the circle starts. |
@@ -81,7 +81,7 @@ A circle:
 ```json
 {
   "id": 0,
-  "name": "Lagos Ajo",
+  "name": "c2VhbGVkOmdhOuWm3k1Lq0…",
   "organizer": "0xa0…01",
   "contribution": "5000000",
   "size": 3,
@@ -90,6 +90,7 @@ A circle:
     {"account_id": "0xa0…01", "deposit": "5000000", "paid_this_round": true, "defaulted": false, "missed": 0}
   ],
   "listings": [null, "1000000", null],
+  "invite_only": true,
   "status": "Active",
   "created_at": "0",
   "started_at": "10000000000",
@@ -101,7 +102,7 @@ A circle:
 }
 ```
 
-`status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight.
+`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight.
 
 ## Seats as NFTs
 
@@ -123,8 +124,8 @@ A token:
   "token_id": "0:1",
   "owner_id": "0xb0…02",
   "metadata": {
-    "title": "Lagos Ajo - turn 2",
-    "description": "Turn 2 of 3 in Contri circle #0. Receives the pot in round 2.",
+    "title": "Contri seat - turn 2 of 3",
+    "description": "Receives the pot in round 2 of Contri circle #0.",
     "extra": "{\"circle\":0,\"seat\":1,\"payout_round\":1,\"price\":\"1000000\"}"
   }
 }
@@ -136,7 +137,7 @@ Logged as NEP-297 `EVENT_JSON`.
 
 | Standard | Event | Data |
 | --- | --- | --- |
-| `contri` | `circle_created` | `circle`, `organizer`, `contribution`, `size`, `period_secs` |
+| `contri` | `circle_created` | `circle`, `organizer`, `contribution`, `size`, `period_secs`, `invite_only` |
 | `contri` | `joined` | `circle`, `member`, `seat` |
 | `contri` | `circle_started` | `circle`, `first_deadline` |
 | `contri` | `contributed` | `circle`, `round`, `member`, `amount` |

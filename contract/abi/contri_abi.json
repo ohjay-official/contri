@@ -35,7 +35,7 @@
       },
       {
         "name": "create_circle",
-        "doc": " Direct call: creates a circle organized by the caller. Returns its id.",
+        "doc": " Direct call: creates a circle organized by the caller. Returns its id.\n `invite_key` (64 hex characters, ed25519) makes the circle invite-only.",
         "kind": "call",
         "params": {
           "serialization_type": "json",
@@ -66,6 +66,15 @@
                 "type": "integer",
                 "format": "uint64",
                 "minimum": 0.0
+              }
+            },
+            {
+              "name": "invite_key",
+              "type_schema": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             }
           ]
@@ -294,7 +303,7 @@
       },
       {
         "name": "mt_on_transfer",
-        "doc": " NEP-245 receiver, called only by NEAR Intents for a member's `Transfer`\n intent. `msg` is `join:<circle>`, `contribute:<circle>:<round>` or\n `buy_seat:<circle>:<seat>`. Returns the amounts to refund; a wrong\n token, amount or message is refunded in full.",
+        "doc": " NEP-245 receiver, called only by NEAR Intents for a member's `Transfer`\n intent. `msg` is `join:<circle>`, `join:<circle>:<invite signature>`,\n `contribute:<circle>:<round>` or `buy_seat:<circle>:<seat>`. Returns the\n amounts to refund; a wrong token, amount, message or invite is refunded in full.",
         "kind": "call",
         "params": {
           "serialization_type": "json",
@@ -533,7 +542,7 @@
       },
       {
         "name": "on_auth",
-        "doc": " Called only by NEAR Intents for a member's signed `AuthCall` intent.\n `msg` is `create:<contribution>:<size>:<period_secs>:<name>`,\n `list_seat:<circle>:<seat>:<price>`, `unlist_seat:<circle>:<seat>`,\n `cancel:<circle>` or `claim_credit`.",
+        "doc": " Called only by NEAR Intents for a member's signed `AuthCall` intent.\n `msg` is `create:<contribution>:<size>:<period_secs>:<invite key or ->:<name>`,\n `list_seat:<circle>:<seat>:<price>`, `unlist_seat:<circle>:<seat>`,\n `cancel:<circle>` or `claim_credit`.",
         "kind": "call",
         "params": {
           "serialization_type": "json",
@@ -715,6 +724,7 @@
             "contribution",
             "created_at",
             "id",
+            "invite_only",
             "listings",
             "members",
             "name",
@@ -742,6 +752,10 @@
               "format": "uint64",
               "minimum": 0.0
             },
+            "invite_only": {
+              "description": "Joining needs a signed invite from the circle's invite link.",
+              "type": "boolean"
+            },
             "listings": {
               "description": "Asking price per seat, or `null` when the seat is not for sale.",
               "type": "array",
@@ -760,6 +774,7 @@
               }
             },
             "name": {
+              "description": "Encrypted by the app with a key from the invite link. The contract stores it as given.",
               "type": "string"
             },
             "organizer": {

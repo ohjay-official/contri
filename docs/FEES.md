@@ -42,8 +42,9 @@ Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stor
 | Text messages, lookup map, no embedded ABI | 193 KB | 1.93 NEAR |
 | Own JSON reader and writer, no serde_json | 110 KB | 1.10 NEAR |
 | Plain storage and promise calls instead of the SDK's collections and promise builder | 83 KB | 0.83 NEAR |
-| Direct calls for NEAR accounts and the embedded ABI added back | **88 KB** | **0.88 NEAR** |
+| Direct calls for NEAR accounts and the embedded ABI added back | 88 KB | 0.88 NEAR |
+| Invite-only circles (ed25519 invites) for privacy | **90 KB** | **0.90 NEAR** |
 
 The 193 KB step removed two things: direct calls for members with a NEAR account, and the embedded ABI. Both are back in the last row (the ABI is generated from typed declarations in `contract/interface`, see `contract/abi/README.md`). Nothing else was removed, and the later steps added NFT enumeration views, NEP-171 events and a round-deadline view. CI measures the size on every push (`ci-results` branch, `size.json`).
 
-Expected total to launch: 0.88 NEAR for the code, up to 0.03 NEAR per circle for its data (a 20-member circle with its full payout history is about 3 KB; a 5-member one under 1 KB), and gas for the relayer. Storage is locked, not spent: it comes back when the data or the contract is deleted.
+Expected total to launch: 0.90 NEAR for the code, up to 0.03 NEAR per circle for its data (a 20-member circle with its full payout history is about 3 KB; a 5-member one under 1 KB), and gas for the relayer. Storage is locked, not spent: it comes back when the data or the contract is deleted.

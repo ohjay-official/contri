@@ -79,10 +79,10 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 
 | Sent as | Message | Meaning |
 | --- | --- | --- |
-| `Transfer` notification | `join:<circle>` | Pay the deposit and take the next seat |
+| `Transfer` notification | `join:<circle>` or `join:<circle>:<invite signature>` | Pay the deposit and take the next seat. An invite-only circle needs the invite key's signature (128 hex) over `contri-join:<contract>:<circle>:<joiner>` |
 | `Transfer` notification | `contribute:<circle>:<round>` | Pay this round |
 | `Transfer` notification | `buy_seat:<circle>:<seat>` | Buy a listed, earlier seat |
-| `AuthCall` | `create:<contribution>:<size>:<period_secs>:<name>` | Create a circle |
+| `AuthCall` | `create:<contribution>:<size>:<period_secs>:<invite key>:<name>` | Create a circle. Invite key: 64 hex (ed25519 public key) or `-` for an open circle. The name is encrypted by the app |
 | `AuthCall` | `list_seat:<circle>:<seat>:<price>` | List your seat for sale |
 | `AuthCall` | `unlist_seat:<circle>:<seat>` | Take it off sale |
 | `AuthCall` | `cancel:<circle>` | Organizer cancels a circle that has not started |
