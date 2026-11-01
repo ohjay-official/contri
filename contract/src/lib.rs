@@ -21,6 +21,8 @@ use near_sdk::{
     PromiseResult,
 };
 
+mod json;
+
 #[cfg(test)]
 mod tests;
 
@@ -281,12 +283,18 @@ pub struct Contri {
 
 #[near]
 impl Contri {
+    // Every public method reads its own JSON arguments with `json.rs` (see
+    // `args()`), so the contract does not carry serde_json. The argument names
+    // are the same as a normal near-sdk contract would use.
+
+    /// Args: `{"intents_id": "intents.near", "token_id": "nep141:usdt.tether-token.near"}`
     #[init]
-    pub fn new(intents_id: AccountId, token_id: String) -> Self {
+    pub fn new() -> Self {
+        let a = args();
         Self {
             owner_id: env::predecessor_account_id(),
-            intents_id,
-            token_id,
+            intents_id: arg_account(&a, "intents_id"),
+            token_id: arg_str(&a, "token_id"),
             circles: LookupMap::new(StorageKey::Circles),
             next_circle_id: 0,
             records: LookupMap::new(StorageKey::Records),
@@ -298,104 +306,87 @@ impl Contri {
     // Entry points from NEAR Intents
     // ------------------------------------------------------------------
 
-    /// Called by NEAR Intents when a member transfers tokens to this contract
-    /// with a notification. Returns the amount to refund to the sender.
-    pub fn mt_on_transfer(
-        &mut self,
-        sender_id: AccountId,
-        previous_owner_ids: Vec<AccountId>,
-        token_ids: Vec<String>,
-        amounts: Vec<U128>,
-        msg: String,
-    ) {
-        let refunds = self.internal_on_transfer(sender_id, previous_owner_ids, token_ids, amounts, msg);
+    /// NEP-245 receiver. Called by NEAR Intents for a member's `Transfer` intent
+    /// with a notification. Returns the amounts to refund, e.g. `["0"]`.
+    /// Args: `sender_id`, `previous_owner_ids`, `token_ids`, `amounts`, `msg`.
+    pub fn mt_on_transfer(&mut self) {
+        let a = args();
+        let amounts = arg_list(&a, "amounts")
+            .iter()
+            .map(|v| U128(v.as_uint().unwrap_or_else(|| bad("amounts"))))
+            .collect();
+        let token_ids = arg_list(&a, "token_ids")
+            .iter()
+            .map(|v| v.as_str().unwrap_or_else(|| bad("token_ids")).to_string())
+            .collect();
+        let refunds = self.internal_on_transfer(
+            arg_account(&a, "sender_id"),
+            vec![],
+            token_ids,
+            amounts,
+            arg_str(&a, "msg"),
+        );
         ret(&format!("[{}]", join(refunds.iter().map(|r| format!("\"{r}\"")))));
     }
 
     /// Called by NEAR Intents for a member's signed `AuthCall` intent.
-    pub fn on_auth(&mut self, signer_id: AccountId, msg: String) {
-        self.assert_intents();
-        let m = parse_auth(&msg).unwrap_or_else(|| env::panic_str("unreadable message"));
-        self.handle_auth(&signer_id, m)
-            .unwrap_or_else(|e| env::panic_str(&e));
+    /// Args: `signer_id`, `msg`.
+    pub fn on_auth(&mut self) {
+        let a = args();
+        self.internal_on_auth(&arg_account(&a, "signer_id"), &arg_str(&a, "msg"));
     }
 
     // ------------------------------------------------------------------
-    // Anyone can call these
+    // Anyone can call these. Args: `{"circle_id": 0}`
     // ------------------------------------------------------------------
 
-    /// Anyone can call this after the round deadline. Missed contributions are
-    /// taken from the missing members' deposits, then the pot is paid out.
-    pub fn settle_round(&mut self, circle_id: u64) {
-        let mut c = self.get_circle_or_panic(circle_id);
-        require!(c.status == CircleStatus::Active, "circle is not active");
-        require!(!c.paying, "payout already in progress");
-        require!(
-            env::block_timestamp() >= c.round_deadline(),
-            "round deadline has not passed"
-        );
-        let contribution = c.contribution.0;
-        let mut defaulted = vec![];
-        for m in c.members.iter_mut() {
-            if m.paid_this_round {
-                continue;
-            }
-            let covered = m.deposit.0.min(contribution);
-            m.deposit = U128(m.deposit.0 - covered);
-            m.paid_this_round = true;
-            m.defaulted = true;
-            m.missed += 1;
-            c.pot = U128(c.pot.0 + covered);
-            defaulted.push(m.account_id.clone());
-        }
-        emit(
-            "round_settled",
-            format!(r#"{{"circle":{},"round":{},"covered_from_deposit":[{}]}}"#, c.id, c.round, defaulted.iter().map(|a| format!("\"{a}\"")).collect::<Vec<_>>().join(",")),
-        );
-        self.start_payout(c).detach();
+    /// After the round deadline: missed contributions come out of deposits,
+    /// then the pot is paid out.
+    pub fn settle_round(&mut self) {
+        self.internal_settle(arg_u64(&args(), "circle_id"));
     }
 
-    /// Anyone can call this if every member has paid but the payout did not start
-    /// (for example, not enough gas in the last contribution) or a payout failed.
-    pub fn pay_out(&mut self, circle_id: u64) {
-        let c = self.get_circle_or_panic(circle_id);
-        require!(c.status == CircleStatus::Active, "circle is not active");
-        require!(!c.paying, "payout already in progress");
-        require!(c.all_paid(), "not every member has paid this round");
-        self.start_payout(c).detach();
+    /// If every member has paid but the payout did not start or failed.
+    pub fn pay_out(&mut self) {
+        self.internal_pay_out(arg_u64(&args(), "circle_id"));
     }
 
-    /// Anyone can call this once a circle has finished or was cancelled.
-    /// Returns remaining deposits to members, as many as the attached gas allows.
-    pub fn release_deposits(&mut self, circle_id: u64) {
-        let sent = self.internal_release(circle_id);
+    /// After a circle finished or was cancelled: returns remaining deposits,
+    /// as many as the attached gas allows. Returns how many were sent.
+    pub fn release_deposits(&mut self) {
+        let sent = self.internal_release(arg_u64(&args(), "circle_id"));
         ret(&sent.to_string());
     }
 
     // ------------------------------------------------------------------
-    // Callbacks
+    // Callbacks (only this contract can call them)
     // ------------------------------------------------------------------
 
     #[private]
     #[allow(deprecated)]
-    pub fn on_payout(&mut self, circle_id: u64, round: u32, amount: U128) {
+    pub fn on_payout(&mut self) {
+        let a = args();
         let ok = matches!(env::promise_result(0), PromiseResult::Successful(_));
-        self.finalize_payout(circle_id, round, amount, ok);
+        self.finalize_payout(
+            arg_u64(&a, "circle_id"),
+            arg_u64(&a, "round") as u32,
+            U128(arg_u128(&a, "amount")),
+            ok,
+        );
     }
 
     #[private]
     #[allow(deprecated)]
-    pub fn on_sent(&mut self, to: AccountId, amount: U128) {
+    pub fn on_sent(&mut self) {
+        let a = args();
         let ok = matches!(env::promise_result(0), PromiseResult::Successful(_));
         if !ok {
-            let owed = self.credits.get(&to).map(|c| c.0).unwrap_or(0);
-            self.credits.insert(to.clone(), U128(owed + amount.0));
-            emit("credit_added", format!(r#"{{"account":"{}","amount":"{}"}}"#, to, amount.0));
+            self.add_credit(arg_account(&a, "to"), arg_u128(&a, "amount"));
         }
     }
 
     // ------------------------------------------------------------------
-    // Views. JSON is written by hand (see `Circle::to_json`).
+    // Views. JSON out is written by hand (see `Circle::to_json`).
     // ------------------------------------------------------------------
 
     pub fn get_config(&self) {
@@ -407,18 +398,25 @@ impl Contri {
         ));
     }
 
-    pub fn get_circle(&self, circle_id: u64) {
-        ret(&self.circles.get(&circle_id).map(|c| c.to_json()).unwrap_or_else(|| "null".into()));
+    /// Args: `{"circle_id": 0}`
+    pub fn get_circle(&self) {
+        let id = arg_u64(&args(), "circle_id");
+        ret(&self.circles.get(&id).map(|c| c.to_json()).unwrap_or_else(|| "null".into()));
     }
 
-    pub fn get_circles(&self, from_index: Option<u64>, limit: Option<u64>) {
-        let from = from_index.unwrap_or(0);
-        let to = self.next_circle_id.min(from + limit.unwrap_or(50).min(100));
+    /// Args: `{"from_index": 0, "limit": 50}` (both optional)
+    pub fn get_circles(&self) {
+        let a = args();
+        let from = opt_uint(&a, "from_index").unwrap_or(0u64);
+        let limit = opt_uint(&a, "limit").unwrap_or(50u64).min(100);
+        let to = self.next_circle_id.min(from + limit);
         let items = join((from..to).filter_map(|id| self.circles.get(&id).map(|c| c.to_json())));
         ret(&format!("[{items}]"));
     }
 
-    pub fn get_circles_for(&self, account_id: AccountId) {
+    /// Args: `{"account_id": "..."}`. Circle ids this account organizes or sits in.
+    pub fn get_circles_for(&self) {
+        let account_id = arg_account(&args(), "account_id");
         let ids = join(
             (0..self.next_circle_id)
                 .filter(|id| {
@@ -431,12 +429,14 @@ impl Contri {
         ret(&format!("[{ids}]"));
     }
 
-    pub fn get_record(&self, account_id: AccountId) {
-        ret(&self.record_of(&account_id).to_json());
+    /// Args: `{"account_id": "..."}`
+    pub fn get_record(&self) {
+        ret(&self.record_of(&arg_account(&args(), "account_id")).to_json());
     }
 
-    pub fn get_credit(&self, account_id: AccountId) {
-        ret(&format!("\"{}\"", self.credit_of(&account_id).0));
+    /// Args: `{"account_id": "..."}`
+    pub fn get_credit(&self) {
+        ret(&format!("\"{}\"", self.credit_of(&arg_account(&args(), "account_id")).0));
     }
 
     // NEP-171 style views: each seat is a token "<circle>:<seat>".
@@ -445,7 +445,9 @@ impl Contri {
         ret(r#"{"spec":"nft-1.0.0","name":"Contri Seats","symbol":"SEAT"}"#);
     }
 
-    pub fn nft_token(&self, token_id: String) {
+    /// Args: `{"token_id": "0:1"}`
+    pub fn nft_token(&self) {
+        let token_id = arg_str(&args(), "token_id");
         let json = parse_seat_token(&token_id)
             .and_then(|(id, seat)| {
                 let c = self.circles.get(&id)?;
@@ -456,17 +458,17 @@ impl Contri {
         ret(&json);
     }
 
-    pub fn nft_tokens_for_owner(
-        &self,
-        account_id: AccountId,
-        from_index: Option<U128>,
-        limit: Option<u32>,
-    ) {
+    /// Args: `{"account_id": "...", "from_index": "0", "limit": 50}`
+    pub fn nft_tokens_for_owner(&self) {
+        let a = args();
+        let account_id = arg_account(&a, "account_id");
+        let from = opt_uint(&a, "from_index").unwrap_or(0usize);
+        let limit = opt_uint(&a, "limit").unwrap_or(50usize);
         let items = join(
             self.seats_of(&account_id)
                 .into_iter()
-                .skip(from_index.map(|i| i.0 as usize).unwrap_or(0))
-                .take(limit.unwrap_or(50) as usize)
+                .skip(from)
+                .take(limit)
                 .filter_map(|(id, seat)| {
                     self.circles.get(&id).map(|c| seat_token_json(c, seat, &account_id))
                 }),
@@ -509,6 +511,7 @@ impl Contri {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn circle_of(&self, circle_id: u64) -> Option<Circle> {
         self.circles.get(&circle_id).cloned()
     }
@@ -529,6 +532,61 @@ impl Contri {
                 c.seat_of(account_id).map(|seat| (id, seat as u32))
             })
             .collect()
+    }
+
+    pub(crate) fn internal_on_auth(&mut self, signer: &AccountId, msg: &str) {
+        self.assert_intents();
+        let m = parse_auth(msg).unwrap_or_else(|| env::panic_str("unreadable message"));
+        self.handle_auth(signer, m)
+            .unwrap_or_else(|e| env::panic_str(&e));
+    }
+
+    pub(crate) fn internal_settle(&mut self, circle_id: u64) {
+        let mut c = self.get_circle_or_panic(circle_id);
+        require!(c.status == CircleStatus::Active, "circle is not active");
+        require!(!c.paying, "payout already in progress");
+        require!(
+            env::block_timestamp() >= c.round_deadline(),
+            "round deadline has not passed"
+        );
+        let contribution = c.contribution.0;
+        let mut defaulted = vec![];
+        for m in c.members.iter_mut() {
+            if m.paid_this_round {
+                continue;
+            }
+            let covered = m.deposit.0.min(contribution);
+            m.deposit = U128(m.deposit.0 - covered);
+            m.paid_this_round = true;
+            m.defaulted = true;
+            m.missed += 1;
+            c.pot = U128(c.pot.0 + covered);
+            defaulted.push(format!("\"{}\"", m.account_id));
+        }
+        emit(
+            "round_settled",
+            format!(
+                r#"{{"circle":{},"round":{},"covered_from_deposit":[{}]}}"#,
+                c.id,
+                c.round,
+                defaulted.join(",")
+            ),
+        );
+        self.start_payout(c).detach();
+    }
+
+    pub(crate) fn internal_pay_out(&mut self, circle_id: u64) {
+        let c = self.get_circle_or_panic(circle_id);
+        require!(c.status == CircleStatus::Active, "circle is not active");
+        require!(!c.paying, "payout already in progress");
+        require!(c.all_paid(), "not every member has paid this round");
+        self.start_payout(c).detach();
+    }
+
+    pub(crate) fn add_credit(&mut self, to: AccountId, amount: u128) {
+        let owed = self.credits.get(&to).map(|c| c.0).unwrap_or(0);
+        self.credits.insert(to.clone(), U128(owed + amount));
+        emit("credit_added", format!(r#"{{"account":"{}","amount":"{}"}}"#, to, amount));
     }
 
     pub(crate) fn internal_release(&mut self, circle_id: u64) -> u32 {
@@ -993,6 +1051,50 @@ pub(crate) fn jstr(s: &str) -> String {
     }
     o.push('"');
     o
+}
+
+fn args() -> json::Json {
+    let raw = env::input().unwrap_or_default();
+    if raw.is_empty() {
+        return json::Json::Obj(vec![]);
+    }
+    json::parse(&raw).unwrap_or_else(|| env::panic_str("arguments must be valid JSON"))
+}
+
+fn bad(key: &str) -> ! {
+    env::panic_str(&format!("missing or invalid argument: {key}"))
+}
+
+fn arg<'a>(a: &'a json::Json, key: &str) -> &'a json::Json {
+    a.get(key).unwrap_or_else(|| bad(key))
+}
+
+fn arg_str(a: &json::Json, key: &str) -> String {
+    arg(a, key).as_str().unwrap_or_else(|| bad(key)).to_string()
+}
+
+fn arg_account(a: &json::Json, key: &str) -> AccountId {
+    arg_str(a, key).parse().unwrap_or_else(|_| bad(key))
+}
+
+fn arg_u64(a: &json::Json, key: &str) -> u64 {
+    arg(a, key).as_uint().unwrap_or_else(|| bad(key))
+}
+
+fn arg_u128(a: &json::Json, key: &str) -> u128 {
+    arg(a, key).as_uint().unwrap_or_else(|| bad(key))
+}
+
+fn arg_list<'a>(a: &'a json::Json, key: &str) -> &'a [json::Json] {
+    arg(a, key).as_arr().unwrap_or_else(|| bad(key))
+}
+
+fn opt_uint<T: core::str::FromStr>(a: &json::Json, key: &str) -> Option<T> {
+    match a.get(key) {
+        None => None,
+        Some(v) if v.is_null() => None,
+        Some(v) => Some(v.as_uint().unwrap_or_else(|| bad(key))),
+    }
 }
 
 /// NEP-297 event log.

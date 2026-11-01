@@ -15,18 +15,27 @@ fn acc(s: &str) -> AccountId {
     s.parse().unwrap()
 }
 
-fn set(predecessor: &str, secs: u64) {
+fn set_with_input(predecessor: &str, secs: u64, input: &str) {
     let mut b = VMContextBuilder::new();
     b.current_account_id(acc("contri.near"))
         .predecessor_account_id(acc(predecessor))
         .block_timestamp(secs * 1_000_000_000)
-        .prepaid_gas(Gas::from_tgas(300));
+        .prepaid_gas(Gas::from_tgas(300))
+        .input(input.as_bytes().to_vec());
     testing_env!(b.build());
 }
 
+fn set(predecessor: &str, secs: u64) {
+    set_with_input(predecessor, secs, "");
+}
+
 fn setup() -> Contri {
-    set("owner.near", 0);
-    Contri::new(acc(INTENTS), TOKEN.to_string())
+    set_with_input(
+        "owner.near",
+        0,
+        &format!(r#"{{"intents_id":"{INTENTS}","token_id":"{TOKEN}"}}"#),
+    );
+    Contri::new()
 }
 
 /// Simulates NEAR Intents delivering a member's Transfer intent with a notification.
@@ -45,7 +54,7 @@ fn transfer(c: &mut Contri, from: &str, amount: u128, msg: &str, secs: u64) -> u
 /// Simulates NEAR Intents delivering a member's AuthCall intent.
 fn auth(c: &mut Contri, signer: &str, msg: &str, secs: u64) {
     set(INTENTS, secs);
-    let _ = c.on_auth(acc(signer), msg.to_string());
+    c.internal_on_auth(&acc(signer), msg);
 }
 
 fn create(c: &mut Contri, size: u32) -> u64 {
@@ -141,7 +150,7 @@ fn other_tokens_are_refunded() {
 fn only_intents_can_notify() {
     let mut c = setup();
     set("someone.near", 10);
-    let _ = c.mt_on_transfer(
+    let _ = c.internal_on_transfer(
         acc(ADA),
         vec![acc(ADA)],
         vec![TOKEN.to_string()],
@@ -206,7 +215,7 @@ fn failed_payout_keeps_the_pot() {
 
     // Anyone can retry.
     set("anyone.near", 200);
-    c.pay_out(0);
+    c.internal_pay_out(0);
     assert!(c.circle_of(0).unwrap().paying);
 }
 
@@ -216,7 +225,7 @@ fn missed_payment_is_covered_by_deposit() {
     contribute(&mut c, ADA, 0, 0, 100);
     contribute(&mut c, BAYO, 0, 0, 100);
     set("anyone.near", 10 + DAY + 1);
-    c.settle_round(0);
+    c.internal_settle(0);
     let circle = c.circle_of(0).unwrap();
     assert!(circle.paying);
     assert_eq!(circle.pot, U128(3 * CONTRIBUTION));
@@ -230,7 +239,7 @@ fn missed_payment_is_covered_by_deposit() {
 fn cannot_settle_early() {
     let mut c = full_circle_of_three();
     set("anyone.near", 10 + DAY - 1);
-    c.settle_round(0);
+    c.internal_settle(0);
 }
 
 #[test]
@@ -297,7 +306,7 @@ fn full_run_updates_records() {
     // Round 1: Bayo misses, deposit covers it.
     contribute(&mut c, ADA, id, 1, 200);
     set("anyone.near", 10 + 2 * DAY + 1);
-    c.settle_round(id);
+    c.internal_settle(id);
     set("contri.near", 10 + 2 * DAY + 2);
     c.finalize_payout(id, 1, U128(2 * CONTRIBUTION), true);
 
@@ -331,11 +340,10 @@ fn organizer_can_cancel_unfilled_circle() {
 fn failed_send_becomes_a_credit() {
     let mut c = setup();
     set("contri.near", 0);
-    // Simulate the callback branch directly.
-    let owed = c.credits.get(&acc(ADA)).map(|v| v.0).unwrap_or(0);
-    assert_eq!(owed, 0);
-    c.credits.insert(acc(ADA), U128(7));
-    assert_eq!(c.credit_of(&acc(ADA)), U128(7));
+    assert_eq!(c.credit_of(&acc(ADA)), U128(0));
+    c.add_credit(acc(ADA), 7);
+    c.add_credit(acc(ADA), 3);
+    assert_eq!(c.credit_of(&acc(ADA)), U128(10));
 }
 
 #[test]
@@ -423,4 +431,92 @@ fn jstr_escapes_control_characters() {
     let raw = "line\nbreak\ttab\u{1}end";
     let v: Value = serde_json::from_str(&jstr(raw)).unwrap();
     assert_eq!(v, raw);
+}
+
+#[test]
+fn public_methods_read_json_arguments() {
+    let mut c = setup();
+    set_with_input(
+        INTENTS,
+        1,
+        &format!(r#"{{"signer_id":"{ADA}","msg":"create:5000000:2:86400:Test"}}"#),
+    );
+    c.on_auth();
+    assert_eq!(c.circle_of(0).unwrap().name, "Test");
+
+    for who in [ADA, BAYO] {
+        set_with_input(
+            INTENTS,
+            2,
+            &format!(
+                r#"{{"sender_id":"{who}","previous_owner_ids":["{who}"],"token_ids":["{TOKEN}"],"amounts":["5000000"],"msg":"join:0"}}"#
+            ),
+        );
+        c.mt_on_transfer();
+    }
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.status, CircleStatus::Active);
+    assert_eq!(circle.members[1].account_id, acc(BAYO));
+
+    // Views read their arguments too and must not panic.
+    set_with_input("viewer.near", 3, r#"{"circle_id":0}"#);
+    c.get_circle();
+    set_with_input("viewer.near", 3, r#"{"from_index":0,"limit":10}"#);
+    c.get_circles();
+    set_with_input("viewer.near", 3, "");
+    c.get_circles();
+    set_with_input("viewer.near", 3, &format!(r#"{{"account_id":"{ADA}"}}"#));
+    c.get_circles_for();
+    c.get_record();
+    c.get_credit();
+    set_with_input("viewer.near", 3, r#"{"token_id":"0:1"}"#);
+    c.nft_token();
+    set_with_input("viewer.near", 3, &format!(r#"{{"account_id":"{BAYO}","from_index":"0","limit":5}}"#));
+    c.nft_tokens_for_owner();
+}
+
+#[test]
+#[should_panic(expected = "missing or invalid argument: circle_id")]
+fn missing_argument_panics_clearly() {
+    let mut c = setup();
+    set_with_input("anyone.near", 1, r#"{"circle":0}"#);
+    c.settle_round();
+}
+
+#[test]
+#[should_panic(expected = "arguments must be valid JSON")]
+fn invalid_json_panics_clearly() {
+    let mut c = setup();
+    set_with_input("anyone.near", 1, r#"{"circle_id":0"#);
+    c.settle_round();
+}
+
+#[test]
+fn json_reader() {
+    use crate::json::{parse, Json};
+    let v = parse(br#" { "a" : "x\"y\\z\n", "n": 42, "big": "340282366920938463463374607431768211455",
+        "list": ["p", "q"], "nested": {"t": true, "f": false, "z": null}, "e": [] } "#)
+    .unwrap();
+    assert_eq!(v.get("a").unwrap().as_str(), Some("x\"y\\z\n"));
+    assert_eq!(v.get("n").unwrap().as_uint::<u64>(), Some(42));
+    assert_eq!(v.get("big").unwrap().as_uint::<u128>(), Some(u128::MAX));
+    assert_eq!(v.get("list").unwrap().as_arr().unwrap().len(), 2);
+    assert!(v.get("nested").unwrap().get("z").unwrap().is_null());
+    assert!(matches!(v.get("nested").unwrap().get("t"), Some(Json::Bool(true))));
+    assert!(v.get("missing").is_none());
+
+    // Unicode escapes, including a surrogate pair.
+    let u = parse(br#""é😀""#).unwrap();
+    assert_eq!(u.as_str(), Some("é😀"));
+
+    // Strictness.
+    assert!(parse(br#"{"a":1} x"#).is_none());
+    assert!(parse(br#"{"a":1,}"#).is_none());
+    assert!(parse(br#"{"a" 1}"#).is_none());
+    assert!(parse(b"\"raw\ncontrol\"").is_none());
+    assert!(parse(br#""\ud83d""#).is_none());
+    assert!(parse(br#"[[[[[[[[[[1]]]]]]]]]]"#).is_none());
+    assert!(parse(b"").is_none());
+    assert_eq!(parse(br#"-1"#).unwrap().as_uint::<u64>(), None);
+    assert_eq!(parse(br#"1.5"#).unwrap().as_uint::<u64>(), None);
 }
