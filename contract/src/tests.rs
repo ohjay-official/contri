@@ -912,6 +912,7 @@ fn views_match_the_typed_interface() {
     set("contri.near", 101);
     c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true);
     auth(&mut c, CHIOMA, "list_seat:0:2:700000", 102);
+    assert_eq!(transfer(&mut c, "coop.near", CONTRIBUTION, "back:0", 103), 0);
 
     auth(&mut c, BAYO, &format!("create:{CONTRIBUTION}:2:3600:-:Short"), 200);
     transfer(&mut c, ADA, CONTRIBUTION, "join:1", 201);
@@ -935,6 +936,7 @@ fn views_match_the_typed_interface() {
     assert_eq!(circle.payouts.len(), 1);
     assert_eq!(circle.listings[2], Some(U128(700_000)));
     assert_eq!(circle.status, typed::CircleStatus::Active);
+    assert_eq!(circle.backers[0].amount, U128(CONTRIBUTION));
     let short: typed::Circle = parse("get_circle", view(&c, r#"{"circle_id":1}"#, Contri::get_circle));
     assert_eq!(short.status, typed::CircleStatus::Finished);
     assert!(short.members[1].defaulted && short.round_deadline.is_none());
@@ -985,9 +987,9 @@ fn invite_key(seed: u8) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(&[seed; 32])
 }
 
-fn signed_invite(key: &ed25519_dalek::SigningKey, circle: u64, who: &str) -> String {
+fn signed_invite(key: &ed25519_dalek::SigningKey, circle: u64, who: &str, deposit: u128) -> String {
     use ed25519_dalek::Signer;
-    let message = join_message(&acc("contri.near"), circle, &acc(who));
+    let message = join_message(&acc("contri.near"), circle, &acc(who), deposit);
     hexs(&key.sign(message.as_bytes()).to_bytes())
 }
 
@@ -1001,14 +1003,14 @@ fn invite_only_circle_needs_a_signed_invite() {
 
     // No invite, an invite made for someone else, or one from another key: refunded.
     assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, "join:0", 2), CONTRIBUTION);
-    let for_bayo = signed_invite(&key, 0, BAYO);
+    let for_bayo = signed_invite(&key, 0, BAYO, CONTRIBUTION);
     assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, &format!("join:0:{for_bayo}"), 2), CONTRIBUTION);
-    let forged = signed_invite(&invite_key(9), 0, ADA);
+    let forged = signed_invite(&invite_key(9), 0, ADA, CONTRIBUTION);
     assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, &format!("join:0:{forged}"), 2), CONTRIBUTION);
     assert!(c.circle_of(0).unwrap().members.is_empty());
 
     // The right invites work, and the circle starts.
-    let for_ada = signed_invite(&key, 0, ADA);
+    let for_ada = signed_invite(&key, 0, ADA, CONTRIBUTION);
     assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, &format!("join:0:{for_ada}"), 3), 0);
     assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, &format!("join:0:{for_bayo}"), 3), 0);
     assert_eq!(c.circle_of(0).unwrap().status, CircleStatus::Active);
@@ -1019,7 +1021,7 @@ fn invite_only_circle_needs_a_signed_invite() {
 fn open_circles_ignore_invites() {
     let mut c = setup();
     create(&mut c, 2);
-    let sig = signed_invite(&invite_key(7), 0, ADA);
+    let sig = signed_invite(&invite_key(7), 0, ADA, CONTRIBUTION);
     assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, &format!("join:0:{sig}"), 2), 0);
     assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, "join:0", 2), 0);
     assert_eq!(view(&c, r#"{"circle_id":0}"#, Contri::get_circle)["invite_only"], false);
@@ -1075,4 +1077,183 @@ fn encrypted_names_fit_and_oversized_ones_do_not() {
     let sealed = "A".repeat(MAX_NAME_LEN);
     assert_eq!(c.internal_create(&acc(ADA), sealed.clone(), U128(1), 3, DAY, None), Ok(0));
     assert!(c.internal_create(&acc(ADA), sealed + "A", U128(1), 3, DAY, None).is_err());
+}
+
+#[test]
+fn invite_can_lower_the_deposit_for_someone_trusted() {
+    let mut c = setup();
+    let key = invite_key(7);
+    let public = hexs(key.verifying_key().as_bytes());
+    auth(&mut c, ADA, &format!("create:{CONTRIBUTION}:2:{DAY}:{public}:sealed"), 1);
+
+    // Bayo's invite sets a 1 USDT deposit. Paying more or less than the invite says is refunded.
+    let trusted = signed_invite(&key, 0, BAYO, 1_000_000);
+    assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, &format!("join:0:{trusted}"), 2), CONTRIBUTION);
+    assert_eq!(transfer(&mut c, BAYO, 999_999, &format!("join:0:{trusted}"), 2), 999_999);
+    assert_eq!(transfer(&mut c, BAYO, 1_000_000, &format!("join:0:{trusted}"), 2), 0);
+    assert_eq!(c.circle_of(0).unwrap().members[0].deposit, U128(1_000_000));
+
+    // An invite can't ask for more than one contribution.
+    let too_much = signed_invite(&key, 0, ADA, CONTRIBUTION + 1);
+    assert_eq!(transfer(&mut c, ADA, CONTRIBUTION + 1, &format!("join:0:{too_much}"), 3), CONTRIBUTION + 1);
+    let event = events();
+    assert!(event.is_empty(), "a refused join logs no events");
+}
+
+/// A circle of three where Chioma's deposit is only 1 USDT, and a community
+/// treasury backs the circle with 6 USDT.
+fn backed_circle() -> Contri {
+    let mut c = setup();
+    let key = invite_key(7);
+    let public = hexs(key.verifying_key().as_bytes());
+    auth(&mut c, ADA, &format!("create:{CONTRIBUTION}:3:{DAY}:{public}:sealed"), 1);
+    for (who, deposit) in [(ADA, CONTRIBUTION), (BAYO, CONTRIBUTION), (CHIOMA, 1_000_000)] {
+        let invite = signed_invite(&key, 0, who, deposit);
+        assert_eq!(transfer(&mut c, who, deposit, &format!("join:0:{invite}"), 10), 0);
+    }
+    assert_eq!(transfer(&mut c, "coop.sputnik-dao.near", 6_000_000, "back:0", 11), 0);
+    c
+}
+
+#[test]
+fn community_backing_covers_what_a_deposit_cannot() {
+    let mut c = backed_circle();
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.backing, U128(6_000_000));
+    assert_eq!(circle.backers[0].account_id, acc("coop.sputnik-dao.near"));
+
+    // Round 0: Chioma misses. 1 USDT comes from her deposit, 4 from the backing.
+    contribute(&mut c, ADA, 0, 0, 100);
+    contribute(&mut c, BAYO, 0, 0, 100);
+    set("anyone.near", 10 + DAY);
+    c.internal_settle(0);
+    let settled = event(&events(), "contri", "round_settled").clone();
+    assert_eq!(settled["data"][0]["missed"], json!([CHIOMA]));
+    assert_eq!(settled["data"][0]["from_backing"], "4000000");
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.pot, U128(3 * CONTRIBUTION));
+    assert_eq!(circle.backing, U128(2_000_000));
+    assert_eq!(circle.members[2].deposit, U128(0));
+    set("contri.near", 10 + DAY + 1);
+    c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true);
+    assert_eq!(c.circle_of(0).unwrap().payouts[0].shortfall, U128(0));
+
+    // Round 1: Chioma misses again. Only 2 USDT of backing is left, so the pot is 3 USDT short.
+    contribute(&mut c, ADA, 0, 1, 10 + DAY + 2);
+    contribute(&mut c, BAYO, 0, 1, 10 + DAY + 2);
+    set("anyone.near", 10 + 2 * DAY);
+    c.internal_settle(0);
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.pot, U128(2 * CONTRIBUTION + 2_000_000));
+    assert_eq!(circle.backing, U128(0));
+    set("contri.near", 10 + 2 * DAY + 1);
+    c.finalize_payout(0, 1, circle.pot, true);
+    assert_eq!(c.circle_of(0).unwrap().payouts[1].shortfall, U128(3_000_000));
+    let paid = event(&events(), "contri", "paid_out").clone();
+    assert_eq!(paid["data"][0]["shortfall"], "3000000");
+}
+
+#[test]
+fn leftover_backing_goes_back_to_backers_in_proportion() {
+    let mut c = backed_circle();
+    assert_eq!(transfer(&mut c, "church.near", CONTRIBUTION, "back:0", 12), 0);
+    assert_eq!(transfer(&mut c, "coop.sputnik-dao.near", CONTRIBUTION, "back:0", 12), 0);
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.backers.len(), 2);
+    assert_eq!(circle.backers[0].amount, U128(11_000_000));
+    assert_eq!(circle.backing, U128(16_000_000));
+
+    // Everyone pays every round, so no backing is used.
+    for round in 0..3u32 {
+        let at = 100 + round as u64 * DAY;
+        for who in [ADA, BAYO, CHIOMA] {
+            contribute(&mut c, who, 0, round, at);
+        }
+        set("contri.near", at + 1);
+        c.finalize_payout(0, round, U128(3 * CONTRIBUTION), true);
+    }
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.status, CircleStatus::Finished);
+    assert_eq!(circle.backing, U128(0));
+    assert_eq!(circle.backers[0].due, U128(11_000_000));
+    assert_eq!(circle.backers[1].due, U128(CONTRIBUTION));
+
+    // Three deposits and two backers get their money back.
+    set("anyone.near", 100 + 3 * DAY);
+    assert_eq!(c.internal_release(0), 5);
+    let circle = c.circle_of(0).unwrap();
+    assert!(circle.backers.iter().all(|b| b.due == U128(0)));
+    assert_eq!(get_created_receipts().len(), 10, "five transfers, each with its callback");
+}
+
+#[test]
+fn backing_shares_round_down_and_the_rest_goes_to_the_first_backer() {
+    let mut c = setup();
+    create(&mut c, 2);
+    let mut circle = c.circle_of(0).unwrap();
+    circle.backers = vec![
+        Backer { account_id: acc("a.near"), amount: U128(5_000_000), due: U128(0) },
+        Backer { account_id: acc("b.near"), amount: U128(10_000_000), due: U128(0) },
+    ];
+    circle.backing = U128(7);
+    close_backing(&mut circle);
+    // 7 split 1:2 is 2.33 and 4.67: rounded down to 2 and 4, and the 1 left goes first.
+    assert_eq!(circle.backers[0].due, U128(3));
+    assert_eq!(circle.backers[1].due, U128(4));
+    assert_eq!(circle.backing, U128(0));
+
+    // Cancelling a circle gives every backer back exactly what they put in.
+    auth(&mut c, ADA, &format!("create:{CONTRIBUTION}:2:{DAY}:-:second"), 6);
+    for who in ["a.near", "b.near", "c.near"] {
+        assert_eq!(transfer(&mut c, who, CONTRIBUTION + 1, "back:1", 7), 0);
+    }
+    auth(&mut c, ADA, "cancel:1", 8);
+    let circle = c.circle_of(1).unwrap();
+    let dues: Vec<u128> = circle.backers.iter().map(|b| b.due.0).collect();
+    assert_eq!(dues.iter().sum::<u128>(), 3 * (CONTRIBUTION + 1));
+    assert_eq!(dues, vec![CONTRIBUTION + 1; 3]);
+}
+
+#[test]
+fn backing_rules() {
+    let mut c = setup();
+    create(&mut c, 2);
+    // Less than one contribution is refunded.
+    assert_eq!(transfer(&mut c, "coop.near", CONTRIBUTION - 1, "back:0", 2), CONTRIBUTION - 1);
+    // At most MAX_BACKERS different backers.
+    for i in 0..MAX_BACKERS {
+        assert_eq!(transfer(&mut c, &format!("backer{i}.near"), CONTRIBUTION, "back:0", 2), 0);
+    }
+    assert_eq!(transfer(&mut c, "late.near", CONTRIBUTION, "back:0", 2), CONTRIBUTION);
+    // An existing backer can add more.
+    assert_eq!(transfer(&mut c, "backer0.near", CONTRIBUTION, "back:0", 2), 0);
+    // A finished or cancelled circle takes no backing.
+    auth(&mut c, ADA, "cancel:0", 3);
+    assert_eq!(transfer(&mut c, "backer0.near", CONTRIBUTION, "back:0", 4), CONTRIBUTION);
+}
+
+#[test]
+fn members_can_refill_their_deposit() {
+    let mut c = full_circle_of_three();
+    contribute(&mut c, ADA, 0, 0, 100);
+    contribute(&mut c, BAYO, 0, 0, 100);
+    set("anyone.near", 10 + DAY);
+    c.internal_settle(0);
+    assert_eq!(c.circle_of(0).unwrap().members[2].deposit, U128(0));
+
+    // Chioma refills in two steps; going over one contribution is refunded.
+    assert_eq!(transfer(&mut c, CHIOMA, 2_000_000, "refill:0", 10 + DAY + 5), 0);
+    assert_eq!(transfer(&mut c, CHIOMA, CONTRIBUTION, "refill:0", 10 + DAY + 5), CONTRIBUTION);
+    assert_eq!(transfer(&mut c, CHIOMA, 3_000_000, "refill:0", 10 + DAY + 5), 0);
+    assert_eq!(c.circle_of(0).unwrap().members[2].deposit, U128(CONTRIBUTION));
+    // Only members refill.
+    assert_eq!(transfer(&mut c, "stranger.near", 1, "refill:0", 10 + DAY + 5), 1);
+}
+
+#[test]
+fn new_messages_parse_strictly() {
+    assert!(matches!(parse_transfer("back:4"), Some(TransferMsg::Back { circle: 4 })));
+    assert!(matches!(parse_transfer("refill:4"), Some(TransferMsg::Refill { circle: 4 })));
+    assert!(parse_transfer("back:4:1").is_none());
+    assert!(parse_transfer("refill").is_none());
 }

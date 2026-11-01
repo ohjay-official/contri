@@ -5,8 +5,9 @@
 //! Tron/EVM wallet key, so they never need a NEAR account.
 //!
 //! Entry points from NEAR Intents (predecessor must be `intents_id`):
-//! - `mt_on_transfer`: a member's signed `Transfer` intent with a notification
-//!   message. Used to join (deposit), contribute and buy a seat.
+//! - `mt_on_transfer`: a signed `Transfer` intent (or an account's own
+//!   `mt_transfer_call`) with a notification message. Used to join (deposit),
+//!   contribute, buy a seat, refill a deposit and back a circle.
 //! - `on_auth`: a member's signed `AuthCall` intent. Used to create a circle,
 //!   list or unlist a seat, cancel an unfilled circle and claim credits.
 //!
@@ -45,6 +46,8 @@ const GAS_CALLBACK: Gas = Gas::from_tgas(15);
 const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(35);
 const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
 const ZERO: NearToken = NearToken::from_yoctonear(0);
+/// Most backers a circle takes, which bounds the gas to return their money.
+pub const MAX_BACKERS: usize = 10;
 /// Default and maximum page size for list views.
 const PAGE: u64 = 50;
 const MAX_PAGE: u64 = 100;
@@ -79,8 +82,24 @@ pub struct PayoutRecord {
     pub round: u32,
     pub to: AccountId,
     pub amount: U128,
+    /// How much less than a full pot (contribution x size) this payout was,
+    /// when missed payments were more than deposits and backing could cover.
+    pub shortfall: U128,
     /// Block timestamp in nanoseconds.
     pub at: u64,
+}
+
+/// Money a community (a DAO treasury, a cooperative, a church, an employer)
+/// puts behind a circle. It covers missed payments that a member's deposit
+/// can't, and what is left goes back to the backers when the circle ends.
+#[near(serializers = [borsh])]
+#[derive(Clone, Debug)]
+pub struct Backer {
+    pub account_id: AccountId,
+    /// What this backer put in.
+    pub amount: U128,
+    /// Their share of what was left when the circle ended, not yet sent.
+    pub due: U128,
 }
 
 #[near(serializers = [borsh])]
@@ -101,6 +120,9 @@ pub struct Circle {
     /// a signature from the invite key over the joiner's account, so only
     /// people with the link can join (see `join_message`).
     pub invite_key: Option<[u8; 32]>,
+    /// Community backing not yet used to cover missed payments.
+    pub backing: U128,
+    pub backers: Vec<Backer>,
     pub status: CircleStatus,
     pub created_at: u64,
     pub started_at: u64,
@@ -152,12 +174,18 @@ impl Circle {
         let listings = join(self.listings.iter().map(|l| opt_amount(*l)));
         let payouts = join(self.payouts.iter().map(|p| {
             format!(
-                r#"{{"round":{},"to":"{}","amount":"{}","at":"{}"}}"#,
-                p.round, p.to, p.amount.0, p.at
+                r#"{{"round":{},"to":"{}","amount":"{}","shortfall":"{}","at":"{}"}}"#,
+                p.round, p.to, p.amount.0, p.shortfall.0, p.at
+            )
+        }));
+        let backers = join(self.backers.iter().map(|b| {
+            format!(
+                r#"{{"account_id":"{}","amount":"{}","due":"{}"}}"#,
+                b.account_id, b.amount.0, b.due.0
             )
         }));
         format!(
-            r#"{{"id":{},"name":{},"organizer":"{}","contribution":"{}","size":{},"period_secs":{},"members":[{}],"listings":[{}],"invite_only":{},"status":"{}","created_at":"{}","started_at":"{}","round":{},"pot":"{}","paying":{},"payouts":[{}],"round_deadline":{}}}"#,
+            r#"{{"id":{},"name":{},"organizer":"{}","contribution":"{}","size":{},"period_secs":{},"members":[{}],"listings":[{}],"invite_only":{},"backing":"{}","backers":[{}],"status":"{}","created_at":"{}","started_at":"{}","round":{},"pot":"{}","paying":{},"payouts":[{}],"round_deadline":{}}}"#,
             self.id,
             jstr(&self.name),
             self.organizer,
@@ -167,6 +195,8 @@ impl Circle {
             members,
             listings,
             self.invite_key.is_some(),
+            self.backing.0,
+            backers,
             self.status.as_str(),
             self.created_at,
             self.started_at,
@@ -205,14 +235,20 @@ impl Circle {
 #[cfg_attr(test, derive(Debug))]
 pub enum TransferMsg {
     /// `join:<circle>` or `join:<circle>:<invite signature, 128 hex>`: pay the
-    /// deposit (one contribution) and take the next free seat. An invite-only
-    /// circle needs the signature (see `join_message`).
+    /// deposit and take the next free seat. In an open circle the deposit is
+    /// one contribution. An invite-only circle needs the invite's signature,
+    /// which also sets the deposit (see `join_message`).
     Join { circle: u64, invite_sig: Option<[u8; 64]> },
     /// `contribute:<circle>:<round>`: pay this round's contribution.
     Contribute { circle: u64, round: u32 },
     /// `buy_seat:<circle>:<seat>`: pay the asking price for a listed seat and swap it
     /// with your own later seat.
     BuySeat { circle: u64, seat: u32 },
+    /// `back:<circle>`: put money behind a circle (anyone, e.g. a DAO treasury
+    /// with `mt_transfer_call`). At least one contribution.
+    Back { circle: u64 },
+    /// `refill:<circle>`: top up your own deposit, up to one contribution.
+    Refill { circle: u64 },
 }
 
 /// `msg` of a member's `AuthCall` intent to this contract.
@@ -252,6 +288,8 @@ pub fn parse_transfer(msg: &str) -> Option<TransferMsg> {
         }
         "contribute" => TransferMsg::Contribute { circle, round: p.next()?.parse().ok()? },
         "buy_seat" => TransferMsg::BuySeat { circle, seat: p.next()?.parse().ok()? },
+        "back" => TransferMsg::Back { circle },
+        "refill" => TransferMsg::Refill { circle },
         _ => return None,
     };
     p.next().is_none().then_some(m)
@@ -281,11 +319,12 @@ fn hex<const N: usize>(s: &str) -> Option<[u8; N]> {
     Some(out)
 }
 
-/// What the invite key signs to let `account` join `circle` of this contract.
-/// Binding the joiner's account means a signature seen on chain cannot be
-/// reused by anyone else.
-pub fn join_message(contract: &AccountId, circle: u64, account: &AccountId) -> String {
-    format!("contri-join:{contract}:{circle}:{account}")
+/// What the invite key signs to let `account` join `circle` of this contract
+/// with `deposit`. Binding the joiner's account means a signature seen on chain
+/// can't be reused by anyone else. The deposit is one contribution, or less for
+/// someone the organizer trusts; that decision is made privately, in the app.
+pub fn join_message(contract: &AccountId, circle: u64, account: &AccountId, deposit: u128) -> String {
+    format!("contri-join:{contract}:{circle}:{account}:{deposit}")
 }
 
 pub fn parse_auth(msg: &str) -> Option<AuthMsg> {
@@ -694,24 +733,31 @@ impl Contri {
         require!(c.status == CircleStatus::Active, "circle is not active");
         require!(!c.paying, "payout already in progress");
         require!(env::block_timestamp() >= c.round_deadline(), "round deadline has not passed");
+        // Each missed payment comes out of the member's deposit first, then out
+        // of the circle's community backing. Anything still missing makes the
+        // pot short, and the payout records the shortfall.
         let contribution = c.contribution.0;
         let mut defaulted = vec![];
+        let mut from_backing = 0;
         for m in c.members.iter_mut() {
             if m.paid_this_round {
                 continue;
             }
-            let covered = m.deposit.0.min(contribution);
-            m.deposit = U128(m.deposit.0 - covered);
+            let from_deposit = m.deposit.0.min(contribution);
+            let backed = c.backing.0.min(contribution - from_deposit);
+            m.deposit = U128(m.deposit.0 - from_deposit);
+            c.backing = U128(c.backing.0 - backed);
+            from_backing += backed;
             m.paid_this_round = true;
             m.defaulted = true;
             m.missed += 1;
-            c.pot = U128(c.pot.0 + covered);
+            c.pot = U128(c.pot.0 + from_deposit + backed);
             defaulted.push(format!("\"{}\"", m.account_id));
         }
         emit(
             "round_settled",
             format!(
-                r#"{{"circle":{},"round":{},"covered_from_deposit":[{}]}}"#,
+                r#"{{"circle":{},"round":{},"missed":[{}],"from_backing":"{from_backing}"}}"#,
                 c.id,
                 c.round,
                 defaulted.join(",")
@@ -754,6 +800,19 @@ impl Contri {
             self.send(to, amount, format!("contri:{}:deposit", c.id));
             sent += 1;
         }
+        for i in 0..c.backers.len() {
+            let amount = c.backers[i].due.0;
+            if amount == 0 {
+                continue;
+            }
+            if env::prepaid_gas().saturating_sub(env::used_gas()).as_gas() < per_send {
+                break;
+            }
+            c.backers[i].due = U128(0);
+            let to = c.backers[i].account_id.clone();
+            self.send(to, amount, format!("contri:{}:backing", c.id));
+            sent += 1;
+        }
         save_circle(&c);
         sent
     }
@@ -767,6 +826,8 @@ impl Contri {
             TransferMsg::Join { circle, invite_sig } => self.internal_join(sender, circle, amount, invite_sig),
             TransferMsg::Contribute { circle, round } => self.internal_contribute(sender, circle, round, amount),
             TransferMsg::BuySeat { circle, seat } => self.internal_buy_seat(sender, circle, seat, amount),
+            TransferMsg::Back { circle } => self.internal_back(sender, circle, amount),
+            TransferMsg::Refill { circle } => self.internal_refill(sender, circle, amount),
         }
     }
 
@@ -816,6 +877,8 @@ impl Contri {
             members: vec![],
             listings: vec![None; size as usize],
             invite_key,
+            backing: U128(0),
+            backers: vec![],
             status: CircleStatus::Open,
             created_at: env::block_timestamp(),
             started_at: 0,
@@ -848,19 +911,21 @@ impl Contri {
             return Err("circle is not open for joining".into());
         }
         if let Some(key) = &c.invite_key {
-            let message = join_message(&env::current_account_id(), circle_id, who);
-            if !invite_sig.is_some_and(|sig| env::ed25519_verify(&sig, message, key)) {
-                return Err("this circle needs a valid invite".into());
+            // The invite sets the deposit: one contribution, or less for someone
+            // the organizer trusts.
+            let message = join_message(&env::current_account_id(), circle_id, who, amount);
+            let valid = invite_sig.is_some_and(|sig| env::ed25519_verify(&sig, message, key));
+            if !valid || amount > c.contribution.0 {
+                return Err("this circle needs a valid invite for this deposit".into());
             }
+        } else if amount != c.contribution.0 {
+            return Err("deposit must equal one contribution".into());
         }
         if c.seat_of(who).is_some() {
             return Err("already a member".into());
         }
         if c.members.len() as u32 >= c.size {
             return Err("circle is full".into());
-        }
-        if amount != c.contribution.0 {
-            return Err("deposit must equal one contribution".into());
         }
         c.members.push(Member {
             account_id: who.clone(),
@@ -870,7 +935,10 @@ impl Contri {
             missed: 0,
         });
         let seat = c.members.len() - 1;
-        emit("joined", format!(r#"{{"circle":{circle_id},"member":"{who}","seat":{seat}}}"#));
+        emit(
+            "joined",
+            format!(r#"{{"circle":{circle_id},"member":"{who}","seat":{seat},"deposit":"{amount}"}}"#),
+        );
         emit_nft("nft_mint", format!(r#"{{"owner_id":"{who}","token_ids":["{circle_id}:{seat}"]}}"#));
         if c.members.len() as u32 == c.size {
             c.status = CircleStatus::Active;
@@ -962,6 +1030,54 @@ impl Contri {
         Ok(())
     }
 
+    fn internal_back(&mut self, who: &AccountId, circle_id: u64, amount: u128) -> Result<(), String> {
+        let mut c = find_circle(circle_id)?;
+        if c.status != CircleStatus::Open && c.status != CircleStatus::Active {
+            return Err("circle has ended".into());
+        }
+        if amount < c.contribution.0 {
+            return Err("backing must be at least one contribution".into());
+        }
+        match c.backers.iter_mut().find(|b| &b.account_id == who) {
+            Some(b) => b.amount = U128(b.amount.0 + amount),
+            None if c.backers.len() < MAX_BACKERS => c.backers.push(Backer {
+                account_id: who.clone(),
+                amount: U128(amount),
+                due: U128(0),
+            }),
+            None => return Err("circle already has the most backers".into()),
+        }
+        c.backing = U128(c.backing.0 + amount);
+        emit(
+            "circle_backed",
+            format!(
+                r#"{{"circle":{circle_id},"backer":"{who}","amount":"{amount}","backing":"{}"}}"#,
+                c.backing.0
+            ),
+        );
+        save_circle(&c);
+        Ok(())
+    }
+
+    fn internal_refill(&mut self, who: &AccountId, circle_id: u64, amount: u128) -> Result<(), String> {
+        let mut c = find_circle(circle_id)?;
+        if c.status != CircleStatus::Open && c.status != CircleStatus::Active {
+            return Err("circle has ended".into());
+        }
+        let seat = c.seat_of(who).ok_or("not a member of this circle")?;
+        let deposit = c.members[seat].deposit.0 + amount;
+        if deposit > c.contribution.0 {
+            return Err("a deposit can be at most one contribution".into());
+        }
+        c.members[seat].deposit = U128(deposit);
+        emit(
+            "deposit_refilled",
+            format!(r#"{{"circle":{circle_id},"member":"{who}","deposit":"{deposit}"}}"#),
+        );
+        save_circle(&c);
+        Ok(())
+    }
+
     pub(crate) fn internal_list_seat(
         &mut self,
         who: &AccountId,
@@ -1002,6 +1118,7 @@ impl Contri {
             return Err("only a circle that has not started can be cancelled".into());
         }
         c.status = CircleStatus::Cancelled;
+        close_backing(&mut c);
         emit("circle_cancelled", format!(r#"{{"circle":{circle_id}}}"#));
         if !c.members.is_empty() {
             let burns = c
@@ -1073,11 +1190,16 @@ impl Contri {
             return false;
         }
         let to = c.members[round as usize].account_id.clone();
+        let full = c.contribution.0.saturating_mul(c.size as u128);
+        let shortfall = U128(full.saturating_sub(amount.0));
         emit(
             "paid_out",
-            format!(r#"{{"circle":{circle_id},"round":{round},"to":"{to}","amount":"{}"}}"#, amount.0),
+            format!(
+                r#"{{"circle":{circle_id},"round":{round},"to":"{to}","amount":"{}","shortfall":"{}"}}"#,
+                amount.0, shortfall.0
+            ),
         );
-        c.payouts.push(PayoutRecord { round, to, amount, at: env::block_timestamp() });
+        c.payouts.push(PayoutRecord { round, to, amount, shortfall, at: env::block_timestamp() });
         c.pot = U128(0);
         for m in c.members.iter_mut() {
             m.paid_this_round = false;
@@ -1096,6 +1218,7 @@ impl Contri {
                 r.missed_payments += m.missed;
                 save_record(&m.account_id, &r);
             }
+            close_backing(&mut c);
             emit("circle_finished", format!(r#"{{"circle":{circle_id}}}"#));
         }
         save_circle(&c);
@@ -1183,6 +1306,25 @@ fn save_credit(account_id: &AccountId, amount: u128) {
 /// explicit failure counts as failed, so a payout that was made is never retried.
 fn transfer_succeeded() -> bool {
     !matches!(env::promise_result_checked(0, 0), Err(PromiseError::Failed))
+}
+
+/// When a circle ends, splits what is left of its backing between the backers
+/// in proportion to what each put in. `release_deposits` sends the shares.
+fn close_backing(c: &mut Circle) {
+    let left = c.backing.0;
+    let total: u128 = c.backers.iter().map(|b| b.amount.0).sum();
+    c.backing = U128(0);
+    if left == 0 || total == 0 {
+        return;
+    }
+    let mut given = 0;
+    for b in c.backers.iter_mut() {
+        let share = left * b.amount.0 / total;
+        b.due = U128(share);
+        given += share;
+    }
+    // Rounding leftovers go to the first backer, so nothing stays behind.
+    c.backers[0].due = U128(c.backers[0].due.0 + left - given);
 }
 
 fn parse_seat_token(token_id: &str) -> Option<(u64, u32)> {

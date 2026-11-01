@@ -50,8 +50,22 @@ pub struct Payout {
     pub round: u32,
     pub to: AccountId,
     pub amount: U128,
+    /// How much less than a full pot (contribution x size) was paid.
+    pub shortfall: U128,
     /// Block timestamp in nanoseconds.
     pub at: U64,
+}
+
+/// Money a community put behind a circle. It covers missed payments a deposit
+/// can't; what is left is split back in proportion when the circle ends.
+#[near(serializers = [json])]
+#[serde(deny_unknown_fields)]
+#[derive(Clone, Debug)]
+pub struct Backer {
+    pub account_id: AccountId,
+    pub amount: U128,
+    /// Share of the leftover backing not yet sent back.
+    pub due: U128,
 }
 
 #[near(serializers = [json])]
@@ -72,6 +86,9 @@ pub struct Circle {
     pub listings: Vec<Option<U128>>,
     /// Joining needs a signed invite from the circle's invite link.
     pub invite_only: bool,
+    /// Community backing not yet used.
+    pub backing: U128,
+    pub backers: Vec<Backer>,
     pub status: CircleStatus,
     /// Nanoseconds.
     pub created_at: U64,
@@ -156,10 +173,12 @@ impl Contri {
         unimplemented!()
     }
 
-    /// NEP-245 receiver, called only by NEAR Intents for a member's `Transfer`
-    /// intent. `msg` is `join:<circle>`, `join:<circle>:<invite signature>`,
-    /// `contribute:<circle>:<round>` or `buy_seat:<circle>:<seat>`. Returns the
-    /// amounts to refund; a wrong token, amount, message or invite is refunded in full.
+    /// NEP-245 receiver, called only by NEAR Intents: for a signed `Transfer`
+    /// intent, or an account's own `mt_transfer_call` (how a DAO treasury backs
+    /// a circle). `msg` is `join:<circle>`, `join:<circle>:<invite signature>`,
+    /// `contribute:<circle>:<round>`, `buy_seat:<circle>:<seat>`,
+    /// `refill:<circle>` or `back:<circle>`. Returns the amounts to refund; a
+    /// wrong token, amount, message or invite is refunded in full.
     pub fn mt_on_transfer(
         &mut self,
         sender_id: AccountId,
