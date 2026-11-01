@@ -79,7 +79,9 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 
 | Sent as | Message | Meaning |
 | --- | --- | --- |
-| `Transfer` notification | `join:<circle>` or `join:<circle>:<invite signature>` | Pay the deposit and take the next seat. An invite-only circle needs the invite key's signature (128 hex) over `contri-join:<contract>:<circle>:<joiner>` |
+| `Transfer` notification | `join:<circle>` or `join:<circle>:<invite signature>` | Pay the deposit and take the next seat. An invite-only circle needs the invite key's signature (128 hex) over `contri-join:<contract>:<circle>:<joiner>:<deposit>`; the deposit is the transferred amount, at most one contribution |
+| `Transfer` notification or `mt_transfer_call` | `back:<circle>` | Back a circle with at least one contribution (for example from a DAO treasury) |
+| `Transfer` notification | `refill:<circle>` | Top up your own deposit, to at most one contribution |
 | `Transfer` notification | `contribute:<circle>:<round>` | Pay this round |
 | `Transfer` notification | `buy_seat:<circle>:<seat>` | Buy a listed, earlier seat |
 | `AuthCall` | `create:<contribution>:<size>:<period_secs>:<invite key>:<name>` | Create a circle. Invite key: 64 hex (ed25519 public key) or `-` for an open circle. The name is encrypted by the app |
@@ -89,7 +91,10 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 | `AuthCall` | `claim_credit` | Claim money from a transfer that failed |
 
 ## Missed payments
-Each member's deposit equals one contribution. After a round deadline, anyone can call `settle_round`. If a member has not paid, the contract takes the missing amount from their deposit, marks them as having defaulted, and pays out. A defaulting member loses their completed-circle record.
+A member's deposit is one contribution, or less if their invite says so. After a round deadline, anyone can call `settle_round`. For each member who has not paid, the contract takes the missing amount from their deposit, then from the circle's community backing, marks them as having defaulted, and pays out. If both run out, the pot is short and the payout records the shortfall. A member can refill their deposit with `refill:<circle>`. A defaulting member loses their completed-circle record.
+
+## Community-backed circles
+Any account can put money behind a circle with `back:<circle>`: a cooperative's DAO treasury, a church, an employer. A Trezu or Sputnik DAO does it with one proposal that calls `mt_transfer_call` on `intents.near` (template in [integrations/trezu](../integrations/trezu)). The backing covers missed payments after deposits. When the circle ends or is cancelled, what is left is split back between the backers in proportion to what each put in, and `release_deposits` sends it.
 
 ## Seats as NFTs
 Each turn is a seat token `<circle>:<turn>`, owned by the member's Intents account. The contract has the NEP-171 core views, NEP-177 metadata and NEP-181 enumeration (`nft_token`, `nft_tokens`, `nft_tokens_for_owner`, `nft_total_supply`, `nft_supply_for_owner`, `nft_metadata`), and logs NEP-171 `nft_mint`, `nft_transfer` and `nft_burn` events so NFT indexers can follow the seats. Seats change hands only through the contract: the seller lists with an `AuthCall`, the buyer pays the price with a `Transfer` (`buy_seat:<circle>:<seat>`), and the contract swaps the two turns and forwards the price to the seller. See [METHODS.md](METHODS.md#seats-as-nfts).

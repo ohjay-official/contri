@@ -20,11 +20,11 @@ Conventions:
 
 ## Called by NEAR Intents
 
-Only `intents_id` can call these. Members never call them directly: they sign an intent and NEAR Intents calls the contract with the verified signer. Messages are listed in [ARCHITECTURE.md](ARCHITECTURE.md#message-formats).
+Only `intents_id` can call these. Members never call them directly: they sign an intent and NEAR Intents calls the contract with the verified signer. A DAO treasury or any NEAR account can also call `mt_transfer_call` on `intents.near` from its own balance, which reaches `mt_on_transfer` the same way. Messages are listed in [ARCHITECTURE.md](ARCHITECTURE.md#message-formats).
 
 | Method | Arguments | Returns |
 | --- | --- | --- |
-| `mt_on_transfer` | `sender_id`, `previous_owner_ids`, `token_ids`, `amounts`, `msg` | Amounts to refund, for example `["0"]`. NEP-245 receiver for a `Transfer` intent with a notification. A wrong token, amount or message is refunded in full, with the reason in the log. |
+| `mt_on_transfer` | `sender_id`, `previous_owner_ids`, `token_ids`, `amounts`, `msg` | Amounts to refund, for example `["0"]`. NEP-245 receiver. `msg` joins, contributes, buys a seat, refills a deposit or backs a circle. A wrong token, amount, message or invite is refunded in full, with the reason in the log. |
 | `on_auth` | `signer_id`, `msg` | Nothing. Runs an `AuthCall` intent. Fails with the reason if the action is not allowed. |
 
 ## Called directly by a NEAR account
@@ -49,9 +49,9 @@ near contract call-function as-transaction contri.testnet create_circle json-arg
 
 | Method | Arguments | Returns |
 | --- | --- | --- |
-| `settle_round` | `circle_id` | Nothing. After the round deadline, takes missed contributions from deposits and pays the pot. |
+| `settle_round` | `circle_id` | Nothing. After the round deadline, takes each missed contribution from the member's deposit, then from the circle's backing, and pays the pot. |
 | `pay_out` | `circle_id` | Nothing. Pays the pot when every member has paid, for example after a failed payout. |
-| `release_deposits` | `circle_id` | Number of deposits sent. After a circle finishes or is cancelled. Sends as many as the attached gas allows; call again for the rest. |
+| `release_deposits` | `circle_id` | Number of transfers sent. After a circle finishes or is cancelled, sends members' remaining deposits and backers' shares of the leftover backing, as many as the attached gas allows; call again for the rest. |
 
 ## Callbacks
 
@@ -91,18 +91,22 @@ A circle:
   ],
   "listings": [null, "1000000", null],
   "invite_only": true,
+  "backing": "6000000",
+  "backers": [{"account_id": "lagos-coop.sputnik-dao.near", "amount": "6000000", "due": "0"}],
   "status": "Active",
   "created_at": "0",
   "started_at": "10000000000",
   "round": 1,
   "pot": "5000000",
   "paying": false,
-  "payouts": [{"round": 0, "to": "0xa0…01", "amount": "15000000", "at": "86400500000000"}],
+  "payouts": [{"round": 0, "to": "0xa0…01", "amount": "15000000", "shortfall": "0", "at": "86400500000000"}],
   "round_deadline": "172810000000000"
 }
 ```
 
-`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight.
+`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight. `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
+
+A member's `deposit` is one contribution in an open circle. In an invite-only circle the invite sets it, up to one contribution, so an organizer can ask less of someone they trust.
 
 ## Seats as NFTs
 
@@ -138,11 +142,13 @@ Logged as NEP-297 `EVENT_JSON`.
 | Standard | Event | Data |
 | --- | --- | --- |
 | `contri` | `circle_created` | `circle`, `organizer`, `contribution`, `size`, `period_secs`, `invite_only` |
-| `contri` | `joined` | `circle`, `member`, `seat` |
+| `contri` | `joined` | `circle`, `member`, `seat`, `deposit` |
 | `contri` | `circle_started` | `circle`, `first_deadline` |
 | `contri` | `contributed` | `circle`, `round`, `member`, `amount` |
-| `contri` | `round_settled` | `circle`, `round`, `covered_from_deposit` (accounts) |
-| `contri` | `paid_out` | `circle`, `round`, `to`, `amount` |
+| `contri` | `round_settled` | `circle`, `round`, `missed` (accounts), `from_backing` |
+| `contri` | `paid_out` | `circle`, `round`, `to`, `amount`, `shortfall` |
+| `contri` | `circle_backed` | `circle`, `backer`, `amount`, `backing` |
+| `contri` | `deposit_refilled` | `circle`, `member`, `deposit` |
 | `contri` | `payout_failed` | `circle`, `round` |
 | `contri` | `circle_finished` | `circle` |
 | `contri` | `circle_cancelled` | `circle` |

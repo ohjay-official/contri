@@ -86,6 +86,10 @@ pub struct Circle {
     pub listings: Vec<Option<U128>>,
     /// Joining needs a signed invite from the circle's invite link.
     pub invite_only: bool,
+    /// Turns are drawn at random when the circle fills.
+    pub random_order: bool,
+    /// Nanoseconds. After this, anyone can cancel the circle if it is still open.
+    pub fill_by: U64,
     /// Community backing not yet used.
     pub backing: U128,
     pub backers: Vec<Backer>,
@@ -147,6 +151,8 @@ pub struct NftContractMetadata {
 pub struct TokenMetadata {
     pub title: Option<String>,
     pub description: Option<String>,
+    /// SVG data URL drawn by the contract from the circle's live state.
+    pub media: Option<String>,
     pub extra: Option<String>,
 }
 
@@ -191,23 +197,30 @@ impl Contri {
     }
 
     /// Called only by NEAR Intents for a member's signed `AuthCall` intent.
-    /// `msg` is `create:<contribution>:<size>:<period_secs>:<invite key or ->:<name>`,
-    /// `list_seat:<circle>:<seat>:<price>`, `unlist_seat:<circle>:<seat>`,
-    /// `cancel:<circle>` or `claim_credit`.
+    /// `msg` is `create:<contribution>:<size>:<period_secs>:<join|random>:<invite key or ->:<name>`,
+    /// `leave:<circle>`, `list_seat:<circle>:<seat>:<price>`,
+    /// `unlist_seat:<circle>:<seat>`, `cancel:<circle>` or `claim_credit`.
     pub fn on_auth(&mut self, signer_id: AccountId, msg: String) {
         unimplemented!()
     }
 
     /// Direct call: creates a circle organized by the caller. Returns its id.
-    /// `invite_key` (64 hex characters, ed25519) makes the circle invite-only.
+    /// `order` is `join` (default) or `random`. `invite_key` (64 hex
+    /// characters, ed25519) makes the circle invite-only.
     pub fn create_circle(
         &mut self,
         name: String,
         contribution: U128,
         size: u32,
         period_secs: u64,
+        order: Option<String>,
         invite_key: Option<String>,
     ) -> u64 {
+        unimplemented!()
+    }
+
+    /// Direct call: leave a circle that has not started; the deposit comes back.
+    pub fn leave_circle(&mut self, circle_id: u64) {
         unimplemented!()
     }
 
@@ -221,7 +234,8 @@ impl Contri {
         unimplemented!()
     }
 
-    /// Direct call: the organizer cancels a circle that has not started.
+    /// Cancels a circle that has not started: the organizer at any time, or
+    /// anyone once the circle has stayed unfilled past its `fill_by`.
     pub fn cancel_circle(&mut self, circle_id: u64) {
         unimplemented!()
     }
@@ -234,6 +248,12 @@ impl Contri {
     /// Anyone, after the round deadline: missed contributions come out of
     /// deposits, then the pot is paid out.
     pub fn settle_round(&mut self, circle_id: u64) {
+        unimplemented!()
+    }
+
+    /// Anyone: deletes a finished or cancelled circle once all its money has
+    /// gone back, freeing its storage. Members' records stay.
+    pub fn close_circle(&mut self, circle_id: u64) {
         unimplemented!()
     }
 

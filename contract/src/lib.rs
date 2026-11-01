@@ -9,7 +9,8 @@
 //!   `mt_transfer_call`) with a notification message. Used to join (deposit),
 //!   contribute, buy a seat, refill a deposit and back a circle.
 //! - `on_auth`: a member's signed `AuthCall` intent. Used to create a circle,
-//!   list or unlist a seat, cancel an unfilled circle and claim credits.
+//!   leave one before it starts, list or unlist a seat, cancel an unfilled
+//!   circle and claim credits.
 //!
 //! Messages are compact text, for example `contribute:0:1`. See `parse_transfer`
 //! and `parse_auth`. Every method, its arguments and its result are listed in
@@ -50,6 +51,10 @@ const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
 const ZERO: NearToken = NearToken::from_yoctonear(0);
 /// Most backers a circle takes, which bounds the gas to return their money.
 pub const MAX_BACKERS: usize = 10;
+/// An open circle that hasn't filled this long after it was created can be
+/// cancelled by anyone, so deposits never get stuck behind an organizer who
+/// disappeared.
+pub const FILL_SECS: u64 = 60 * 60 * 24 * 14;
 /// Default and maximum page size for list views.
 const PAGE: u64 = 50;
 const MAX_PAGE: u64 = 100;
@@ -122,6 +127,11 @@ pub struct Circle {
     /// a signature from the invite key over the joiner's account, so only
     /// people with the link can join (see `join_message`).
     pub invite_key: Option<[u8; 32]>,
+    /// Turns are drawn at random when the circle fills (from NEAR's
+    /// per-block random seed), instead of following join order.
+    pub random_order: bool,
+    /// Nanoseconds. After this, anyone can cancel the circle if it is still open.
+    pub fill_by: u64,
     /// Community backing not yet used to cover missed payments.
     pub backing: U128,
     pub backers: Vec<Backer>,
@@ -187,7 +197,7 @@ impl Circle {
             )
         }));
         format!(
-            r#"{{"id":{},"name":{},"organizer":"{}","contribution":"{}","size":{},"period_secs":{},"members":[{}],"listings":[{}],"invite_only":{},"backing":"{}","backers":[{}],"status":"{}","created_at":"{}","started_at":"{}","round":{},"pot":"{}","paying":{},"payouts":[{}],"round_deadline":{}}}"#,
+            r#"{{"id":{},"name":{},"organizer":"{}","contribution":"{}","size":{},"period_secs":{},"members":[{}],"listings":[{}],"invite_only":{},"random_order":{},"fill_by":"{}","backing":"{}","backers":[{}],"status":"{}","created_at":"{}","started_at":"{}","round":{},"pot":"{}","paying":{},"payouts":[{}],"round_deadline":{}}}"#,
             self.id,
             jstr(&self.name),
             self.organizer,
@@ -197,6 +207,8 @@ impl Circle {
             members,
             listings,
             self.invite_key.is_some(),
+            self.random_order,
+            self.fill_by,
             self.backing.0,
             backers,
             self.status.as_str(),
@@ -222,6 +234,11 @@ impl Circle {
         } else {
             "null".into()
         }
+    }
+
+    /// Seats are tokens from the moment the turn order is final.
+    fn has_seat_tokens(&self) -> bool {
+        self.status == CircleStatus::Active || self.status == CircleStatus::Finished
     }
 
     fn seat_of(&self, account_id: &AccountId) -> Option<usize> {
@@ -256,16 +273,20 @@ pub enum TransferMsg {
 /// `msg` of a member's `AuthCall` intent to this contract.
 #[cfg_attr(test, derive(Debug))]
 pub enum AuthMsg {
-    /// `create:<contribution>:<size>:<period_secs>:<invite key>:<name>`. The
-    /// invite key is 64 hex characters, or `-` for a circle anyone can join.
-    /// The name may contain `:`.
+    /// `create:<contribution>:<size>:<period_secs>:<order>:<invite key>:<name>`.
+    /// The order is `join` (turns follow join order) or `random` (drawn when
+    /// the circle fills). The invite key is 64 hex characters, or `-` for a
+    /// circle anyone can join. The name may contain `:`.
     Create {
         name: String,
         contribution: U128,
         size: u32,
         period_secs: u64,
+        random_order: bool,
         invite_key: Option<[u8; 32]>,
     },
+    /// `leave:<circle>`: leave a circle that has not started; the deposit comes back.
+    Leave { circle: u64 },
     /// `list_seat:<circle>:<seat>:<price>`
     ListSeat { circle: u64, seat: u32, price: U128 },
     /// `unlist_seat:<circle>:<seat>`
@@ -295,6 +316,15 @@ pub fn parse_transfer(msg: &str) -> Option<TransferMsg> {
         _ => return None,
     };
     p.next().is_none().then_some(m)
+}
+
+/// `join` or `random`: whether turns are drawn at random.
+fn parse_order(s: &str) -> Option<bool> {
+    match s {
+        "join" => Some(false),
+        "random" => Some(true),
+        _ => None,
+    }
 }
 
 /// `-` for none, or exactly 64 hex characters.
@@ -335,13 +365,14 @@ pub fn parse_auth(msg: &str) -> Option<AuthMsg> {
     }
     let (op, rest) = msg.split_once(':')?;
     if op == "create" {
-        let mut p = rest.splitn(5, ':');
+        let mut p = rest.splitn(6, ':');
         let contribution = U128(p.next()?.parse().ok()?);
         let size = p.next()?.parse().ok()?;
         let period_secs = p.next()?.parse().ok()?;
+        let random_order = parse_order(p.next()?)?;
         let invite_key = opt_key(p.next()?)?;
         let name = p.next()?.to_string();
-        return Some(AuthMsg::Create { name, contribution, size, period_secs, invite_key });
+        return Some(AuthMsg::Create { name, contribution, size, period_secs, random_order, invite_key });
     }
     let mut p = rest.split(':');
     let circle = p.next()?.parse().ok()?;
@@ -353,6 +384,7 @@ pub fn parse_auth(msg: &str) -> Option<AuthMsg> {
         },
         "unlist_seat" => AuthMsg::UnlistSeat { circle, seat: p.next()?.parse().ok()? },
         "cancel" => AuthMsg::Cancel { circle },
+        "leave" => AuthMsg::Leave { circle },
         _ => return None,
     };
     p.next().is_none().then_some(m)
@@ -426,15 +458,13 @@ impl Contri {
     // ------------------------------------------------------------------
 
     /// Args: `{"name": "<encrypted name>", "contribution": "5000000", "size": 5,
-    /// "period_secs": 86400, "invite_key": "<64 hex>"}`. `invite_key` is
-    /// optional; without it anyone can join. Returns the new circle's id.
+    /// "period_secs": 86400, "order": "random", "invite_key": "<64 hex>"}`.
+    /// `order` (`join` or `random`, default `join`) and `invite_key` (without
+    /// it anyone can join) are optional. Returns the new circle's id.
     pub fn create_circle(&mut self) {
         let a = args();
-        let invite_key = match a.get("invite_key") {
-            None => None,
-            Some(v) if v.is_null() => None,
-            Some(_) => Some(hex(&arg_str(&a, "invite_key")).unwrap_or_else(|| bad("invite_key"))),
-        };
+        let invite_key = opt_str(&a, "invite_key").map(|k| hex(&k).unwrap_or_else(|| bad("invite_key")));
+        let random_order = opt_str(&a, "order").is_some_and(|o| parse_order(&o).unwrap_or_else(|| bad("order")));
         let id = self
             .internal_create(
                 &env::predecessor_account_id(),
@@ -442,10 +472,18 @@ impl Contri {
                 U128(arg_u128(&a, "contribution")),
                 arg_u32(&a, "size"),
                 arg_u64(&a, "period_secs"),
+                random_order,
                 invite_key,
             )
             .unwrap_or_else(|e| env::panic_str(&e));
         ret(&id.to_string());
+    }
+
+    /// Args: `{"circle_id": 0}`. Leave a circle that has not started; the deposit comes back.
+    pub fn leave_circle(&mut self) {
+        let circle_id = arg_u64(&args(), "circle_id");
+        self.internal_leave(&env::predecessor_account_id(), circle_id)
+            .unwrap_or_else(|e| env::panic_str(&e));
     }
 
     /// Args: `{"circle_id": 0, "seat": 1, "price": "1000000"}`
@@ -460,7 +498,8 @@ impl Contri {
         self.direct_list(&args(), None);
     }
 
-    /// Args: `{"circle_id": 0}`
+    /// Args: `{"circle_id": 0}`. The organizer, or anyone once the circle has
+    /// stayed unfilled past its `fill_by` time.
     pub fn cancel_circle(&mut self) {
         let circle_id = arg_u64(&args(), "circle_id");
         self.internal_cancel(&env::predecessor_account_id(), circle_id)
@@ -493,6 +532,12 @@ impl Contri {
     pub fn release_deposits(&mut self) {
         let sent = self.internal_release(arg_u64(&args(), "circle_id"));
         ret(&sent.to_string());
+    }
+
+    /// Deletes a finished or cancelled circle once all its money has gone back,
+    /// which frees its storage. Members' records stay.
+    pub fn close_circle(&mut self) {
+        self.internal_close(arg_u64(&args(), "circle_id"));
     }
 
     // ------------------------------------------------------------------
@@ -594,7 +639,7 @@ impl Contri {
         let token_id = arg_str(&args(), "token_id");
         let json = parse_seat_token(&token_id)
             .and_then(|(id, seat)| {
-                let c = load_circle(id).filter(|c| c.status != CircleStatus::Cancelled)?;
+                let c = load_circle(id).filter(Circle::has_seat_tokens)?;
                 let m = c.members.get(seat as usize)?;
                 Some(seat_token_json(&c, seat, &m.account_id))
             })
@@ -689,10 +734,10 @@ impl Contri {
     }
 
     /// Calls `f` for every seat token in circle and seat order, or only for
-    /// `owner`'s seats. A cancelled circle has no seat tokens.
+    /// `owner`'s seats. Seats become tokens when the circle starts.
     fn each_seat(&self, owner: Option<&AccountId>, mut f: impl FnMut(&Circle, u32, &AccountId)) {
         for c in self.circles() {
-            if c.status == CircleStatus::Cancelled {
+            if !c.has_seat_tokens() {
                 continue;
             }
             for (seat, m) in c.members.iter().enumerate() {
@@ -835,9 +880,10 @@ impl Contri {
 
     pub(crate) fn handle_auth(&mut self, signer: &AccountId, msg: AuthMsg) -> Result<(), String> {
         match msg {
-            AuthMsg::Create { name, contribution, size, period_secs, invite_key } => self
-                .internal_create(signer, name, contribution, size, period_secs, invite_key)
+            AuthMsg::Create { name, contribution, size, period_secs, random_order, invite_key } => self
+                .internal_create(signer, name, contribution, size, period_secs, random_order, invite_key)
                 .map(|_| ()),
+            AuthMsg::Leave { circle } => self.internal_leave(signer, circle),
             AuthMsg::ListSeat { circle, seat, price } => self.internal_list_seat(signer, circle, seat, Some(price)),
             AuthMsg::UnlistSeat { circle, seat } => self.internal_list_seat(signer, circle, seat, None),
             AuthMsg::Cancel { circle } => self.internal_cancel(signer, circle),
@@ -852,6 +898,7 @@ impl Contri {
         contribution: U128,
         size: u32,
         period_secs: u64,
+        random_order: bool,
         invite_key: Option<[u8; 32]>,
     ) -> Result<u64, String> {
         let name = name.trim().to_string();
@@ -869,6 +916,7 @@ impl Contri {
         }
         let id = self.next_circle_id;
         self.next_circle_id += 1;
+        let now = env::block_timestamp();
         let c = Circle {
             id,
             name,
@@ -879,10 +927,12 @@ impl Contri {
             members: vec![],
             listings: vec![None; size as usize],
             invite_key,
+            random_order,
+            fill_by: now + FILL_SECS * NS_PER_SEC,
             backing: U128(0),
             backers: vec![],
             status: CircleStatus::Open,
-            created_at: env::block_timestamp(),
+            created_at: now,
             started_at: 0,
             round: 0,
             pot: U128(0),
@@ -892,7 +942,7 @@ impl Contri {
         emit(
             "circle_created",
             format!(
-                r#"{{"circle":{id},"organizer":"{organizer}","contribution":"{}","size":{size},"period_secs":{period_secs},"invite_only":{}}}"#,
+                r#"{{"circle":{id},"organizer":"{organizer}","contribution":"{}","size":{size},"period_secs":{period_secs},"invite_only":{},"random_order":{random_order}}}"#,
                 contribution.0,
                 invite_key.is_some()
             ),
@@ -941,14 +991,22 @@ impl Contri {
             "joined",
             format!(r#"{{"circle":{circle_id},"member":"{who}","seat":{seat},"deposit":"{amount}"}}"#),
         );
-        emit_nft("nft_mint", format!(r#"{{"owner_id":"{who}","token_ids":["{circle_id}:{seat}"]}}"#));
         if c.members.len() as u32 == c.size {
+            if c.random_order {
+                draw_turns(&mut c.members);
+            }
             c.status = CircleStatus::Active;
             c.started_at = env::block_timestamp();
+            let order = join(c.members.iter().map(|m| format!("\"{}\"", m.account_id)));
             emit(
                 "circle_started",
-                format!(r#"{{"circle":{circle_id},"first_deadline":"{}"}}"#, c.round_deadline()),
+                format!(r#"{{"circle":{circle_id},"first_deadline":"{}","order":[{order}]}}"#, c.round_deadline()),
             );
+            // Seats become tokens once the turn order is final.
+            let mints = c.members.iter().enumerate().map(|(seat, m)| {
+                format!(r#"{{"owner_id":"{}","token_ids":["{circle_id}:{seat}"]}}"#, m.account_id)
+            });
+            emit_nft("nft_mint", join(mints));
         }
         save_circle(&c);
         Ok(())
@@ -989,7 +1047,7 @@ impl Contri {
 
     fn internal_buy_seat(&mut self, buyer: &AccountId, circle_id: u64, seat: u32, amount: u128) -> Result<(), String> {
         let mut c = find_circle(circle_id)?;
-        if c.status != CircleStatus::Active && c.status != CircleStatus::Open {
+        if c.status != CircleStatus::Active {
             return Err("seats can only be traded while the circle is running".into());
         }
         if c.paying {
@@ -1096,8 +1154,8 @@ impl Contri {
         if seat < c.round {
             return Err("that turn has already been paid".into());
         }
-        if c.status == CircleStatus::Finished || c.status == CircleStatus::Cancelled {
-            return Err("circle has ended".into());
+        if c.status != CircleStatus::Active {
+            return Err("seats can only be listed while the circle is running".into());
         }
         if price.is_some_and(|p| p.0 == 0) {
             return Err("price must be more than zero".into());
@@ -1113,25 +1171,47 @@ impl Contri {
 
     pub(crate) fn internal_cancel(&mut self, who: &AccountId, circle_id: u64) -> Result<(), String> {
         let mut c = find_circle(circle_id)?;
-        if &c.organizer != who {
-            return Err("only the organizer can cancel".into());
+        if &c.organizer != who && env::block_timestamp() < c.fill_by {
+            return Err("only the organizer can cancel before the fill deadline".into());
         }
         if c.status != CircleStatus::Open {
             return Err("only a circle that has not started can be cancelled".into());
         }
         c.status = CircleStatus::Cancelled;
         close_backing(&mut c);
-        emit("circle_cancelled", format!(r#"{{"circle":{circle_id}}}"#));
-        if !c.members.is_empty() {
-            let burns = c
-                .members
-                .iter()
-                .enumerate()
-                .map(|(seat, m)| format!(r#"{{"owner_id":"{}","token_ids":["{circle_id}:{seat}"]}}"#, m.account_id));
-            emit_nft("nft_burn", join(burns));
-        }
+        emit("circle_cancelled", format!(r#"{{"circle":{circle_id},"by":"{who}"}}"#));
         save_circle(&c);
         Ok(())
+    }
+
+    pub(crate) fn internal_leave(&mut self, who: &AccountId, circle_id: u64) -> Result<(), String> {
+        let mut c = find_circle(circle_id)?;
+        if c.status != CircleStatus::Open {
+            return Err("you can only leave a circle that has not started".into());
+        }
+        let seat = c.seat_of(who).ok_or("not a member of this circle")?;
+        let m = c.members.remove(seat);
+        emit("left", format!(r#"{{"circle":{circle_id},"member":"{who}"}}"#));
+        save_circle(&c);
+        if m.deposit.0 > 0 {
+            self.send(m.account_id, m.deposit.0, format!("contri:{circle_id}:leave"));
+        }
+        Ok(())
+    }
+
+    pub(crate) fn internal_close(&mut self, circle_id: u64) {
+        let c = circle_or_panic(circle_id);
+        require!(
+            c.status == CircleStatus::Finished || c.status == CircleStatus::Cancelled,
+            "circle is still running"
+        );
+        let settled = !c.paying
+            && c.backing.0 == 0
+            && c.members.iter().all(|m| m.deposit.0 == 0)
+            && c.backers.iter().all(|b| b.due.0 == 0);
+        require!(settled, "release the deposits first");
+        env::storage_remove(&key(b'c', &circle_id.to_le_bytes()));
+        emit("circle_closed", format!(r#"{{"circle":{circle_id}}}"#));
     }
 
     pub(crate) fn internal_claim_credit(&mut self, who: &AccountId) -> Result<(), String> {
@@ -1347,12 +1427,55 @@ fn seat_token_json(c: &Circle, seat: u32, owner: &AccountId) -> String {
         opt_amount(price)
     );
     format!(
-        r#"{{"token_id":"{}:{seat}","owner_id":"{owner}","metadata":{{"title":{},"description":{},"extra":{}}}}}"#,
+        r#"{{"token_id":"{}:{seat}","owner_id":"{owner}","metadata":{{"title":{},"description":{},"media":"{}","extra":{}}}}}"#,
         c.id,
         jstr(&title),
         jstr(&description),
+        seat_image(c, seat, price.is_some()),
         jstr(&extra)
     )
+}
+
+/// The seat's picture, drawn by the contract from the circle's live state, so
+/// it changes as the circle runs: the ring fills round by round, and the line
+/// below says where this seat stands. An SVG data URL, ASCII only.
+fn seat_image(c: &Circle, seat: u32, for_sale: bool) -> String {
+    let done = if c.status == CircleStatus::Finished { c.size } else { c.round };
+    let ring = 490 * done / c.size;
+    let status = if seat < done {
+        "PAID OUT".to_string()
+    } else if seat == c.round {
+        "PAYS THIS ROUND".to_string()
+    } else if for_sale {
+        "FOR SALE".to_string()
+    } else {
+        format!("PAYS IN ROUND {}", seat + 1)
+    };
+    format!(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E\
+         %3Crect width='300' height='300' fill='%23173f35'/%3E\
+         %3Cg fill='none' stroke-width='12' transform='rotate(-90 150 132)'%3E\
+         %3Ccircle cx='150' cy='132' r='78' stroke='%23245247'/%3E\
+         %3Ccircle cx='150' cy='132' r='78' stroke='%23f0b429' stroke-dasharray='{ring} 490'/%3E%3C/g%3E\
+         %3Cg font-family='monospace' text-anchor='middle'%3E\
+         %3Ctext x='150' y='144' font-size='34' fill='%23f6f1e7'%3E{}/{}%3C/text%3E\
+         %3Ctext x='150' y='246' font-size='15' fill='%23f6f1e7'%3E{status}%3C/text%3E\
+         %3Ctext x='150' y='274' font-size='11' fill='%2399b5ab'%3ECONTRI SEAT %23{}%3C/text%3E%3C/g%3E%3C/svg%3E",
+        seat + 1,
+        c.size,
+        c.id
+    )
+}
+
+/// Shuffles the turn order with NEAR's per-block random seed. Nobody, the
+/// organizer included, can pick who goes first.
+fn draw_turns(members: &mut [Member]) {
+    let seed = env::random_seed_array();
+    for i in (1..members.len()).rev() {
+        let h = env::sha256_array([&seed[..], &(i as u32).to_le_bytes()].concat());
+        let j = u32::from_le_bytes([h[0], h[1], h[2], h[3]]) as usize % (i + 1);
+        members.swap(i, j);
+    }
 }
 
 /// `"123"` or `null`.
@@ -1432,6 +1555,15 @@ fn arg_u128(a: &json::Json, key: &str) -> u128 {
 
 fn arg_list<'a>(a: &'a json::Json, key: &str) -> &'a [json::Json] {
     arg(a, key).as_arr().unwrap_or_else(|| bad(key))
+}
+
+/// An optional string argument. Absent or `null` reads as `None`.
+fn opt_str(a: &json::Json, key: &str) -> Option<String> {
+    match a.get(key) {
+        None => None,
+        Some(v) if v.is_null() => None,
+        Some(_) => Some(arg_str(a, key)),
+    }
 }
 
 /// An optional unsigned integer argument. Absent or `null` reads as `None`.
