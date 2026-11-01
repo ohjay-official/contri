@@ -1038,8 +1038,8 @@ impl Contri {
         if amount < c.contribution.0 {
             return Err("backing must be at least one contribution".into());
         }
-        match c.backers.iter_mut().find(|b| &b.account_id == who) {
-            Some(b) => b.amount = U128(b.amount.0 + amount),
+        match c.backers.iter().position(|b| &b.account_id == who) {
+            Some(i) => c.backers[i].amount = U128(c.backers[i].amount.0 + amount),
             None if c.backers.len() < MAX_BACKERS => c.backers.push(Backer {
                 account_id: who.clone(),
                 amount: U128(amount),

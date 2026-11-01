@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "id": "back-contri-circle",
+  "title": "Back a Contri savings circle",
+  "description": "Puts USDT from this treasury's NEAR Intents balance behind a member savings circle on Contri. It covers missed payments that a member's deposit can't. What is left comes back to this treasury when the circle ends.",
+  "binding": {
+    "receiver_id": "intents.near",
+    "method_name": "mt_transfer_call",
+    "deposit": "1",
+    "gas": "100000000000000"
+  },
+  "fields": [
+    {
+      "name": "circle",
+      "label": "Circle number",
+      "type": "uint",
+      "required": true,
+      "help": "The circle number shown on the circle's page in Contri"
+    },
+    {
+      "name": "amount",
+      "label": "Amount in USDT base units",
+      "type": "amount",
+      "required": true,
+      "help": "1 USDT = 1000000. At least one contribution of the circle.",
+      "validation": { "min": "1" }
+    }
+  ],
+  "args": {
+    "receiver_id": "CONTRI_CONTRACT_ID",
+    "token_id": "nep141:usdt.tether-token.near",
+    "amount": "{{amount}}",
+    "msg": "back:{{circle}}"
+  },
+  "summary": "Back Contri circle {{circle}} with {{amount}} USDT base units"
+}
