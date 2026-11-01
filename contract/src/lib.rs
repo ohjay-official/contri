@@ -6,11 +6,12 @@
 //!
 //! Entry points from NEAR Intents (predecessor must be `intents_id`):
 //! - `mt_on_transfer`: a signed `Transfer` intent (or an account's own
-//!   `mt_transfer_call`) with a notification message. Used to join (deposit),
-//!   contribute, buy a seat, refill a deposit and back a circle.
-//! - `on_auth`: a member's signed `AuthCall` intent. Used to create a circle,
-//!   leave one before it starts, list or unlist a seat, cancel an unfilled
-//!   circle and claim credits.
+//!   `mt_transfer_call`) with a notification message. Used to create a circle
+//!   (with the organizer's deposit), join, contribute, buy a seat, refill a
+//!   deposit and back a circle.
+//! - `on_auth`: a member's signed `AuthCall` intent. Used to leave a circle
+//!   before it starts, list or unlist a seat, cancel an unfilled circle and
+//!   claim credits.
 //!
 //! Messages are compact text, for example `contribute:0:1`. See `parse_transfer`
 //! and `parse_auth`. Every method, its arguments and its result are listed in
@@ -55,6 +56,9 @@ pub const MAX_BACKERS: usize = 10;
 /// cancelled by anyone, so deposits never get stuck behind an organizer who
 /// disappeared.
 pub const FILL_SECS: u64 = 60 * 60 * 24 * 14;
+/// What a NEAR account attaches to `create_circle` to pay for the circle's
+/// storage. Members creating through NEAR Intents pay their deposit instead.
+pub const CREATE_FEE: NearToken = NearToken::from_millinear(10);
 /// Default and maximum page size for list views.
 const PAGE: u64 = 50;
 const MAX_PAGE: u64 = 100;
@@ -236,6 +240,12 @@ impl Circle {
         }
     }
 
+    /// The most a member's deposit can be: every round but their own payout,
+    /// so an organizer can ask a stranger to cover all their future payments.
+    fn max_deposit(&self) -> u128 {
+        self.contribution.0.saturating_mul(self.size as u128 - 1)
+    }
+
     /// Seats are tokens from the moment the turn order is final.
     fn has_seat_tokens(&self) -> bool {
         self.status == CircleStatus::Active || self.status == CircleStatus::Finished
@@ -253,10 +263,26 @@ impl Circle {
 /// `msg` of a member's `Transfer` intent to this contract.
 #[cfg_attr(test, derive(Debug))]
 pub enum TransferMsg {
+    /// `create:<contribution>:<size>:<period_secs>:<order>:<invite key>:<name>`,
+    /// sent with the organizer's own deposit (one contribution): the organizer
+    /// creates the circle and takes the first seat, so creating costs real
+    /// money and can't be used to fill the contract's storage for free. The
+    /// order is `join` or `random` (drawn when the circle fills). The invite
+    /// key is 64 hex characters, or `-` for a circle anyone can join. The name
+    /// may contain `:`.
+    Create {
+        name: String,
+        contribution: U128,
+        size: u32,
+        period_secs: u64,
+        random_order: bool,
+        invite_key: Option<[u8; 32]>,
+    },
     /// `join:<circle>` or `join:<circle>:<invite signature, 128 hex>`: pay the
     /// deposit and take the next free seat. In an open circle the deposit is
     /// one contribution. An invite-only circle needs the invite's signature,
-    /// which also sets the deposit (see `join_message`).
+    /// which also sets the deposit, from zero up to every round but the
+    /// member's own (see `join_message`).
     Join { circle: u64, invite_sig: Option<[u8; 64]> },
     /// `contribute:<circle>:<round>`: pay this round's contribution.
     Contribute { circle: u64, round: u32 },
@@ -266,25 +292,13 @@ pub enum TransferMsg {
     /// `back:<circle>`: put money behind a circle (anyone, e.g. a DAO treasury
     /// with `mt_transfer_call`). At least one contribution.
     Back { circle: u64 },
-    /// `refill:<circle>`: top up your own deposit, up to one contribution.
+    /// `refill:<circle>`: top up your own deposit, up to every round but your own.
     Refill { circle: u64 },
 }
 
 /// `msg` of a member's `AuthCall` intent to this contract.
 #[cfg_attr(test, derive(Debug))]
 pub enum AuthMsg {
-    /// `create:<contribution>:<size>:<period_secs>:<order>:<invite key>:<name>`.
-    /// The order is `join` (turns follow join order) or `random` (drawn when
-    /// the circle fills). The invite key is 64 hex characters, or `-` for a
-    /// circle anyone can join. The name may contain `:`.
-    Create {
-        name: String,
-        contribution: U128,
-        size: u32,
-        period_secs: u64,
-        random_order: bool,
-        invite_key: Option<[u8; 32]>,
-    },
     /// `leave:<circle>`: leave a circle that has not started; the deposit comes back.
     Leave { circle: u64 },
     /// `list_seat:<circle>:<seat>:<price>`
@@ -298,6 +312,16 @@ pub enum AuthMsg {
 }
 
 pub fn parse_transfer(msg: &str) -> Option<TransferMsg> {
+    if let Some(rest) = msg.strip_prefix("create:") {
+        let mut p = rest.splitn(6, ':');
+        let contribution = U128(p.next()?.parse().ok()?);
+        let size = p.next()?.parse().ok()?;
+        let period_secs = p.next()?.parse().ok()?;
+        let random_order = parse_order(p.next()?)?;
+        let invite_key = opt_key(p.next()?)?;
+        let name = p.next()?.to_string();
+        return Some(TransferMsg::Create { name, contribution, size, period_secs, random_order, invite_key });
+    }
     let mut p = msg.split(':');
     let op = p.next()?;
     let circle = p.next()?.parse().ok()?;
@@ -359,8 +383,10 @@ fn hex_into(s: &str, out: &mut [u8]) -> Option<()> {
 
 /// What the invite key signs to let `account` join `circle` of this contract
 /// with `deposit`. Binding the joiner's account means a signature seen on chain
-/// can't be reused by anyone else. The deposit is one contribution, or less for
-/// someone the organizer trusts; that decision is made privately, in the app.
+/// can't be reused by anyone else. The organizer chooses each person's deposit
+/// privately, in the app: less for someone they trust, more (up to every round
+/// but the member's own) for a stranger, which protects the members who are
+/// paid last.
 pub fn join_message(contract: &AccountId, circle: u64, account: &AccountId, deposit: u128) -> String {
     format!("contri-join:{contract}:{circle}:{account}:{deposit}")
 }
@@ -370,16 +396,6 @@ pub fn parse_auth(msg: &str) -> Option<AuthMsg> {
         return Some(AuthMsg::ClaimCredit);
     }
     let (op, rest) = msg.split_once(':')?;
-    if op == "create" {
-        let mut p = rest.splitn(6, ':');
-        let contribution = U128(p.next()?.parse().ok()?);
-        let size = p.next()?.parse().ok()?;
-        let period_secs = p.next()?.parse().ok()?;
-        let random_order = parse_order(p.next()?)?;
-        let invite_key = opt_key(p.next()?)?;
-        let name = p.next()?.to_string();
-        return Some(AuthMsg::Create { name, contribution, size, period_secs, random_order, invite_key });
-    }
     let mut p = rest.split(':');
     let circle = p.next()?.parse().ok()?;
     let m = match op {
@@ -467,17 +483,25 @@ impl Contri {
     /// "period_secs": 86400, "order": "random", "invite_key": "<64 hex>"}`.
     /// `order` (`join` or `random`, default `join`) and `invite_key` (without
     /// it anyone can join) are optional. Returns the new circle's id.
+    ///
+    /// Attach 0.01 NEAR (`CREATE_FEE`), which pays for the circle's storage.
+    /// The caller organizes without taking a seat, which suits a DAO or a
+    /// cooperative running circles for its members.
+    #[payable]
     pub fn create_circle(&mut self) {
         let a = args();
         let invite_key = opt_str(&a, "invite_key").map(|k| hex(&k).unwrap_or_else(|| bad("invite_key")));
         let random_order = opt_str(&a, "order").is_some_and(|o| parse_order(&o).unwrap_or_else(|| bad("order")));
+        let (name, contribution) = (arg_str(&a, "name"), U128(arg_u128(&a, "contribution")));
+        let (size, period_secs) = (arg_u32(&a, "size"), arg_u64(&a, "period_secs"));
+        require!(env::attached_deposit() >= CREATE_FEE, "attach 0.01 NEAR to pay for the circle's storage");
         let id = self
             .internal_create(
                 &env::predecessor_account_id(),
-                arg_str(&a, "name"),
-                U128(arg_u128(&a, "contribution")),
-                arg_u32(&a, "size"),
-                arg_u64(&a, "period_secs"),
+                name,
+                contribution,
+                size,
+                period_secs,
                 random_order,
                 invite_key,
             )
@@ -867,6 +891,24 @@ impl Contri {
 
     pub(crate) fn handle_transfer(&mut self, sender: &AccountId, amount: u128, msg: TransferMsg) -> Result<(), String> {
         match msg {
+            TransferMsg::Create { name, contribution, size, period_secs, random_order, invite_key } => {
+                if amount != contribution.0 {
+                    return Err("send one contribution as your deposit to create a circle".into());
+                }
+                let id = self.internal_create(sender, name, contribution, size, period_secs, random_order, invite_key)?;
+                // The organizer takes the first seat with their deposit.
+                let mut c = circle_or_panic(id);
+                c.members.push(Member {
+                    account_id: sender.clone(),
+                    deposit: U128(amount),
+                    paid_this_round: false,
+                    defaulted: false,
+                    missed: 0,
+                });
+                emit("joined", format!(r#"{{"circle":{id},"member":"{sender}","seat":0,"deposit":"{amount}"}}"#));
+                save_circle(&c);
+                Ok(())
+            }
             TransferMsg::Join { circle, invite_sig } => self.internal_join(sender, circle, amount, invite_sig),
             TransferMsg::Contribute { circle, round } => self.internal_contribute(sender, circle, round, amount),
             TransferMsg::BuySeat { circle, seat } => self.internal_buy_seat(sender, circle, seat, amount),
@@ -877,9 +919,6 @@ impl Contri {
 
     pub(crate) fn handle_auth(&mut self, signer: &AccountId, msg: AuthMsg) -> Result<(), String> {
         match msg {
-            AuthMsg::Create { name, contribution, size, period_secs, random_order, invite_key } => self
-                .internal_create(signer, name, contribution, size, period_secs, random_order, invite_key)
-                .map(|_| ()),
             AuthMsg::Leave { circle } => self.internal_leave(signer, circle),
             AuthMsg::ListSeat { circle, seat, price } => self.internal_list_seat(signer, circle, seat, Some(price)),
             AuthMsg::UnlistSeat { circle, seat } => self.internal_list_seat(signer, circle, seat, None),
@@ -960,11 +999,10 @@ impl Contri {
             return Err("circle is not open for joining".into());
         }
         if let Some(key) = &c.invite_key {
-            // The invite sets the deposit: one contribution, or less for someone
-            // the organizer trusts.
+            // The invite sets the deposit (see `join_message`).
             let message = join_message(&env::current_account_id(), circle_id, who, amount);
             let valid = invite_sig.is_some_and(|sig| env::ed25519_verify(&sig, message, key));
-            if !valid || amount > c.contribution.0 {
+            if !valid || amount > c.max_deposit() {
                 return Err("this circle needs a valid invite for this deposit".into());
             }
         } else if amount != c.contribution.0 {
@@ -1122,8 +1160,8 @@ impl Contri {
         }
         let seat = c.seat_of(who).ok_or("not a member of this circle")?;
         let deposit = c.members[seat].deposit.0 + amount;
-        if deposit > c.contribution.0 {
-            return Err("a deposit can be at most one contribution".into());
+        if deposit > c.max_deposit() {
+            return Err("a deposit can't be more than the rest of the circle owes".into());
         }
         c.members[seat].deposit = U128(deposit);
         emit(

@@ -181,7 +181,10 @@ impl Contri {
 
     /// NEP-245 receiver, called only by NEAR Intents: for a signed `Transfer`
     /// intent, or an account's own `mt_transfer_call` (how a DAO treasury backs
-    /// a circle). `msg` is `join:<circle>`, `join:<circle>:<invite signature>`,
+    /// a circle). `msg` is
+    /// `create:<contribution>:<size>:<period_secs>:<join|random>:<invite key or ->:<name>`
+    /// (sent with the organizer's deposit; the organizer takes the first seat),
+    /// `join:<circle>`, `join:<circle>:<invite signature>`,
     /// `contribute:<circle>:<round>`, `buy_seat:<circle>:<seat>`,
     /// `refill:<circle>` or `back:<circle>`. Returns the amounts to refund; a
     /// wrong token, amount, message or invite is refunded in full.
@@ -197,16 +200,17 @@ impl Contri {
     }
 
     /// Called only by NEAR Intents for a member's signed `AuthCall` intent.
-    /// `msg` is `create:<contribution>:<size>:<period_secs>:<join|random>:<invite key or ->:<name>`,
-    /// `leave:<circle>`, `list_seat:<circle>:<seat>:<price>`,
+    /// `msg` is `leave:<circle>`, `list_seat:<circle>:<seat>:<price>`,
     /// `unlist_seat:<circle>:<seat>`, `cancel:<circle>` or `claim_credit`.
     pub fn on_auth(&mut self, signer_id: AccountId, msg: String) {
         unimplemented!()
     }
 
-    /// Direct call: creates a circle organized by the caller. Returns its id.
+    /// Direct call: creates a circle organized by the caller, who doesn't take
+    /// a seat. Attach 0.01 NEAR for the circle's storage. Returns its id.
     /// `order` is `join` (default) or `random`. `invite_key` (64 hex
     /// characters, ed25519) makes the circle invite-only.
+    #[payable]
     pub fn create_circle(
         &mut self,
         name: String,
