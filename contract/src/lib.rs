@@ -897,17 +897,7 @@ impl Contri {
                 }
                 let id = self.internal_create(sender, name, contribution, size, period_secs, random_order, invite_key)?;
                 // The organizer takes the first seat with their deposit.
-                let mut c = circle_or_panic(id);
-                c.members.push(Member {
-                    account_id: sender.clone(),
-                    deposit: U128(amount),
-                    paid_this_round: false,
-                    defaulted: false,
-                    missed: 0,
-                });
-                emit("joined", format!(r#"{{"circle":{id},"member":"{sender}","seat":0,"deposit":"{amount}"}}"#));
-                save_circle(&c);
-                Ok(())
+                self.internal_join(sender, id, amount, None)
             }
             TransferMsg::Join { circle, invite_sig } => self.internal_join(sender, circle, amount, invite_sig),
             TransferMsg::Contribute { circle, round } => self.internal_contribute(sender, circle, round, amount),
@@ -998,10 +988,12 @@ impl Contri {
         if c.status != CircleStatus::Open {
             return Err("circle is not open for joining".into());
         }
-        if let Some(key) = &c.invite_key {
-            // The invite sets the deposit (see `join_message`).
+        // The invite sets the deposit (see `join_message`). The organizer needs
+        // no invite to their own circle and pays one contribution like anyone
+        // joining an open circle.
+        if let Some(key) = c.invite_key.filter(|_| who != &c.organizer) {
             let message = join_message(&env::current_account_id(), circle_id, who, amount);
-            let valid = invite_sig.is_some_and(|sig| env::ed25519_verify(&sig, message, key));
+            let valid = invite_sig.is_some_and(|sig| env::ed25519_verify(&sig, message, &key));
             if !valid || amount > c.max_deposit() {
                 return Err("this circle needs a valid invite for this deposit".into());
             }

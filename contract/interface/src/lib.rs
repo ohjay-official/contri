@@ -179,15 +179,11 @@ impl Contri {
         unimplemented!()
     }
 
-    /// NEP-245 receiver, called only by NEAR Intents: for a signed `Transfer`
-    /// intent, or an account's own `mt_transfer_call` (how a DAO treasury backs
-    /// a circle). `msg` is
-    /// `create:<contribution>:<size>:<period_secs>:<join|random>:<invite key or ->:<name>`
-    /// (sent with the organizer's deposit; the organizer takes the first seat),
-    /// `join:<circle>`, `join:<circle>:<invite signature>`,
-    /// `contribute:<circle>:<round>`, `buy_seat:<circle>:<seat>`,
-    /// `refill:<circle>` or `back:<circle>`. Returns the amounts to refund; a
-    /// wrong token, amount, message or invite is refunded in full.
+    /// NEP-245 receiver, called by NEAR Intents (a signed `Transfer` or an
+    /// account's `mt_transfer_call`). `msg`: `create:...` (with the organizer's
+    /// deposit), `join:<c>[:<invite sig>]`, `contribute:<c>:<round>`,
+    /// `buy_seat:<c>:<seat>`, `refill:<c>`, `back:<c>`. Returns refunds; bad
+    /// input is refunded in full.
     pub fn mt_on_transfer(
         &mut self,
         sender_id: AccountId,
@@ -199,9 +195,9 @@ impl Contri {
         unimplemented!()
     }
 
-    /// Called only by NEAR Intents for a member's signed `AuthCall` intent.
-    /// `msg` is `leave:<circle>`, `list_seat:<circle>:<seat>:<price>`,
-    /// `unlist_seat:<circle>:<seat>`, `cancel:<circle>` or `claim_credit`.
+    /// Called by NEAR Intents for a signed `AuthCall`. `msg`: `leave:<c>`,
+    /// `list_seat:<c>:<seat>:<price>`, `unlist_seat:<c>:<seat>`, `cancel:<c>`,
+    /// `claim_credit`.
     pub fn on_auth(&mut self, signer_id: AccountId, msg: String) {
         unimplemented!()
     }

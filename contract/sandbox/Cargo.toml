@@ -1,0 +1,17 @@
+[package]
+name = "contri-sandbox"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "End-to-end tests: Contri against the real NEAR Intents contract on a local NEAR sandbox"
+
+[dev-dependencies]
+near-workspaces = "0.24"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+anyhow = "1"
+serde_json = "1"
+ed25519-dalek = "2"
+sha2 = "0.10"
+bs58 = "0.5"
+base64 = "0.22"
+hex = "0.4"

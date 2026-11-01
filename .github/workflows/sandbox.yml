@@ -1,0 +1,91 @@
+name: sandbox
+
+# End-to-end tests: Contri against the real NEAR Intents contract, built from
+# github.com/near/intents, on a local NEAR sandbox. Results are published to
+# the sandbox-results branch.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - contract/**
+      - .github/workflows/sandbox.yml
+
+permissions:
+  contents: write
+
+env:
+  # The NEAR Intents source the tests run against.
+  INTENTS_REF: d340060
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out NEAR Intents
+        run: |
+          git clone -q https://github.com/near/intents.git intents
+          git -C intents checkout -q "$INTENTS_REF"
+          git -C intents log -1 --format='%h %ci %s'
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            intents
+            contract
+            contract/sandbox
+
+      - name: Install cargo-near
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+
+      - name: Build NEAR Intents
+        id: intents
+        continue-on-error: true
+        working-directory: intents/contracts/defuse
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/e2e-out" "$GITHUB_WORKSPACE/wasm"
+          set -o pipefail
+          cargo near build non-reproducible-wasm --locked --features=contract --no-abi --out-dir "$GITHUB_WORKSPACE/wasm" 2>&1 | tail -30 | tee "$GITHUB_WORKSPACE/e2e-out/intents-build.log"
+
+      - name: Build Contri
+        id: contri
+        continue-on-error: true
+        working-directory: contract
+        run: |
+          set -o pipefail
+          cargo near build non-reproducible-wasm --no-abi --out-dir "$GITHUB_WORKSPACE/wasm" 2>&1 | tail -20 | tee "$GITHUB_WORKSPACE/e2e-out/contri-build.log"
+          ls -l "$GITHUB_WORKSPACE/wasm" | tee -a "$GITHUB_WORKSPACE/e2e-out/contri-build.log"
+
+      - name: End-to-end tests
+        id: e2e
+        if: steps.intents.outcome == 'success' && steps.contri.outcome == 'success'
+        continue-on-error: true
+        working-directory: contract/sandbox
+        env:
+          INTENTS_WASM: ${{ github.workspace }}/wasm/defuse.wasm
+          FT_WASM: ${{ github.workspace }}/intents/releases/fungible-token.wasm
+          CONTRI_WASM: ${{ github.workspace }}/wasm/contri.wasm
+        run: |
+          set -o pipefail
+          cargo test -- --nocapture --test-threads=1 2>&1 | tee "$GITHUB_WORKSPACE/e2e-out/e2e.log"
+
+      - name: Publish results to the sandbox-results branch
+        if: always()
+        run: |
+          mkdir -p e2e-out
+          echo "{\"commit\":\"${GITHUB_SHA}\",\"intents\":\"${{ steps.intents.outcome }}\",\"contri\":\"${{ steps.contri.outcome }}\",\"e2e\":\"${{ steps.e2e.outcome }}\"}" > e2e-out/status.json
+          cd e2e-out
+          git init -q
+          git checkout -q -b sandbox-results
+          git config user.name "contri-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "sandbox results ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" sandbox-results
+
+      - name: Fail the job if a step failed
+        if: steps.intents.outcome != 'success' || steps.contri.outcome != 'success' || steps.e2e.outcome != 'success'
+        run: exit 1
