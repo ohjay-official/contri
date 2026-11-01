@@ -59,6 +59,7 @@ pub struct Payout {
 #[derive(Clone, Debug)]
 pub struct Circle {
     pub id: u64,
+    /// Encrypted by the app with a key from the invite link. The contract stores it as given.
     pub name: String,
     pub organizer: AccountId,
     /// Amount each member pays per round, in the token's smallest unit.
@@ -69,6 +70,8 @@ pub struct Circle {
     pub members: Vec<Member>,
     /// Asking price per seat, or `null` when the seat is not for sale.
     pub listings: Vec<Option<U128>>,
+    /// Joining needs a signed invite from the circle's invite link.
+    pub invite_only: bool,
     pub status: CircleStatus,
     /// Nanoseconds.
     pub created_at: U64,
@@ -154,9 +157,9 @@ impl Contri {
     }
 
     /// NEP-245 receiver, called only by NEAR Intents for a member's `Transfer`
-    /// intent. `msg` is `join:<circle>`, `contribute:<circle>:<round>` or
-    /// `buy_seat:<circle>:<seat>`. Returns the amounts to refund; a wrong
-    /// token, amount or message is refunded in full.
+    /// intent. `msg` is `join:<circle>`, `join:<circle>:<invite signature>`,
+    /// `contribute:<circle>:<round>` or `buy_seat:<circle>:<seat>`. Returns the
+    /// amounts to refund; a wrong token, amount, message or invite is refunded in full.
     pub fn mt_on_transfer(
         &mut self,
         sender_id: AccountId,
@@ -169,7 +172,7 @@ impl Contri {
     }
 
     /// Called only by NEAR Intents for a member's signed `AuthCall` intent.
-    /// `msg` is `create:<contribution>:<size>:<period_secs>:<name>`,
+    /// `msg` is `create:<contribution>:<size>:<period_secs>:<invite key or ->:<name>`,
     /// `list_seat:<circle>:<seat>:<price>`, `unlist_seat:<circle>:<seat>`,
     /// `cancel:<circle>` or `claim_credit`.
     pub fn on_auth(&mut self, signer_id: AccountId, msg: String) {
@@ -177,7 +180,15 @@ impl Contri {
     }
 
     /// Direct call: creates a circle organized by the caller. Returns its id.
-    pub fn create_circle(&mut self, name: String, contribution: U128, size: u32, period_secs: u64) -> u64 {
+    /// `invite_key` (64 hex characters, ed25519) makes the circle invite-only.
+    pub fn create_circle(
+        &mut self,
+        name: String,
+        contribution: U128,
+        size: u32,
+        period_secs: u64,
+        invite_key: Option<String>,
+    ) -> u64 {
         unimplemented!()
     }
 

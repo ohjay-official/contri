@@ -34,7 +34,9 @@ pub const MIN_MEMBERS: u32 = 2;
 pub const MAX_MEMBERS: u32 = 20;
 pub const MIN_PERIOD_SECS: u64 = 60;
 pub const MAX_PERIOD_SECS: u64 = 60 * 60 * 24 * 31;
-pub const MAX_NAME_LEN: usize = 64;
+/// Circle names arrive encrypted by the app (see docs/PRIVACY.md), so the
+/// limit is on the stored bytes, not on readable characters.
+pub const MAX_NAME_LEN: usize = 256;
 
 const NS_PER_SEC: u64 = 1_000_000_000;
 const GAS_MT_TRANSFER: Gas = Gas::from_tgas(15);
@@ -95,6 +97,10 @@ pub struct Circle {
     pub members: Vec<Member>,
     /// Asking price per seat, if listed for sale.
     pub listings: Vec<Option<U128>>,
+    /// Ed25519 public key of the circle's invite link. When set, joining needs
+    /// a signature from the invite key over the joiner's account, so only
+    /// people with the link can join (see `join_message`).
+    pub invite_key: Option<[u8; 32]>,
     pub status: CircleStatus,
     pub created_at: u64,
     pub started_at: u64,
@@ -151,7 +157,7 @@ impl Circle {
             )
         }));
         format!(
-            r#"{{"id":{},"name":{},"organizer":"{}","contribution":"{}","size":{},"period_secs":{},"members":[{}],"listings":[{}],"status":"{}","created_at":"{}","started_at":"{}","round":{},"pot":"{}","paying":{},"payouts":[{}],"round_deadline":{}}}"#,
+            r#"{{"id":{},"name":{},"organizer":"{}","contribution":"{}","size":{},"period_secs":{},"members":[{}],"listings":[{}],"invite_only":{},"status":"{}","created_at":"{}","started_at":"{}","round":{},"pot":"{}","paying":{},"payouts":[{}],"round_deadline":{}}}"#,
             self.id,
             jstr(&self.name),
             self.organizer,
@@ -160,6 +166,7 @@ impl Circle {
             self.period_secs,
             members,
             listings,
+            self.invite_key.is_some(),
             self.status.as_str(),
             self.created_at,
             self.started_at,
@@ -197,8 +204,10 @@ impl Circle {
 /// `msg` of a member's `Transfer` intent to this contract.
 #[cfg_attr(test, derive(Debug))]
 pub enum TransferMsg {
-    /// `join:<circle>`: pay the deposit (one contribution) and take the next free seat.
-    Join { circle: u64 },
+    /// `join:<circle>` or `join:<circle>:<invite signature, 128 hex>`: pay the
+    /// deposit (one contribution) and take the next free seat. An invite-only
+    /// circle needs the signature (see `join_message`).
+    Join { circle: u64, invite_sig: Option<[u8; 64]> },
     /// `contribute:<circle>:<round>`: pay this round's contribution.
     Contribute { circle: u64, round: u32 },
     /// `buy_seat:<circle>:<seat>`: pay the asking price for a listed seat and swap it
@@ -209,12 +218,15 @@ pub enum TransferMsg {
 /// `msg` of a member's `AuthCall` intent to this contract.
 #[cfg_attr(test, derive(Debug))]
 pub enum AuthMsg {
-    /// `create:<contribution>:<size>:<period_secs>:<name>` (the name may contain `:`).
+    /// `create:<contribution>:<size>:<period_secs>:<invite key>:<name>`. The
+    /// invite key is 64 hex characters, or `-` for a circle anyone can join.
+    /// The name may contain `:`.
     Create {
         name: String,
         contribution: U128,
         size: u32,
         period_secs: u64,
+        invite_key: Option<[u8; 32]>,
     },
     /// `list_seat:<circle>:<seat>:<price>`
     ListSeat { circle: u64, seat: u32, price: U128 },
@@ -231,12 +243,49 @@ pub fn parse_transfer(msg: &str) -> Option<TransferMsg> {
     let op = p.next()?;
     let circle = p.next()?.parse().ok()?;
     let m = match op {
-        "join" => TransferMsg::Join { circle },
+        "join" => {
+            let invite_sig = match p.next() {
+                Some(s) => Some(hex(s)?),
+                None => None,
+            };
+            TransferMsg::Join { circle, invite_sig }
+        }
         "contribute" => TransferMsg::Contribute { circle, round: p.next()?.parse().ok()? },
         "buy_seat" => TransferMsg::BuySeat { circle, seat: p.next()?.parse().ok()? },
         _ => return None,
     };
     p.next().is_none().then_some(m)
+}
+
+/// `-` for none, or exactly 64 hex characters.
+fn opt_key(s: &str) -> Option<Option<[u8; 32]>> {
+    if s == "-" {
+        Some(None)
+    } else {
+        hex(s).map(Some)
+    }
+}
+
+/// Exactly `2 * N` hex digits.
+fn hex<const N: usize>(s: &str) -> Option<[u8; N]> {
+    let b = s.as_bytes();
+    if b.len() != 2 * N {
+        return None;
+    }
+    let mut out = [0u8; N];
+    for (i, pair) in b.chunks(2).enumerate() {
+        let hi = (pair[0] as char).to_digit(16)?;
+        let lo = (pair[1] as char).to_digit(16)?;
+        out[i] = (hi * 16 + lo) as u8;
+    }
+    Some(out)
+}
+
+/// What the invite key signs to let `account` join `circle` of this contract.
+/// Binding the joiner's account means a signature seen on chain cannot be
+/// reused by anyone else.
+pub fn join_message(contract: &AccountId, circle: u64, account: &AccountId) -> String {
+    format!("contri-join:{contract}:{circle}:{account}")
 }
 
 pub fn parse_auth(msg: &str) -> Option<AuthMsg> {
@@ -245,12 +294,13 @@ pub fn parse_auth(msg: &str) -> Option<AuthMsg> {
     }
     let (op, rest) = msg.split_once(':')?;
     if op == "create" {
-        let mut p = rest.splitn(4, ':');
+        let mut p = rest.splitn(5, ':');
         let contribution = U128(p.next()?.parse().ok()?);
         let size = p.next()?.parse().ok()?;
         let period_secs = p.next()?.parse().ok()?;
+        let invite_key = opt_key(p.next()?)?;
         let name = p.next()?.to_string();
-        return Some(AuthMsg::Create { name, contribution, size, period_secs });
+        return Some(AuthMsg::Create { name, contribution, size, period_secs, invite_key });
     }
     let mut p = rest.split(':');
     let circle = p.next()?.parse().ok()?;
@@ -334,10 +384,16 @@ impl Contri {
     // buy_seat are Transfer intents), so these cover the other actions.
     // ------------------------------------------------------------------
 
-    /// Args: `{"name": "Lagos Ajo", "contribution": "5000000", "size": 5, "period_secs": 86400}`.
-    /// Returns the new circle's id.
+    /// Args: `{"name": "<encrypted name>", "contribution": "5000000", "size": 5,
+    /// "period_secs": 86400, "invite_key": "<64 hex>"}`. `invite_key` is
+    /// optional; without it anyone can join. Returns the new circle's id.
     pub fn create_circle(&mut self) {
         let a = args();
+        let invite_key = match a.get("invite_key") {
+            None => None,
+            Some(v) if v.is_null() => None,
+            Some(_) => Some(hex(&arg_str(&a, "invite_key")).unwrap_or_else(|| bad("invite_key"))),
+        };
         let id = self
             .internal_create(
                 &env::predecessor_account_id(),
@@ -345,6 +401,7 @@ impl Contri {
                 U128(arg_u128(&a, "contribution")),
                 arg_u32(&a, "size"),
                 arg_u64(&a, "period_secs"),
+                invite_key,
             )
             .unwrap_or_else(|e| env::panic_str(&e));
         ret(&id.to_string());
@@ -707,7 +764,7 @@ impl Contri {
 
     pub(crate) fn handle_transfer(&mut self, sender: &AccountId, amount: u128, msg: TransferMsg) -> Result<(), String> {
         match msg {
-            TransferMsg::Join { circle } => self.internal_join(sender, circle, amount),
+            TransferMsg::Join { circle, invite_sig } => self.internal_join(sender, circle, amount, invite_sig),
             TransferMsg::Contribute { circle, round } => self.internal_contribute(sender, circle, round, amount),
             TransferMsg::BuySeat { circle, seat } => self.internal_buy_seat(sender, circle, seat, amount),
         }
@@ -715,9 +772,9 @@ impl Contri {
 
     pub(crate) fn handle_auth(&mut self, signer: &AccountId, msg: AuthMsg) -> Result<(), String> {
         match msg {
-            AuthMsg::Create { name, contribution, size, period_secs } => {
-                self.internal_create(signer, name, contribution, size, period_secs).map(|_| ())
-            }
+            AuthMsg::Create { name, contribution, size, period_secs, invite_key } => self
+                .internal_create(signer, name, contribution, size, period_secs, invite_key)
+                .map(|_| ()),
             AuthMsg::ListSeat { circle, seat, price } => self.internal_list_seat(signer, circle, seat, Some(price)),
             AuthMsg::UnlistSeat { circle, seat } => self.internal_list_seat(signer, circle, seat, None),
             AuthMsg::Cancel { circle } => self.internal_cancel(signer, circle),
@@ -732,10 +789,11 @@ impl Contri {
         contribution: U128,
         size: u32,
         period_secs: u64,
+        invite_key: Option<[u8; 32]>,
     ) -> Result<u64, String> {
         let name = name.trim().to_string();
         if name.is_empty() || name.len() > MAX_NAME_LEN {
-            return Err(format!("name must be 1 to {MAX_NAME_LEN} characters"));
+            return Err(format!("name must be 1 to {MAX_NAME_LEN} bytes"));
         }
         if contribution.0 == 0 {
             return Err("contribution must be more than zero".into());
@@ -757,6 +815,7 @@ impl Contri {
             period_secs,
             members: vec![],
             listings: vec![None; size as usize],
+            invite_key,
             status: CircleStatus::Open,
             created_at: env::block_timestamp(),
             started_at: 0,
@@ -768,18 +827,31 @@ impl Contri {
         emit(
             "circle_created",
             format!(
-                r#"{{"circle":{id},"organizer":"{organizer}","contribution":"{}","size":{size},"period_secs":{period_secs}}}"#,
-                contribution.0
+                r#"{{"circle":{id},"organizer":"{organizer}","contribution":"{}","size":{size},"period_secs":{period_secs},"invite_only":{}}}"#,
+                contribution.0,
+                invite_key.is_some()
             ),
         );
         save_circle(&c);
         Ok(id)
     }
 
-    fn internal_join(&mut self, who: &AccountId, circle_id: u64, amount: u128) -> Result<(), String> {
+    fn internal_join(
+        &mut self,
+        who: &AccountId,
+        circle_id: u64,
+        amount: u128,
+        invite_sig: Option<[u8; 64]>,
+    ) -> Result<(), String> {
         let mut c = find_circle(circle_id)?;
         if c.status != CircleStatus::Open {
             return Err("circle is not open for joining".into());
+        }
+        if let Some(key) = &c.invite_key {
+            let message = join_message(&env::current_account_id(), circle_id, who);
+            if !invite_sig.is_some_and(|sig| env::ed25519_verify(&sig, message, key)) {
+                return Err("this circle needs a valid invite".into());
+            }
         }
         if c.seat_of(who).is_some() {
             return Err("already a member".into());
@@ -1118,14 +1190,12 @@ fn parse_seat_token(token_id: &str) -> Option<(u64, u32)> {
     Some((a.parse().ok()?, b.parse().ok()?))
 }
 
-/// NEP-171 token with NEP-177 metadata for one seat.
+/// NEP-171 token with NEP-177 metadata for one seat. The circle's name is
+/// private (encrypted by the app), so it never appears in token metadata.
 fn seat_token_json(c: &Circle, seat: u32, owner: &AccountId) -> String {
     let turn = seat + 1;
-    let title = format!("{} - turn {turn}", c.name);
-    let description = format!(
-        "Turn {turn} of {} in Contri circle #{}. Receives the pot in round {turn}.",
-        c.size, c.id
-    );
+    let title = format!("Contri seat - turn {turn} of {}", c.size);
+    let description = format!("Receives the pot in round {turn} of Contri circle #{}.", c.id);
     let price = c.listings.get(seat as usize).copied().flatten();
     let extra = format!(
         r#"{{"circle":{},"seat":{seat},"payout_round":{seat},"price":{}}}"#,

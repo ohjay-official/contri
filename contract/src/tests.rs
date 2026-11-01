@@ -112,7 +112,7 @@ fn create(c: &mut Contri, size: u32) -> u64 {
     auth(
         c,
         ADA,
-        &format!("create:{CONTRIBUTION}:{size}:{DAY}:Lagos Ajo"),
+        &format!("create:{CONTRIBUTION}:{size}:{DAY}:-:Lagos Ajo"),
         0,
     );
     0
@@ -398,17 +398,17 @@ fn failed_send_becomes_a_credit() {
 fn create_validates_inputs() {
     let mut c = setup();
     set("someone.near", 0);
-    assert!(c.internal_create(&acc(ADA), "".into(), U128(1), 3, DAY).is_err());
-    assert!(c.internal_create(&acc(ADA), "x".into(), U128(0), 3, DAY).is_err());
-    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 1, DAY).is_err());
-    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 21, DAY).is_err());
-    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 3, 10).is_err());
-    assert_eq!(c.internal_create(&acc(ADA), "x".into(), U128(1), 3, DAY), Ok(0));
+    assert!(c.internal_create(&acc(ADA), "".into(), U128(1), 3, DAY, None).is_err());
+    assert!(c.internal_create(&acc(ADA), "x".into(), U128(0), 3, DAY, None).is_err());
+    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 1, DAY, None).is_err());
+    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 21, DAY, None).is_err());
+    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 3, 10, None).is_err());
+    assert_eq!(c.internal_create(&acc(ADA), "x".into(), U128(1), 3, DAY, None), Ok(0));
 }
 
 #[test]
 fn messages_parse_strictly() {
-    assert!(matches!(parse_transfer("join:3"), Some(TransferMsg::Join { circle: 3 })));
+    assert!(matches!(parse_transfer("join:3"), Some(TransferMsg::Join { circle: 3, invite_sig: None })));
     assert!(matches!(
         parse_transfer("contribute:3:2"),
         Some(TransferMsg::Contribute { circle: 3, round: 2 })
@@ -420,8 +420,9 @@ fn messages_parse_strictly() {
     assert!(parse_transfer("steal:1").is_none());
     assert!(parse_transfer("").is_none());
 
-    match parse_auth("create:5000000:5:86400:Ada's: Lagos circle") {
-        Some(AuthMsg::Create { name, contribution, size, period_secs }) => {
+    match parse_auth("create:5000000:5:86400:-:Ada's: Lagos circle") {
+        Some(AuthMsg::Create { name, contribution, size, period_secs, invite_key }) => {
+            assert_eq!(invite_key, None);
             assert_eq!(name, "Ada's: Lagos circle");
             assert_eq!(contribution, U128(5_000_000));
             assert_eq!(size, 5);
@@ -450,7 +451,7 @@ fn unreadable_auth_message_panics() {
 #[test]
 fn views_return_valid_json() {
     let mut c = full_circle_of_three();
-    auth(&mut c, ADA, "create:1000000:2:3600:Mama \"Tolu\" \\ circle", 1);
+    auth(&mut c, ADA, "create:1000000:2:3600:-:Mama \"Tolu\" \\ circle", 1);
     let circle: Value = serde_json::from_str(&c.circle_of(0).unwrap().to_json()).unwrap();
     assert_eq!(circle["status"], "Active");
     assert_eq!(circle["contribution"], "5000000");
@@ -485,7 +486,7 @@ fn public_methods_read_json_arguments() {
     set_with_input(
         INTENTS,
         1,
-        &format!(r#"{{"signer_id":"{ADA}","msg":"create:5000000:2:86400:Test"}}"#),
+        &format!(r#"{{"signer_id":"{ADA}","msg":"create:5000000:2:86400:-:Test"}}"#),
     );
     c.on_auth();
     assert_eq!(c.circle_of(0).unwrap().name, "Test");
@@ -715,7 +716,7 @@ fn seats_are_nft_tokens() {
     assert_eq!(page.as_array().unwrap().len(), 1);
     assert_eq!(page[0]["token_id"], "0:1");
     assert_eq!(page[0]["owner_id"], BAYO);
-    assert_eq!(page[0]["metadata"]["title"], "Lagos Ajo - turn 2");
+    assert_eq!(page[0]["metadata"]["title"], "Contri seat - turn 2 of 3");
     let extra: Value = serde_json::from_str(page[0]["metadata"]["extra"].as_str().unwrap()).unwrap();
     assert_eq!(extra, json!({"circle": 0, "seat": 1, "payout_round": 1, "price": null}));
     assert_eq!(view(&c, "", Contri::nft_tokens).as_array().unwrap().len(), 3);
@@ -775,8 +776,8 @@ fn cancelling_burns_the_seat_tokens() {
 #[test]
 fn circle_views() {
     let mut c = full_circle_of_three();
-    auth(&mut c, BAYO, "create:1000000:2:3600:Second", 20);
-    auth(&mut c, BAYO, "create:1000000:2:3600:Third", 20);
+    auth(&mut c, BAYO, "create:1000000:2:3600:-:Second", 20);
+    auth(&mut c, BAYO, "create:1000000:2:3600:-:Third", 20);
 
     let config = view(&c, "", Contri::get_config);
     assert_eq!(config["intents_id"], INTENTS);
@@ -912,7 +913,7 @@ fn views_match_the_typed_interface() {
     c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true);
     auth(&mut c, CHIOMA, "list_seat:0:2:700000", 102);
 
-    auth(&mut c, BAYO, &format!("create:{CONTRIBUTION}:2:3600:Short"), 200);
+    auth(&mut c, BAYO, &format!("create:{CONTRIBUTION}:2:3600:-:Short"), 200);
     transfer(&mut c, ADA, CONTRIBUTION, "join:1", 201);
     transfer(&mut c, BAYO, CONTRIBUTION, "join:1", 201);
     for round in 0..2u32 {
@@ -922,7 +923,7 @@ fn views_match_the_typed_interface() {
         set("contri.near", 202 + (round as u64 + 1) * 3600);
         c.finalize_payout(1, round, U128(2 * CONTRIBUTION), true);
     }
-    auth(&mut c, ADA, &format!("create:{CONTRIBUTION}:3:3600:Cancelled"), 9_000);
+    auth(&mut c, ADA, &format!("create:{CONTRIBUTION}:3:3600:-:Cancelled"), 9_000);
     auth(&mut c, ADA, "cancel:2", 9_001);
     set("contri.near", 9_002);
     c.add_credit(acc(ADA), 5);
@@ -972,4 +973,106 @@ fn views_match_the_typed_interface() {
     set_with_input("anyone.near", 9_102, r#"{"circle_id":2}"#);
     c.release_deposits();
     let _: u32 = parse("release_deposits", returned());
+}
+
+fn hexs(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// The invite key the organizer's app makes for a circle. Its secret half
+/// lives only in the invite link.
+fn invite_key(seed: u8) -> ed25519_dalek::SigningKey {
+    ed25519_dalek::SigningKey::from_bytes(&[seed; 32])
+}
+
+fn signed_invite(key: &ed25519_dalek::SigningKey, circle: u64, who: &str) -> String {
+    use ed25519_dalek::Signer;
+    let message = join_message(&acc("contri.near"), circle, &acc(who));
+    hexs(&key.sign(message.as_bytes()).to_bytes())
+}
+
+#[test]
+fn invite_only_circle_needs_a_signed_invite() {
+    let mut c = setup();
+    let key = invite_key(7);
+    let public = hexs(key.verifying_key().as_bytes());
+    auth(&mut c, ADA, &format!("create:{CONTRIBUTION}:2:{DAY}:{public}:c2VhbGVkIG5hbWU"), 1);
+    assert_eq!(c.circle_of(0).unwrap().invite_key, Some(*key.verifying_key().as_bytes()));
+
+    // No invite, an invite made for someone else, or one from another key: refunded.
+    assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, "join:0", 2), CONTRIBUTION);
+    let for_bayo = signed_invite(&key, 0, BAYO);
+    assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, &format!("join:0:{for_bayo}"), 2), CONTRIBUTION);
+    let forged = signed_invite(&invite_key(9), 0, ADA);
+    assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, &format!("join:0:{forged}"), 2), CONTRIBUTION);
+    assert!(c.circle_of(0).unwrap().members.is_empty());
+
+    // The right invites work, and the circle starts.
+    let for_ada = signed_invite(&key, 0, ADA);
+    assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, &format!("join:0:{for_ada}"), 3), 0);
+    assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, &format!("join:0:{for_bayo}"), 3), 0);
+    assert_eq!(c.circle_of(0).unwrap().status, CircleStatus::Active);
+    assert_eq!(view(&c, r#"{"circle_id":0}"#, Contri::get_circle)["invite_only"], true);
+}
+
+#[test]
+fn open_circles_ignore_invites() {
+    let mut c = setup();
+    create(&mut c, 2);
+    let sig = signed_invite(&invite_key(7), 0, ADA);
+    assert_eq!(transfer(&mut c, ADA, CONTRIBUTION, &format!("join:0:{sig}"), 2), 0);
+    assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, "join:0", 2), 0);
+    assert_eq!(view(&c, r#"{"circle_id":0}"#, Contri::get_circle)["invite_only"], false);
+}
+
+#[test]
+fn invite_messages_parse_strictly() {
+    let sig = "ab".repeat(64);
+    assert!(matches!(
+        parse_transfer(&format!("join:1:{sig}")),
+        Some(TransferMsg::Join { circle: 1, invite_sig: Some(_) })
+    ));
+    assert!(parse_transfer(&format!("join:1:{}", &sig[..126])).is_none());
+    assert!(parse_transfer(&format!("join:1:{sig}:x")).is_none());
+    assert!(parse_transfer(&format!("join:1:{}", "zz".repeat(64))).is_none());
+    let key = "cd".repeat(32);
+    assert!(matches!(
+        parse_auth(&format!("create:1:2:60:{key}:name")),
+        Some(AuthMsg::Create { invite_key: Some(_), .. })
+    ));
+    assert!(parse_auth("create:1:2:60:abc:name").is_none());
+    assert!(parse_auth("create:1:2:60:name").is_none());
+}
+
+#[test]
+fn direct_create_takes_an_optional_invite_key() {
+    let mut c = setup();
+    let key = hexs(invite_key(7).verifying_key().as_bytes());
+    set_with_input(
+        "alice.near",
+        1,
+        &format!(r#"{{"name":"x","contribution":"1","size":2,"period_secs":60,"invite_key":"{key}"}}"#),
+    );
+    c.create_circle();
+    assert!(c.circle_of(0).unwrap().invite_key.is_some());
+    set_with_input("alice.near", 1, r#"{"name":"y","contribution":"1","size":2,"period_secs":60,"invite_key":null}"#);
+    c.create_circle();
+    assert!(c.circle_of(1).unwrap().invite_key.is_none());
+}
+
+#[test]
+#[should_panic(expected = "missing or invalid argument: invite_key")]
+fn bad_invite_key_is_rejected() {
+    let mut c = setup();
+    set_with_input("alice.near", 1, r#"{"name":"x","contribution":"1","size":2,"period_secs":60,"invite_key":"xyz"}"#);
+    c.create_circle();
+}
+
+#[test]
+fn encrypted_names_fit_and_oversized_ones_do_not() {
+    let mut c = setup();
+    set("someone.near", 0);
+    let sealed = "A".repeat(MAX_NAME_LEN);
+    assert_eq!(c.internal_create(&acc(ADA), sealed.clone(), U128(1), 3, DAY, None), Ok(0));
+    assert!(c.internal_create(&acc(ADA), sealed + "A", U128(1), 3, DAY, None).is_err());
 }

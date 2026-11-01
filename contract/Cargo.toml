@@ -16,6 +16,8 @@ near-sdk = "5"
 near-sdk = { version = "5", features = ["unit-testing"] }
 # Typed declaration of the same methods. Tests check every view's output against it.
 contri-interface = { path = "interface" }
+# Signs invite links in tests, as the app does.
+ed25519-dalek = "2"
 
 [profile.release]
 codegen-units = 1
