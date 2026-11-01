@@ -43,7 +43,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          (cargo near build non-reproducible-wasm --no-embed-abi || cargo near build non-reproducible-wasm --no-abi) 2>&1 | tee ../ci-out/build.log
+          (cargo near build non-reproducible-wasm --no-abi || cargo near build non-reproducible-wasm --no-embed-abi) 2>&1 | tee ../ci-out/build.log
           cp target/near/contri.wasm ../ci-out/contri.wasm
           ls -l ../ci-out/contri.wasm | tee -a ../ci-out/build.log
 

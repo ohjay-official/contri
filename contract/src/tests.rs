@@ -1,6 +1,57 @@
 use super::*;
-use near_sdk::test_utils::VMContextBuilder;
-use near_sdk::testing_env;
+use near_sdk::serde_json::{self, json, Value};
+use near_sdk::test_utils::{get_created_receipts, get_logs, VMContextBuilder};
+use near_sdk::{testing_env, PromiseResult};
+
+thread_local! {
+    /// The last JSON value a method returned (`ret` writes it here in tests).
+    pub(crate) static RETURNED: std::cell::RefCell<String> = Default::default();
+}
+
+fn returned() -> Value {
+    RETURNED.with(|r| serde_json::from_str(&r.borrow()).expect("returned value is valid JSON"))
+}
+
+/// Calls a view with JSON arguments and returns its result.
+fn view(c: &Contri, input: &str, method: fn(&Contri)) -> Value {
+    set_with_input("viewer.near", 1_000, input);
+    method(c);
+    returned()
+}
+
+/// NEP-297 events logged in the current context.
+fn events() -> Vec<Value> {
+    get_logs()
+        .iter()
+        .filter_map(|l| l.strip_prefix("EVENT_JSON:"))
+        .map(|j| serde_json::from_str(j).expect("event is valid JSON"))
+        .collect()
+}
+
+fn event<'a>(all: &'a [Value], standard: &str, name: &str) -> &'a Value {
+    all.iter()
+        .find(|e| e["standard"] == standard && e["event"] == name)
+        .unwrap_or_else(|| panic!("no {standard} {name} event in {all:?}"))
+}
+
+/// Context for a callback: this contract calls itself, and the call it
+/// followed returned `result`.
+fn set_callback(input: &str, result: PromiseResult) {
+    let mut b = VMContextBuilder::new();
+    b.current_account_id(acc("contri.near"))
+        .predecessor_account_id(acc("contri.near"))
+        .block_timestamp(500 * 1_000_000_000)
+        .prepaid_gas(Gas::from_tgas(15));
+    let mut ctx = b.build();
+    ctx.input = std::rc::Rc::from(input.as_bytes());
+    testing_env!(
+        ctx,
+        near_sdk::test_vm_config(),
+        near_sdk::RuntimeFeesConfig::test(),
+        Default::default(),
+        vec![result],
+    );
+}
 
 const INTENTS: &str = "intents.near";
 const TOKEN: &str = "nep141:usdt.tether-token.near";
@@ -45,7 +96,6 @@ fn transfer(c: &mut Contri, from: &str, amount: u128, msg: &str, secs: u64) -> u
     set(INTENTS, secs);
     c.internal_on_transfer(
         acc(from),
-        vec![acc(from)],
         vec![TOKEN.to_string()],
         vec![U128(amount)],
         msg.to_string(),
@@ -123,7 +173,6 @@ fn unreadable_message_is_refunded() {
     set(INTENTS, 10);
     let r = c.internal_on_transfer(
         acc(ADA),
-        vec![acc(ADA)],
         vec![TOKEN.to_string()],
         vec![U128(CONTRIBUTION)],
         "hello".to_string(),
@@ -138,7 +187,6 @@ fn other_tokens_are_refunded() {
     set(INTENTS, 10);
     let r = c.internal_on_transfer(
         acc(ADA),
-        vec![acc(ADA)],
         vec!["nep141:wrap.near".to_string()],
         vec![U128(CONTRIBUTION)],
         format!("join:{id}"),
@@ -153,7 +201,6 @@ fn only_intents_can_notify() {
     set("someone.near", 10);
     let _ = c.internal_on_transfer(
         acc(ADA),
-        vec![acc(ADA)],
         vec![TOKEN.to_string()],
         vec![U128(CONTRIBUTION)],
         "join:0".to_string(),
@@ -402,7 +449,6 @@ fn unreadable_auth_message_panics() {
 
 #[test]
 fn views_return_valid_json() {
-    use near_sdk::serde_json::{self, Value};
     let mut c = full_circle_of_three();
     auth(&mut c, ADA, "create:1000000:2:3600:Mama \"Tolu\" \\ circle", 1);
     let circle: Value = serde_json::from_str(&c.circle_of(0).unwrap().to_json()).unwrap();
@@ -428,7 +474,6 @@ fn views_return_valid_json() {
 
 #[test]
 fn jstr_escapes_control_characters() {
-    use near_sdk::serde_json::{self, Value};
     let raw = "line\nbreak\ttab\u{1}end";
     let v: Value = serde_json::from_str(&jstr(raw)).unwrap();
     assert_eq!(v, raw);
@@ -520,4 +565,255 @@ fn json_reader() {
     assert!(parse(b"").is_none());
     assert_eq!(parse(br#"-1"#).unwrap().as_uint::<u64>(), None);
     assert_eq!(parse(br#"1.5"#).unwrap().as_uint::<u64>(), None);
+}
+
+#[test]
+fn transfer_notification_returns_refunds() {
+    let mut c = setup();
+    create(&mut c, 2);
+    let call = |c: &mut Contri, amount: u128| {
+        set_with_input(
+            INTENTS,
+            5,
+            &format!(
+                r#"{{"sender_id":"{ADA}","previous_owner_ids":["{ADA}"],"token_ids":["{TOKEN}"],"amounts":["{amount}"],"msg":"join:0"}}"#
+            ),
+        );
+        c.mt_on_transfer();
+        returned()
+    };
+    assert_eq!(call(&mut c, 1), json!(["1"]));
+    assert_eq!(call(&mut c, CONTRIBUTION), json!(["0"]));
+}
+
+#[test]
+fn payout_is_an_intents_transfer_then_a_callback() {
+    use near_sdk::mock::MockAction;
+    let mut c = full_circle_of_three();
+    for who in [ADA, BAYO, CHIOMA] {
+        contribute(&mut c, who, 0, 0, 100);
+    }
+    let receipts = get_created_receipts();
+    assert_eq!(receipts.len(), 2);
+
+    // 1. intents.near moves the pot out of this contract's own balance.
+    assert_eq!(receipts[0].receiver_id, acc(INTENTS));
+    match &receipts[0].actions[..] {
+        [MockAction::FunctionCallWeight { method_name, args, attached_deposit, prepaid_gas, .. }] => {
+            assert_eq!(method_name, b"mt_transfer");
+            let args: Value = serde_json::from_slice(args).unwrap();
+            assert_eq!(
+                args,
+                json!({
+                    "receiver_id": ADA,
+                    "token_id": TOKEN,
+                    "amount": (3 * CONTRIBUTION).to_string(),
+                    "memo": "contri:0:0",
+                })
+            );
+            assert_eq!(*attached_deposit, NearToken::from_yoctonear(1));
+            assert_eq!(*prepaid_gas, Gas::from_tgas(15));
+        }
+        other => panic!("unexpected actions {other:?}"),
+    }
+
+    // 2. Then a callback on this contract, which waits for the transfer.
+    assert_eq!(receipts[1].receiver_id, acc("contri.near"));
+    assert_eq!(receipts[1].receipt_indices, vec![0]);
+}
+
+#[test]
+fn payout_callback_reads_the_transfer_result() {
+    let pot = 3 * CONTRIBUTION;
+    let args = format!(r#"{{"circle_id":0,"round":0,"amount":"{pot}"}}"#);
+    let mut c = full_circle_of_three();
+    for who in [ADA, BAYO, CHIOMA] {
+        contribute(&mut c, who, 0, 0, 100);
+    }
+
+    // The transfer failed: the pot stays and the round does not move.
+    set_callback(&args, PromiseResult::Failed);
+    c.on_payout();
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!((circle.round, circle.pot, circle.paying), (0, U128(pot), false));
+    event(&events(), "contri", "payout_failed");
+
+    // Anyone retries, and this time it goes through.
+    set("anyone.near", 200);
+    c.internal_pay_out(0);
+    set_callback(&args, PromiseResult::Successful(vec![]));
+    c.on_payout();
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!((circle.round, circle.pot, circle.paying), (1, U128(0), false));
+    assert_eq!(event(&events(), "contri", "paid_out")["data"][0]["to"], ADA);
+}
+
+#[test]
+fn only_an_explicit_failure_leaves_the_round_open() {
+    // A transfer that went through must never be paid again, whatever it returned.
+    let mut c = full_circle_of_three();
+    for who in [ADA, BAYO, CHIOMA] {
+        contribute(&mut c, who, 0, 0, 100);
+    }
+    set_callback(
+        &format!(r#"{{"circle_id":0,"round":0,"amount":"{}"}}"#, 3 * CONTRIBUTION),
+        PromiseResult::Successful(br#"["15000000"]"#.to_vec()),
+    );
+    c.on_payout();
+    assert_eq!(c.circle_of(0).unwrap().round, 1);
+}
+
+#[test]
+fn failed_transfer_out_becomes_a_claimable_credit() {
+    let mut c = setup();
+    let args = format!(r#"{{"to":"{ADA}","amount":"700"}}"#);
+    set_callback(&args, PromiseResult::Successful(vec![]));
+    c.on_sent();
+    assert_eq!(c.credit_of(&acc(ADA)), U128(0));
+
+    set_callback(&args, PromiseResult::Failed);
+    c.on_sent();
+    assert_eq!(c.credit_of(&acc(ADA)), U128(700));
+    assert_eq!(view(&c, &format!(r#"{{"account_id":"{ADA}"}}"#), Contri::get_credit), "700");
+
+    // Claiming sends it again and clears the credit.
+    auth(&mut c, ADA, "claim_credit", 600);
+    assert_eq!(get_created_receipts()[0].receiver_id, acc(INTENTS));
+    assert_eq!(c.credit_of(&acc(ADA)), U128(0));
+}
+
+#[test]
+fn storage_has_one_key_per_circle_record_and_credit() {
+    let mut c = full_circle_of_three();
+    let circle_key = |id: u64| [b"c".as_slice(), &id.to_le_bytes()].concat();
+    assert!(env::storage_has_key(&circle_key(0)));
+    assert!(!env::storage_has_key(&circle_key(1)));
+
+    set("contri.near", 1);
+    c.add_credit(acc(BAYO), 5);
+    let credit_key = [b"k".as_slice(), BAYO.as_bytes()].concat();
+    assert!(env::storage_has_key(&credit_key));
+    auth(&mut c, BAYO, "claim_credit", 2);
+    assert!(!env::storage_has_key(&credit_key), "a claimed credit frees its storage");
+}
+
+#[test]
+fn seats_are_nft_tokens() {
+    let mut c = setup();
+    let id = create(&mut c, 3);
+    join(&mut c, ADA, id);
+    let mint = event(&events(), "nep171", "nft_mint").clone();
+    assert_eq!(mint["version"], "1.0.0");
+    assert_eq!(mint["data"], json!([{"owner_id": ADA, "token_ids": ["0:0"]}]));
+    join(&mut c, BAYO, id);
+    join(&mut c, CHIOMA, id);
+
+    assert_eq!(view(&c, "", Contri::nft_total_supply), "3");
+    assert_eq!(view(&c, &format!(r#"{{"account_id":"{BAYO}"}}"#), Contri::nft_supply_for_owner), "1");
+
+    let page = view(&c, r#"{"from_index":"1","limit":1}"#, Contri::nft_tokens);
+    assert_eq!(page.as_array().unwrap().len(), 1);
+    assert_eq!(page[0]["token_id"], "0:1");
+    assert_eq!(page[0]["owner_id"], BAYO);
+    assert_eq!(page[0]["metadata"]["title"], "Lagos Ajo - turn 2");
+    let extra: Value = serde_json::from_str(page[0]["metadata"]["extra"].as_str().unwrap()).unwrap();
+    assert_eq!(extra, json!({"circle": 0, "seat": 1, "payout_round": 1, "price": null}));
+    assert_eq!(view(&c, "", Contri::nft_tokens).as_array().unwrap().len(), 3);
+
+    assert_eq!(view(&c, r#"{"token_id":"0:2"}"#, Contri::nft_token)["owner_id"], CHIOMA);
+    assert_eq!(view(&c, r#"{"token_id":"0:3"}"#, Contri::nft_token), Value::Null);
+    assert_eq!(view(&c, r#"{"token_id":"seat"}"#, Contri::nft_token), Value::Null);
+
+    let meta = view(&c, "", Contri::nft_metadata);
+    assert_eq!(meta["spec"], "nft-1.0.0");
+    assert_eq!(meta["symbol"], "SEAT");
+    assert!(meta["icon"].as_str().unwrap().starts_with("data:image/svg+xml,"));
+
+    // Selling a seat transfers both tokens: the earlier turn to the buyer,
+    // the buyer's later turn to the seller.
+    auth(&mut c, ADA, "list_seat:0:0:1000000", 50);
+    assert_eq!(page_extra_price(&c, "0:0"), json!("1000000"));
+    transfer(&mut c, CHIOMA, 1_000_000, "buy_seat:0:0", 60);
+    let moved = event(&events(), "nep171", "nft_transfer").clone();
+    assert_eq!(
+        moved["data"],
+        json!([
+            {"old_owner_id": ADA, "new_owner_id": CHIOMA, "token_ids": ["0:0"]},
+            {"old_owner_id": CHIOMA, "new_owner_id": ADA, "token_ids": ["0:2"]},
+        ])
+    );
+    let chioma = view(&c, &format!(r#"{{"account_id":"{CHIOMA}"}}"#), Contri::nft_tokens_for_owner);
+    assert_eq!(chioma.as_array().unwrap().len(), 1);
+    assert_eq!(chioma[0]["token_id"], "0:0");
+}
+
+fn page_extra_price(c: &Contri, token_id: &str) -> Value {
+    let token = view(c, &format!(r#"{{"token_id":"{token_id}"}}"#), Contri::nft_token);
+    let extra: Value = serde_json::from_str(token["metadata"]["extra"].as_str().unwrap()).unwrap();
+    extra["price"].clone()
+}
+
+#[test]
+fn cancelling_burns_the_seat_tokens() {
+    let mut c = setup();
+    let id = create(&mut c, 3);
+    join(&mut c, ADA, id);
+    join(&mut c, BAYO, id);
+    auth(&mut c, ADA, &format!("cancel:{id}"), 20);
+    let burn = event(&events(), "nep171", "nft_burn").clone();
+    assert_eq!(
+        burn["data"],
+        json!([
+            {"owner_id": ADA, "token_ids": ["0:0"]},
+            {"owner_id": BAYO, "token_ids": ["0:1"]},
+        ])
+    );
+    assert_eq!(view(&c, "", Contri::nft_total_supply), "0");
+    assert_eq!(view(&c, r#"{"token_id":"0:0"}"#, Contri::nft_token), Value::Null);
+}
+
+#[test]
+fn circle_views() {
+    let mut c = full_circle_of_three();
+    auth(&mut c, BAYO, "create:1000000:2:3600:Second", 20);
+    auth(&mut c, BAYO, "create:1000000:2:3600:Third", 20);
+
+    let config = view(&c, "", Contri::get_config);
+    assert_eq!(config["intents_id"], INTENTS);
+    assert_eq!(config["token_id"], TOKEN);
+    assert_eq!(config["circle_count"], 3);
+
+    let deadline = ((10 + DAY) * 1_000_000_000).to_string();
+    assert_eq!(view(&c, r#"{"circle_id":0}"#, Contri::get_round_deadline), deadline);
+    assert_eq!(view(&c, r#"{"circle_id":1}"#, Contri::get_round_deadline), Value::Null);
+    assert_eq!(view(&c, r#"{"circle_id":9}"#, Contri::get_round_deadline), Value::Null);
+    assert_eq!(view(&c, r#"{"circle_id":0}"#, Contri::get_circle)["round_deadline"], deadline);
+    assert_eq!(view(&c, r#"{"circle_id":9}"#, Contri::get_circle), Value::Null);
+
+    let all = view(&c, "", Contri::get_circles);
+    assert_eq!(all.as_array().unwrap().len(), 3);
+    let page = view(&c, r#"{"from_index":1,"limit":1}"#, Contri::get_circles);
+    assert_eq!(page.as_array().unwrap().len(), 1);
+    assert_eq!(page[0]["name"], "Second");
+    assert_eq!(view(&c, r#"{"from_index":"2","limit":null}"#, Contri::get_circles)[0]["name"], "Third");
+
+    assert_eq!(view(&c, &format!(r#"{{"account_id":"{BAYO}"}}"#), Contri::get_circles_for), json!([0, 1, 2]));
+    assert_eq!(view(&c, &format!(r#"{{"account_id":"{ADA}"}}"#), Contri::get_circles_for), json!([0]));
+    assert_eq!(
+        view(&c, &format!(r#"{{"account_id":"{ADA}"}}"#), Contri::get_record),
+        json!({"completed": 0, "defaults": 0, "missed_payments": 0})
+    );
+}
+
+#[test]
+fn source_metadata_names_the_repo_and_standards() {
+    let meta: Value = serde_json::from_str(CONTRACT_SOURCE_METADATA).unwrap();
+    assert_eq!(meta["link"], "https://github.com/ohjay-official/contri");
+    let standards: Vec<&str> = meta["standards"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["standard"].as_str().unwrap())
+        .collect();
+    assert!(standards.contains(&"nep297") && standards.contains(&"nep330"), "{standards:?}");
 }

@@ -5,6 +5,10 @@
 //! (with its error formatting, which pulls in float printing) was the largest
 //! single part of the contract. Arguments here are small, flat objects, so a
 //! strict recursive-descent reader is enough.
+//!
+//! It follows RFC 8259 exactly, except that it rejects duplicate keys and
+//! nesting deeper than `MAX_DEPTH`. `json_tests.rs` checks it against
+//! serde_json on tens of thousands of generated and mutated documents.
 
 #[allow(dead_code)]
 pub enum Json {
@@ -106,6 +110,10 @@ impl Reader<'_> {
                 loop {
                     self.ws();
                     let key = self.string()?;
+                    // Duplicate keys are rejected, as serde rejects duplicate fields.
+                    if fields.iter().any(|(k, _)| *k == key) {
+                        return None;
+                    }
                     self.ws();
                     (self.next()? == b':').then_some(())?;
                     let v = self.value(depth + 1)?;
@@ -141,10 +149,20 @@ impl Reader<'_> {
             b'f' => self.literal(b"false").map(|_| Json::Bool(false)),
             b'n' => self.literal(b"null").map(|_| Json::Null),
             b'-' | b'0'..=b'9' => {
+                // RFC 8259: -? (0 | [1-9][0-9]*) (. [0-9]+)? ([eE] [+-]? [0-9]+)?
                 let start = self.i;
-                self.i += 1;
-                while matches!(self.peek(), Some(b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-')) {
-                    self.i += 1;
+                self.eat(b'-');
+                if !self.eat(b'0') {
+                    self.digits()?;
+                }
+                if self.eat(b'.') {
+                    self.digits()?;
+                }
+                if self.eat(b'e') || self.eat(b'E') {
+                    if !self.eat(b'+') {
+                        self.eat(b'-');
+                    }
+                    self.digits()?;
                 }
                 let text = core::str::from_utf8(&self.b[start..self.i]).ok()?;
                 Some(Json::Num(text.to_string()))
@@ -153,10 +171,31 @@ impl Reader<'_> {
         }
     }
 
+    fn eat(&mut self, c: u8) -> bool {
+        let hit = self.peek() == Some(c);
+        if hit {
+            self.i += 1;
+        }
+        hit
+    }
+
+    /// One or more ASCII digits.
+    fn digits(&mut self) -> Option<()> {
+        let start = self.i;
+        while matches!(self.peek(), Some(b'0'..=b'9')) {
+            self.i += 1;
+        }
+        (self.i > start).then_some(())
+    }
+
+    /// Exactly four hex digits (`from_str_radix` would also take a `+` sign).
     fn hex4(&mut self) -> Option<u32> {
-        let h = core::str::from_utf8(self.b.get(self.i..self.i + 4)?).ok()?;
+        let mut v = 0;
+        for &c in self.b.get(self.i..self.i + 4)? {
+            v = v * 16 + (c as char).to_digit(16)?;
+        }
         self.i += 4;
-        u32::from_str_radix(h, 16).ok()
+        Some(v)
     }
 
     fn string(&mut self) -> Option<String> {
