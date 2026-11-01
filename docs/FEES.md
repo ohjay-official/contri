@@ -31,3 +31,15 @@ The circle asset is USDT on NEAR inside NEAR Intents: `nep141:usdt.tether-token.
 | --- | --- | --- | --- |
 | USDT (TRC-20) | 1 USDT | 1 USDT | 1 USDT |
 | TRX | 4 TRX | 0.000001 TRX | 0.29 TRX |
+
+## Deploying the contract
+
+Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stores, and gets it back when the storage is freed.
+
+| Version | Contract size | Storage locked |
+| --- | --- | --- |
+| First build | 271 KB | 2.71 NEAR |
+| Text messages, lookup map, no embedded ABI | 193 KB | 1.93 NEAR |
+| Own JSON reader and writer, no serde_json | **110 KB** | **1.10 NEAR** |
+
+Expected total to launch: about 1.1 NEAR for the code, a few hundredths of a NEAR for circle data, and about 0.2 NEAR of gas for the relayer. The gas is spent; the storage comes back when the contract account is deleted after judging.

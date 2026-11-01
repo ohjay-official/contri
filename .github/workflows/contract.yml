@@ -60,8 +60,8 @@ jobs:
           # NEAR storage staking: 1 NEAR per 100,000 bytes (refundable when storage is freed)
           echo "{\"raw_bytes\":$RAW,\"opt_bytes\":$OPT,\"raw_near\":$(echo "scale=3; $RAW/100000" | bc),\"opt_near\":$(echo "scale=3; $OPT/100000" | bc)}" | tee ../ci-out/size.json
 
-      - name: Size profile (what takes the space)
-        if: steps.build.outcome == 'success'
+      - name: Size profile (what takes the space). Add [profile] to a commit message to run it.
+        if: steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[profile]')
         continue-on-error: true
         run: |
           cargo install twiggy --locked -q 2>/dev/null || cargo install twiggy -q
