@@ -183,14 +183,14 @@ fn string(r: &mut Rng, out: &mut String) {
         match r.below(12) {
             0 => out.push_str("\\\""),
             1 => out.push_str("\\\\"),
-            2 => out.push_str(r.pick(&["\\n", "\\t", "\\r", "\\b", "\\f", "\\/"])),
+            2 => out.push_str(*r.pick(&["\\n", "\\t", "\\r", "\\b", "\\f", "\\/"])),
             3 => {
                 let c = *r.pick(&['\u{0}', '\u{1}', '\u{1f}', 'é', '€', '\u{7f}']);
                 let hex = format!("{:04x}", c as u32);
                 out.push_str("\\u");
                 out.push_str(&if r.chance(50) { hex.to_uppercase() } else { hex });
             }
-            4 => out.push_str(r.pick(&["\\ud83d\\ude00", "\\uD834\\uDD1E"])),
+            4 => out.push_str(*r.pick(&["\\ud83d\\ude00", "\\uD834\\uDD1E"])),
             5 => out.push(*r.pick(&['é', 'ß', '€', '漢', '😀'])),
             6 => out.push(*r.pick(&[':', ',', '{', '}', '[', ']', ' '])),
             _ => out.push((b'a' + r.below(26) as u8) as char),
@@ -203,7 +203,7 @@ fn value(r: &mut Rng, depth: u32, out: &mut String) {
     ws(r, out);
     let kind = if depth >= GEN_DEPTH { r.below(4) } else { r.below(6) };
     match kind {
-        0 => out.push_str(r.pick(&["null", "true", "false"])),
+        0 => out.push_str(*r.pick(&["null", "true", "false"])),
         1 => number(r, out),
         2 | 3 => string(r, out),
         4 => {
@@ -226,7 +226,7 @@ fn value(r: &mut Rng, depth: u32, out: &mut String) {
                 ws(r, out);
                 // A small key set, so repeated keys come up regularly.
                 if r.chance(80) {
-                    out.push_str(r.pick(&["\"id\"", "\"msg\"", "\"amount\"", "\"a\"", "\"\\u0061\""]));
+                    out.push_str(*r.pick(&["\"id\"", "\"msg\"", "\"amount\"", "\"a\"", "\"\\u0061\""]));
                 } else {
                     string(r, out);
                 }
