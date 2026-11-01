@@ -312,7 +312,7 @@ impl Contri {
         unimplemented!()
     }
 
-    pub fn nft_metadata(&self) -> NftContractMetadata {
+    pub fn nft_metadata() -> NftContractMetadata {
         unimplemented!()
     }
 

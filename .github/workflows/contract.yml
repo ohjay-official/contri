@@ -85,7 +85,8 @@ jobs:
         continue-on-error: true
         run: |
           cargo install twiggy --locked -q 2>/dev/null || cargo install twiggy -q
-          CARGO_PROFILE_RELEASE_STRIP=false cargo build --release --target wasm32-unknown-unknown -q 2>&1 | tail -5
+          # Same --cfg near as cargo-near, so host functions are used like in the real build.
+          RUSTFLAGS="--cfg near" CARGO_PROFILE_RELEASE_STRIP=false cargo build --release --target wasm32-unknown-unknown -q 2>&1 | tail -5
           W=target/wasm32-unknown-unknown/release/contri.wasm
           ls -l $W | tee ../ci-out/profile.txt
           twiggy top -n 60 $W >> ../ci-out/profile.txt 2>&1

@@ -338,17 +338,23 @@ fn opt_key(s: &str) -> Option<Option<[u8; 32]>> {
 
 /// Exactly `2 * N` hex digits.
 fn hex<const N: usize>(s: &str) -> Option<[u8; N]> {
+    let mut out = [0u8; N];
+    hex_into(s, &mut out)?;
+    Some(out)
+}
+
+/// Fills `out` from exactly `2 * out.len()` hex digits.
+fn hex_into(s: &str, out: &mut [u8]) -> Option<()> {
     let b = s.as_bytes();
-    if b.len() != 2 * N {
+    if b.len() != 2 * out.len() {
         return None;
     }
-    let mut out = [0u8; N];
     for (i, pair) in b.chunks(2).enumerate() {
         let hi = (pair[0] as char).to_digit(16)?;
         let lo = (pair[1] as char).to_digit(16)?;
         out[i] = (hi * 16 + lo) as u8;
     }
-    Some(out)
+    Some(())
 }
 
 /// What the invite key signs to let `account` join `circle` of this contract
@@ -626,7 +632,7 @@ impl Contri {
     // (enumeration). Seats change hands through the contract's own sale flow
     // (`list_seat` + `buy_seat`), which also logs NEP-171 `nft_transfer` events.
 
-    pub fn nft_metadata(&self) {
+    pub fn nft_metadata() {
         ret(concat!(
             r#"{"spec":"nft-1.0.0","name":"Contri Seats","symbol":"SEAT","icon":""#,
             "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173f35'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23f0b429' stroke-width='3' stroke-dasharray='5.07 2'/%3E%3C/svg%3E",
@@ -834,30 +840,21 @@ impl Contri {
         );
         let mut sent = 0;
         let per_send = GAS_MT_TRANSFER.as_gas() + GAS_CALLBACK.as_gas() + Gas::from_tgas(10).as_gas();
-        for i in 0..c.members.len() {
-            let amount = c.members[i].deposit.0;
-            if amount == 0 {
+        // Members' deposits, then backers' shares of what was left.
+        let owed = c
+            .members
+            .iter_mut()
+            .map(|m| (&m.account_id, &mut m.deposit))
+            .chain(c.backers.iter_mut().map(|b| (&b.account_id, &mut b.due)));
+        for (to, amount) in owed {
+            if amount.0 == 0 {
                 continue;
             }
             if env::prepaid_gas().saturating_sub(env::used_gas()).as_gas() < per_send {
                 break;
             }
-            c.members[i].deposit = U128(0);
-            let to = c.members[i].account_id.clone();
-            self.send(to, amount, format!("contri:{}:deposit", c.id));
-            sent += 1;
-        }
-        for i in 0..c.backers.len() {
-            let amount = c.backers[i].due.0;
-            if amount == 0 {
-                continue;
-            }
-            if env::prepaid_gas().saturating_sub(env::used_gas()).as_gas() < per_send {
-                break;
-            }
-            c.backers[i].due = U128(0);
-            let to = c.backers[i].account_id.clone();
-            self.send(to, amount, format!("contri:{}:backing", c.id));
+            self.send(to.clone(), amount.0, format!("contri:{}:release", c.id));
+            *amount = U128(0);
             sent += 1;
         }
         save_circle(&c);
@@ -997,10 +994,9 @@ impl Contri {
             }
             c.status = CircleStatus::Active;
             c.started_at = env::block_timestamp();
-            let order = join(c.members.iter().map(|m| format!("\"{}\"", m.account_id)));
             emit(
                 "circle_started",
-                format!(r#"{{"circle":{circle_id},"first_deadline":"{}","order":[{order}]}}"#, c.round_deadline()),
+                format!(r#"{{"circle":{circle_id},"first_deadline":"{}"}}"#, c.round_deadline()),
             );
             // Seats become tokens once the turn order is final.
             let mints = c.members.iter().enumerate().map(|(seat, m)| {

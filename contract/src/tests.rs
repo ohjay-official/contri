@@ -740,7 +740,7 @@ fn seats_are_nft_tokens() {
     assert_eq!(view(&c, r#"{"token_id":"0:3"}"#, Contri::nft_token), Value::Null);
     assert_eq!(view(&c, r#"{"token_id":"seat"}"#, Contri::nft_token), Value::Null);
 
-    let meta = view(&c, "", Contri::nft_metadata);
+    let meta = view(&c, "", |_| Contri::nft_metadata());
     assert_eq!(meta["spec"], "nft-1.0.0");
     assert_eq!(meta["symbol"], "SEAT");
     assert!(meta["icon"].as_str().unwrap().starts_with("data:image/svg+xml,"));
@@ -961,7 +961,7 @@ fn views_match_the_typed_interface() {
     let credit: U128 = parse("get_credit", view(&c, &ada, Contri::get_credit));
     assert_eq!(credit, U128(5));
 
-    let _: typed::NftContractMetadata = parse("nft_metadata", view(&c, "", Contri::nft_metadata));
+    let _: typed::NftContractMetadata = parse("nft_metadata", view(&c, "", |_| Contri::nft_metadata()));
     let token: Option<typed::Token> = parse("nft_token", view(&c, r#"{"token_id":"0:2"}"#, Contri::nft_token));
     assert!(token.unwrap().metadata.extra.unwrap().contains("700000"));
     let _: Option<typed::Token> = parse("nft_token", view(&c, r#"{"token_id":"2:0"}"#, Contri::nft_token));
@@ -1300,7 +1300,7 @@ fn random_order_draws_turns_when_the_circle_fills() {
 
         // The start event and the seat tokens follow the drawn order.
         let all = events();
-        assert_eq!(event(&all, "contri", "circle_started")["data"][0]["order"], json!(order));
+        assert!(event(&all, "contri", "circle_started")["data"][0]["first_deadline"].is_string());
         let mint = &event(&all, "nep171", "nft_mint")["data"];
         for (seat, who) in order.iter().enumerate() {
             assert_eq!(mint[seat]["owner_id"], who.as_str());
