@@ -1373,7 +1373,7 @@ fn members_can_leave_before_the_start() {
 }
 
 #[test]
-#[should_panic(expected = "you can only leave a circle that has not started")]
+#[should_panic(expected = "this circle has already started")]
 fn nobody_leaves_a_running_circle() {
     let mut c = full_circle_of_three();
     auth(&mut c, BAYO, "leave:0", 20);
@@ -1413,7 +1413,7 @@ fn anyone_can_cancel_a_circle_that_never_filled_then_close_it() {
 }
 
 #[test]
-#[should_panic(expected = "seats can only be listed while the circle is running")]
+#[should_panic(expected = "seats can only be traded while the circle is running")]
 fn seats_are_not_listed_before_the_draw() {
     let mut c = setup();
     create(&mut c, 3);

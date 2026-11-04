@@ -1153,7 +1153,7 @@ impl Contri {
         let seat = c.seat_of(who).ok_or("not a member of this circle")?;
         let deposit = c.members[seat].deposit.0 + amount;
         if deposit > c.max_deposit() {
-            return Err("a deposit can't be more than the rest of the circle owes".into());
+            return Err("deposit too large for this circle".into());
         }
         c.members[seat].deposit = U128(deposit);
         emit(
@@ -1181,7 +1181,7 @@ impl Contri {
             return Err("that turn has already been paid".into());
         }
         if c.status != CircleStatus::Active {
-            return Err("seats can only be listed while the circle is running".into());
+            return Err("seats can only be traded while the circle is running".into());
         }
         if price.is_some_and(|p| p.0 == 0) {
             return Err("price must be more than zero".into());
@@ -1198,10 +1198,10 @@ impl Contri {
     pub(crate) fn internal_cancel(&mut self, who: &AccountId, circle_id: u64) -> Result<(), String> {
         let mut c = find_circle(circle_id)?;
         if &c.organizer != who && env::block_timestamp() < c.fill_by {
-            return Err("only the organizer can cancel before the fill deadline".into());
+            return Err("only the organizer can cancel yet".into());
         }
         if c.status != CircleStatus::Open {
-            return Err("only a circle that has not started can be cancelled".into());
+            return Err("this circle has already started".into());
         }
         c.status = CircleStatus::Cancelled;
         close_backing(&mut c);
@@ -1213,7 +1213,7 @@ impl Contri {
     pub(crate) fn internal_leave(&mut self, who: &AccountId, circle_id: u64) -> Result<(), String> {
         let mut c = find_circle(circle_id)?;
         if c.status != CircleStatus::Open {
-            return Err("you can only leave a circle that has not started".into());
+            return Err("this circle has already started".into());
         }
         let seat = c.seat_of(who).ok_or("not a member of this circle")?;
         let m = c.members.remove(seat);
