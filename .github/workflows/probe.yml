@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - scripts/probe-1click.mjs
+      - scripts/probe-confidential.mjs
       - .github/workflows/probe.yml
 
 permissions:
@@ -18,11 +19,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Run read-only 1Click probe
         env:
           ONECLICK_API_KEY: ${{ secrets.ONECLICK_API_KEY }}
-        run: node scripts/probe-1click.mjs
+        run: |
+          node scripts/probe-1click.mjs || true
+          node scripts/probe-confidential.mjs || true
       - name: Publish results to the probe-results branch
         run: |
           mkdir -p /tmp/publish && cp -r probe-out /tmp/publish/
