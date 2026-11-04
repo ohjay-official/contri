@@ -1,0 +1,16 @@
+{
+  "name": "contri-app",
+  "private": true,
+  "type": "module",
+  "description": "Contri's web app, relayer and keeper. No runtime dependencies.",
+  "engines": { "node": "22.x" },
+  "scripts": {
+    "dev": "node dev/server.js",
+    "test": "node --test \"test/*.test.js\"",
+    "check": "tsc -p jsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "6.0.2",
+    "@types/node": "^22.0.0"
+  }
+}

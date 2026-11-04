@@ -1,0 +1,168 @@
+// @ts-check
+// Top-ups and cash-outs through NEAR Intents' 1Click API. The API key stays on
+// the server. 1Click sees a deposit address and a destination, never who the
+// member is: Contri sends no names, emails or IP addresses.
+//
+// Top up:   stablecoin on another chain -> 1Click deposit address -> the
+//           member's circle account on NEAR Intents (as USDT).
+// Cash out: the member signs a transfer from their circle account to a 1Click
+//           deposit account inside NEAR Intents -> stablecoin on any chain.
+// Refunds go back to the member's circle account, so no other address is asked for.
+
+import { RelayError } from "./relay.js";
+
+/** @typedef {import("./config.js").Config} Config */
+
+/**
+ * Networks members pay from and cash out to. Asset ids are 1Click's.
+ * @type {Record<string, { label: string, symbol: string, asset: string, decimals: number, address: RegExp }>}
+ */
+export const NETWORKS = {
+  bsc: { label: "BNB Smart Chain (BEP20)", symbol: "USDT", asset: "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g", decimals: 18, address: /^0x[0-9a-fA-F]{40}$/ },
+  sol: { label: "Solana", symbol: "USDT", asset: "nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near", decimals: 6, address: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/ },
+  tron: { label: "Tron (TRC20)", symbol: "USDT", asset: "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near", decimals: 6, address: /^T[1-9A-HJ-NP-Za-km-z]{33}$/ },
+  ton: { label: "TON", symbol: "USDT", asset: "nep245:v2_1.omni.hot.tg:1117_3tsdfyziyc7EJbP2aULWSKU4toBaAcN4FdTgfm5W1mC4ouR", decimals: 6, address: /^[A-Za-z0-9_-]{48}$|^-?\d:[0-9a-fA-F]{64}$/ },
+  base: { label: "Base", symbol: "USDC", asset: "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near", decimals: 6, address: /^0x[0-9a-fA-F]{40}$/ },
+  arb: { label: "Arbitrum", symbol: "USDC", asset: "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near", decimals: 6, address: /^0x[0-9a-fA-F]{40}$/ },
+  eth: { label: "Ethereum (ERC20)", symbol: "USDT", asset: "nep141:eth-0xdac17f958d2ee523a2206206994597c13d831ec7.omft.near", decimals: 6, address: /^0x[0-9a-fA-F]{40}$/ },
+};
+
+const TOKEN_DECIMALS = 6;
+const IMPLICIT_OR_NAMED = /^[0-9a-f]{64}$|^(([a-z\d]+[-_])*[a-z\d]+\.)+[a-z\d]+$/;
+
+/** @param {Config} c @param {object} body */
+async function quote(c, body) {
+  /** @type {Record<string, string>} */
+  const headers = { "Content-Type": "application/json", Accept: "application/json" };
+  if (c.oneClickKey) headers["X-API-Key"] = c.oneClickKey;
+  const res = await fetch(`${c.oneClickUrl}/v0/quote`, { method: "POST", headers, body: JSON.stringify(body) });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new RelayError(json.message ? `1Click: ${json.message}` : `1Click quote failed (${res.status})`, res.status >= 500 ? 502 : 400);
+  return json.quote;
+}
+
+/** @param {unknown} v @param {string} what */
+function units(v, what) {
+  if (typeof v !== "string" || !/^\d{1,18}$/.test(v) || BigInt(v) === 0n) throw new RelayError(`invalid ${what}`);
+  return BigInt(v);
+}
+
+/** @param {unknown} network */
+function net(network) {
+  const n = NETWORKS[/** @type {string} */ (network)];
+  if (!n) throw new RelayError("unsupported network");
+  return n;
+}
+
+/** @param {number} minutes */
+const deadline = (minutes) => new Date(Date.now() + minutes * 60_000).toISOString();
+
+/**
+ * A deposit address that turns about `amount` (token units) sent on `network`
+ * into USDT in `account`'s NEAR Intents balance. FLEX_INPUT: sending a bit more
+ * or less still works, and anything extra stays in the member's balance.
+ * @param {any} body @param {Config} c
+ */
+export async function topUp(body, c) {
+  const n = net(body.network);
+  const want = units(body.amount, "amount");
+  if (!IMPLICIT_OR_NAMED.test(String(body.account))) throw new RelayError("invalid account");
+  // Ask for 0.5% more than needed so swap and bridge costs don't leave the member short.
+  const send = ((want * 1005n) / 1000n) * 10n ** BigInt(n.decimals - TOKEN_DECIMALS);
+  const q = await quote(c, {
+    dry: false,
+    swapType: "FLEX_INPUT",
+    slippageTolerance: 100,
+    originAsset: n.asset,
+    depositType: "ORIGIN_CHAIN",
+    destinationAsset: c.tokenId,
+    amount: send.toString(),
+    recipient: body.account,
+    recipientType: "INTENTS",
+    refundTo: body.account,
+    refundType: "INTENTS",
+    deadline: deadline(24 * 60),
+    referral: "contri",
+  });
+  return {
+    network: body.network,
+    label: n.label,
+    symbol: n.symbol,
+    depositAddress: q.depositAddress,
+    depositMemo: q.depositMemo ?? null,
+    send: q.amountInFormatted,
+    minSend: formatUnits(BigInt(q.minAmountIn), n.decimals),
+    receive: q.amountOutFormatted,
+    deadline: q.deadline,
+    seconds: q.timeEstimate,
+  };
+}
+
+/**
+ * A 1Click deposit account inside NEAR Intents that sends `amount` USDT on to
+ * `address` on `network`. The member then signs a transfer to it.
+ * @param {any} body @param {Config} c
+ */
+export async function cashOut(body, c) {
+  const n = net(body.network);
+  const amount = units(body.amount, "amount");
+  if (!n.address.test(String(body.address))) throw new RelayError(`that isn't a ${n.label} address`);
+  if (!IMPLICIT_OR_NAMED.test(String(body.account))) throw new RelayError("invalid account");
+  const q = await quote(c, {
+    dry: Boolean(body.dry),
+    swapType: "EXACT_INPUT",
+    slippageTolerance: 100,
+    originAsset: c.tokenId,
+    depositType: "INTENTS",
+    destinationAsset: n.asset,
+    amount: amount.toString(),
+    recipient: body.address,
+    recipientType: "DESTINATION_CHAIN",
+    refundTo: body.account,
+    refundType: "INTENTS",
+    deadline: deadline(30),
+    referral: "contri",
+  });
+  return {
+    network: body.network,
+    label: n.label,
+    symbol: n.symbol,
+    depositAddress: q.depositAddress ?? null,
+    receive: q.amountOutFormatted,
+    fee: q.withdrawFee ? formatUnits(BigInt(q.withdrawFee), n.decimals) : "0",
+    seconds: q.timeEstimate,
+  };
+}
+
+/** Where a top-up or cash-out is. @param {any} body @param {Config} c */
+export async function swapStatus(body, c) {
+  const address = String(body.depositAddress ?? "");
+  if (!/^[A-Za-z0-9:_.-]{20,100}$/.test(address)) throw new RelayError("invalid deposit address");
+  /** @type {Record<string, string>} */
+  const headers = { Accept: "application/json" };
+  if (c.oneClickKey) headers["X-API-Key"] = c.oneClickKey;
+  const res = await fetch(`${c.oneClickUrl}/v0/status?depositAddress=${encodeURIComponent(address)}`, { headers });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new RelayError(json.message ?? `1Click status failed (${res.status})`, 502);
+  return { status: json.status, updatedAt: json.updatedAt ?? null };
+}
+
+/** Tells 1Click about a deposit so it is picked up sooner. @param {any} body @param {Config} c */
+export async function submitDeposit(body, c) {
+  /** @type {Record<string, string>} */
+  const headers = { "Content-Type": "application/json", Accept: "application/json" };
+  if (c.oneClickKey) headers["X-API-Key"] = c.oneClickKey;
+  const res = await fetch(`${c.oneClickUrl}/v0/deposit/submit`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ txHash: String(body.txHash), depositAddress: String(body.depositAddress) }),
+  });
+  return { ok: res.ok };
+}
+
+/** @param {bigint} v @param {number} decimals */
+export function formatUnits(v, decimals) {
+  const base = 10n ** BigInt(decimals);
+  const cents = (v * 100n + base - 1n) / base; // round up: never tell someone to send too little
+  return `${cents / 100n}.${(cents % 100n).toString().padStart(2, "0")}`;
+}

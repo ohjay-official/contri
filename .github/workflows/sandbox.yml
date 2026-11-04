@@ -10,6 +10,10 @@ on:
     branches: [main]
     paths:
       - contract/**
+      - app/public/js/lib/**
+      - app/server/**
+      - app/api/**
+      - app/test/e2e/**
       - .github/workflows/sandbox.yml
 
 permissions:
@@ -30,6 +34,10 @@ jobs:
           git clone -q https://github.com/near/intents.git intents
           git -C intents checkout -q "$INTENTS_REF"
           git -C intents log -1 --format='%h %ci %s'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - uses: Swatinem/rust-cache@v2
         with:

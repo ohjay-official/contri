@@ -1,0 +1,45 @@
+// @ts-check
+// Wraps a server function as a web-standard request handler (what Vercel
+// Functions and the local dev server call). Errors meant for the member are
+// returned as `{ error }`; anything else becomes a generic message. Nothing is
+// logged: not the request, not the IP address, not the error.
+
+import { config } from "./config.js";
+import { RelayError } from "./relay.js";
+
+const MAX_BODY = 64 * 1024;
+
+/**
+ * @param {(body: any, c: import("./config.js").Config) => Promise<unknown>} fn
+ * @returns {(request: Request) => Promise<Response>}
+ */
+export function handler(fn) {
+  return async (request) => {
+    try {
+      let body = {};
+      if (request.method === "POST") {
+        const text = await request.text();
+        if (text.length > MAX_BODY) throw new RelayError("request too large", 413);
+        try {
+          body = text ? JSON.parse(text) : {};
+        } catch {
+          throw new RelayError("the request isn't JSON");
+        }
+      } else {
+        body = Object.fromEntries(new URL(request.url).searchParams);
+      }
+      return json(await fn(body, config()));
+    } catch (e) {
+      if (e instanceof RelayError) return json({ error: e.message }, e.status);
+      return json({ error: "Something went wrong on our side. Refresh to see what went through before you try again." }, 500);
+    }
+  };
+}
+
+/** @param {unknown} data @param {number} [status] */
+export function json(data, status = 200) {
+  return new Response(JSON.stringify(data, (_, v) => (typeof v === "bigint" ? v.toString() : v)), {
+    status,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
+}

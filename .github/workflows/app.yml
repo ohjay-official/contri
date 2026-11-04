@@ -1,0 +1,48 @@
+name: app
+
+# Type-checks the app, relayer and keeper, and runs their unit tests. The
+# end-to-end run against NEAR Intents is in sandbox.yml. Results go to the
+# app-results branch.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app/**
+      - .github/workflows/app.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund 2>&1 | tail -2
+      - name: Types
+        id: types
+        continue-on-error: true
+        run: mkdir -p ../app-out && set -o pipefail && npx tsc -p jsconfig.json 2>&1 | tee ../app-out/types.log
+      - name: Unit tests
+        id: tests
+        continue-on-error: true
+        run: set -o pipefail && npm test 2>&1 | tee ../app-out/test.log
+      - name: Publish to the app-results branch
+        if: always()
+        run: |
+          cd ../app-out
+          echo "{\"commit\":\"${GITHUB_SHA}\",\"types\":\"${{ steps.types.outcome }}\",\"tests\":\"${{ steps.tests.outcome }}\"}" > status.json
+          git init -q && git checkout -q -b app-results
+          git config user.name "contri-ci" && git config user.email "actions@users.noreply.github.com"
+          git add -A && git commit -q -m "app results ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" app-results
+      - if: steps.types.outcome != 'success' || steps.tests.outcome != 'success'
+        run: exit 1
