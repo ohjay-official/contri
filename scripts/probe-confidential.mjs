@@ -68,6 +68,17 @@ for (const [label, body] of legs) {
   if (session) await quote(`${label} (dry, with session)`, { dry: true, ...body }, session);
 }
 
+// 2b. Where does the session go? Try the dry top-up leg with the token in other headers.
+if (session) {
+  for (const [name, value] of [["User-Session", session], ["X-User-Session", session], ["X-Session-Token", session], ["X-Access-Token", session], ["Cookie", `accessToken=${session}`]]) {
+    await call(`top up (dry), session in ${name}`, "/v0/quote", {
+      method: "POST",
+      headers: headers({ [name]: value }),
+      body: JSON.stringify({ slippageTolerance: 100, deadline: deadline(30), referral: "contri", dry: true, ...legs[0][1] }),
+    });
+  }
+}
+
 // 3. A real confidential -> public quote, then generate-intent and submit-intent.
 const live = await quote("contribute leg (live quote)", { dry: false, ...legs[1][1] }, session);
 const depositAddress = live.body?.quote?.depositAddress;
