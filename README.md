@@ -6,6 +6,15 @@ Contri runs a rotating savings circle (ajo, esusu, susu, tanda, chit fund) where
 
 Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: NFTs That Do Something, Real-World Money, Privacy & Private AI, Open Innovation.
 
+<p>
+<img src="docs/img/start.png" width="200" alt="Starting a circle">
+<img src="docs/img/invite.png" width="200" alt="An invite, opened by a new member">
+<img src="docs/img/joined.png" width="200" alt="The circle running">
+<img src="docs/img/paid-out.png" width="200" alt="The pot paid out, with the seat NFT">
+</p>
+
+Screenshots from the automated browser test: two members with passkeys click through a circle in Chromium against the real NEAR Intents contract on a local NEAR network.
+
 ## How to test
 
 **Live app:** _URL added at deploy_. Contract: _account added at deploy_.
@@ -42,7 +51,8 @@ End-to-end, against the real NEAR Intents contract built from [near/intents](htt
 
 - `a_whole_circle_through_near_intents`: create, join, a refused join refunded, a seat sale, payouts, a missed payment settled from a deposit, deposits released, circle closed. Every USDT is accounted for and Contri ends at zero.
 - `members_with_only_a_key_use_signed_intents`: a member with no NEAR account joins, leaves and pays with signed intents.
-- `the_app_runs_a_circle_through_its_relayer`: the app's own JavaScript (passkey-derived keys, invite signatures, encrypted name, signing) runs a whole circle through the relayer, read proxy and keeper handlers.
+- `the_app_runs_a_circle_through_its_relayer`: the app's own JavaScript (passkey-derived keys, invite signatures, encrypted name, versioned nonces) runs a whole circle through the relayer, read proxy and keeper handlers, including a missed round settled by the keeper.
+- `the_app_works_in_a_browser`: two members, each in their own Chromium profile with a passkey (a WebAuthn virtual authenticator with PRF), sign up, start a circle, invite, join, top up, pay and get paid by clicking through the real app. Screenshots are published to the `sandbox-results` branch.
 
 ## What it does
 
