@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contri: ajo without the collector</title>
+  <meta name="description" content="Save in a rotating circle with people you trust. A contract on NEAR holds the pot and pays each turn by itself, so nobody can run with the money.">
+  <meta name="referrer" content="no-referrer">
+  <meta property="og:title" content="Contri: ajo without the collector">
+  <meta property="og:description" content="Save with people you trust. A contract on NEAR holds the pot and pays each turn by itself.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/instrument-sans.woff" as="font" type="font/woff" crossorigin>
+  <link rel="stylesheet" href="/css/contri.css">
+</head>
+<body>
+  <div class="site">
+    <header class="site-header">
+      <a class="wordmark" href="/" aria-label="Contri home">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle class="hole" cx="25.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/><circle class="hole" cx="6.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
+        Contri
+      </a>
+      <nav aria-label="Site">
+        <a class="hide-sm" href="/how-it-works">How it works</a>
+        <a class="hide-sm" href="/privacy">Privacy</a>
+        <a class="button primary" href="/app">Open Contri</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <h1>Ajo, without the collector.</h1>
+          <p class="lead">Save with people you trust, in turns. A contract on NEAR holds the pot and pays each person on their day, so nobody can run with the money, not even us.</p>
+          <div class="actions">
+            <a class="button primary" href="/app#/new">Start a circle</a>
+            <a class="button secondary" href="/how-it-works">How it works</a>
+          </div>
+        </div>
+        <div class="hero-ring">
+          <figure class="ring">
+            <svg class="ring-art" viewBox="0 0 320 320" aria-hidden="true">
+              <circle class="ring-track" cx="160" cy="160" r="122"/>
+              <circle class="ring-progress" cx="160" cy="160" r="122" stroke-dasharray="306.6 766.6" transform="rotate(-90 160 160)"/>
+              <g class="seat received paid"><circle cx="160" cy="38" r="20"/><text x="160" y="38" dominant-baseline="central" text-anchor="middle" font-size="17">1</text></g>
+              <g class="seat received paid"><circle cx="276" cy="122.3" r="20"/><text x="276" y="122.3" dominant-baseline="central" text-anchor="middle" font-size="17">2</text></g>
+              <g class="seat current paid"><circle cx="231.7" cy="258.7" r="24"/><text x="231.7" y="258.7" dominant-baseline="central" text-anchor="middle" font-size="17">3</text></g>
+              <g class="seat paid"><circle cx="88.3" cy="258.7" r="20"/><text x="88.3" y="258.7" dominant-baseline="central" text-anchor="middle" font-size="17">4</text></g>
+              <g class="seat"><circle cx="44" cy="122.3" r="20"/><text x="44" y="122.3" dominant-baseline="central" text-anchor="middle" font-size="17">5</text></g>
+            </svg>
+            <figcaption class="ring-center"><span><span class="big">$100</span><span>to turn 3 this week</span><span class="small">4 of 5 have paid</span></span></figcaption>
+          </figure>
+          <p class="hero-note">Five members, $20 a week each. Each week one of them receives the $100 pot.</p>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="steps">
+        <h2 id="steps">A circle in four steps</h2>
+        <ol class="steps">
+          <li><h3>Start a circle and send the link</h3><p>Choose the amount, how many people and how often. Share the invite link on WhatsApp. Only people with the link can see or join the circle.</p></li>
+          <li><h3>Everyone pays from where their money is</h3><p>Send USDT or USDC from your exchange or wallet on BNB Chain, Solana, Tron, TON, Base and more. It arrives as USDT, usually within a couple of minutes.</p></li>
+          <li><h3>The pot pays out by itself</h3><p>When the last person pays, the contract sends the whole pot to whoever's turn it is. Nobody has to hold it or remember to pass it on.</p></li>
+          <li><h3>Need it sooner? Swap turns</h3><p>Put your turn up for sale, or buy an earlier turn from someone who can wait. You agree a price and the contract swaps your places.</p></li>
+        </ol>
+      </section>
+
+      <section class="band" aria-labelledby="missed">
+        <h2 id="missed">When someone doesn't pay</h2>
+        <div class="split">
+          <div><h3>Their deposit covers it</h3><p>Everyone puts down one contribution when they join. If someone misses a round, it comes out of their deposit and the pot still pays in full. Unused deposits come back when the circle ends.</p></div>
+          <div><h3>Everyone in the circle sees it</h3><p>Missed payments are recorded on chain against the seat that missed them, so the whole circle knows who paid and who didn't. No chasing, no arguments about who said what.</p></div>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="privacy">
+        <h2 id="privacy">What other people can see</h2>
+        <p class="intro">Payments on a blockchain are public. Contri keeps who you are out of them.</p>
+        <div class="table-wrap">
+          <table class="seen">
+            <thead><tr><th scope="col">About you</th><th scope="col">Who can see it</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Your name, phone number, email</th><td>Nobody. Contri never asks for them. You sign in with a passkey.</td></tr>
+              <tr><th scope="row">Your circle's name</th><td>Only people with the invite link. It is encrypted on your phone before it is saved.</td></tr>
+              <tr><th scope="row">Your other circles</th><td>Nobody. Each circle uses its own account, made from your passkey, and nothing on chain connects them.</td></tr>
+              <tr><th scope="row">Who paid this round</th><td>Your circle, as it always has in ajo. Outside it, only an account number that leads nowhere.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="after"><a href="/privacy">Read the privacy policy</a> for exactly what is stored and where.</p>
+      </section>
+
+      <section class="band" aria-labelledby="faq">
+        <h2 id="faq">Questions</h2>
+        <div class="faq">
+          <details><summary>Who holds the money?</summary><p>No person. Contributions go to a contract on NEAR, a program whose rules anyone can read. It only pays a pot to the member whose turn it is, and only returns deposits to the members who made them. Our team can't move it.</p></details>
+          <details><summary>What does it cost?</summary><p>Contri takes no fee. Moving money in and out goes through NEAR Intents, which shows its network fee before you send, usually a few cents on BNB Chain or Solana. Contri pays the NEAR transaction fees for every payment you make in a circle.</p></details>
+          <details><summary>What if Contri disappears?</summary><p>The contract keeps running without us. Anyone can trigger a payout once a round's deadline has passed, and your money is held in NEAR Intents under a key only your passkey can produce.</p></details>
+          <details><summary>What if I lose my phone?</summary><p>Sign in on a new phone with the same passkey. Passkeys are synced by Google Password Manager and iCloud Keychain, and every circle account comes back from it.</p></details>
+          <details><summary>Is this a bank or an investment?</summary><p>No. Contri doesn't lend, pay interest or invest your money. It is software that runs a savings circle among people who already trust each other.</p></details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Contri. Built on NEAR.</span>
+      <nav aria-label="Footer">
+        <a href="/how-it-works">How it works</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="https://github.com/ohjay-official/contri">Source code</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

@@ -61,7 +61,7 @@ async function chainNow() {
 
 /** Signs as `who` and relays. @param {import("../../public/js/lib/keys.js").Signer} who @param {object[]} intents */
 async function act(who, intents, what = "") {
-  const signed = await signIntents(who, intents, { now: await chainNow() });
+  const signed = await signIntents(who, intents, { now: await chainNow(), recipient: INTENTS });
   const r = await call(relayPost, { signed: [signed] });
   assert.ok(r.ok, `${what}: ${r.failure}`);
   console.log(`  ${what}: ${r.events.map((/** @type {any} */ e) => e.event).join(", ") || "no events"} ${r.notes.join(" | ")}`);
@@ -153,10 +153,10 @@ await act(ada, [transfer(`cashout.${CONTRI}`, TOKEN, USDT)], "cash out");
 assert.equal(await balance(`cashout.${CONTRI}`), USDT);
 
 // The relayer refuses intents it shouldn't pay for, before spending gas.
-const evil = await signIntents(ada, [transfer(INTENTS, TOKEN, USDT, { msg: "x" })], { now: await chainNow() });
+const evil = await signIntents(ada, [transfer(INTENTS, TOKEN, USDT, { msg: "x" })], { now: await chainNow(), recipient: INTENTS });
 await assert.rejects(call(relayPost, { signed: [evil] }), /only to Contri/);
 // And NEAR Intents' simulation catches what would fail on chain: spending more than the balance.
-const broke = await signIntents(bayo, a.contribute(id, 2, 1000n * USDT), { now: await chainNow() });
+const broke = await signIntents(bayo, a.contribute(id, 2, 1000n * USDT), { now: await chainNow(), recipient: INTENTS });
 await assert.rejects(call(relayPost, { signed: [broke] }), /would reject/);
 
 console.log("app e2e: passed");
