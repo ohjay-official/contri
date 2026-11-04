@@ -7,11 +7,11 @@
 // lands as USDT in this circle's account on NEAR Intents.
 
 import { toHex } from "../../lib/bytes.js";
-import { actions, dueFor, findEvent, seatOf } from "../../lib/contri.js";
+import { actions, dueFor, findEvent, formatAmount, parseAmount, seatOf } from "../../lib/contri.js";
 import { encryptName, inviteSigner, signJoin } from "../../lib/invite.js";
 import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { nameOf, usd } from "../state.js";
-import { busy, copy, h, notice, show, sleep } from "../ui.js";
+import { busy, copy, field, h, notice, show, sleep } from "../ui.js";
 import { balanceOf, decodeSecret, local, remember, signer } from "../wallet.js";
 
 /** Networks shown first are the cheapest for small amounts. */
@@ -32,7 +32,7 @@ export async function fundScreen(index) {
   const a = actions(cfg.contractId, cfg.tokenId);
 
   // What the money is for.
-  /** @type {{ title: string, need: bigint, button: string, run: () => Promise<string> } | null} */
+  /** @type {{ title: string, need: bigint, whole: bigint, button: string, run: () => Promise<string> } | null} */
   let purpose = null;
   if (l.pending?.kind === "create") {
     const p = l.pending;
@@ -40,6 +40,7 @@ export async function fundScreen(index) {
     purpose = {
       title: `Create ${p.name}`,
       need: contribution,
+      whole: contribution * BigInt(p.size + 1),
       button: `Create circle and pay ${usd(contribution)} deposit`,
       run: async () => {
         if (!l.secret) throw new Error("This circle's invite secret is missing on this device. Start again.");
@@ -64,6 +65,7 @@ export async function fundScreen(index) {
     purpose = {
       title: `Join ${nameOf(id)}`,
       need: deposit,
+      whole: deposit + BigInt(c.contribution) * BigInt(c.size),
       button: `Join and pay ${usd(deposit)} deposit`,
       run: async () => {
         const sig = l.secret && c.invite_only ? await signJoin(decodeSecret(l.secret), cfg.contractId, id, s.accountId, deposit) : null;
@@ -81,6 +83,7 @@ export async function fundScreen(index) {
       purpose = {
         title: `Pay round ${round + 1} of ${nameOf(id)}`,
         need: BigInt(c.contribution),
+        whole: BigInt(c.contribution) * BigInt(c.size - round),
         button: `Pay ${usd(c.contribution)}`,
         run: async () => {
           await relay([await sign(s, a.contribute(id, round, c.contribution))]);
@@ -110,6 +113,10 @@ export async function fundScreen(index) {
     }),
   );
   const getAddress = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary" }, "Get a deposit address"));
+  const amountInput = h("input", { type: "text", inputmode: "decimal", autocomplete: "off" });
+  /** @param {bigint} v */
+  const setAmount = (v) => (amountInput.value = formatAmount(v > 0n ? v : 1_000_000n).replace(/,/g, ""));
+  const amountChoices = h("div", { class: "actions row" });
 
   let balance = 0n;
   let stopped = false;
@@ -126,7 +133,8 @@ export async function fundScreen(index) {
   getAddress.addEventListener("click", () =>
     busy(getAddress, "Getting an address", async () => {
       const network = /** @type {HTMLInputElement | null} */ (networkList.querySelector("input:checked"))?.value ?? "bsc";
-      const want = purpose ? (purpose.need - balance > 0n ? purpose.need - balance : purpose.need) : 5_000_000n;
+      const want = parseAmount(amountInput.value);
+      if (want < 1_000_000n) throw new Error("Add at least $1: smaller amounts cost more in fees than they're worth.");
       const q = await swap("topup", { network, account: s.accountId, amount: want.toString() });
       depositAddress = q.depositAddress;
       depositBox.replaceChildren(
@@ -156,6 +164,8 @@ export async function fundScreen(index) {
       progress,
       h("div", { class: "actions" }, actionBtn),
       h("h2", null, "Add money"),
+      field("How much, in dollars", amountInput, "Adding enough for every round at once saves a network fee each round. Anything not used stays in this account, and you can cash it out."),
+      amountChoices,
       h("p", null, "Choose the network you're sending from. Withdrawing from an exchange works: pick the same network there."),
       networkList,
       h("div", { class: "actions" }, getAddress),
@@ -163,6 +173,17 @@ export async function fundScreen(index) {
       nearAccount,
     ),
   );
+
+  // Suggested amounts: what's missing now, or enough for the whole circle.
+  balance = await balanceOf(index).catch(() => 0n);
+  const short = purpose ? purpose.need - balance : 5_000_000n;
+  setAmount(short);
+  if (purpose && purpose.whole - balance > short) {
+    amountChoices.append(
+      h("button", { class: "secondary", type: "button", onclick: () => setAmount(short) }, `Just this: ${usd(short > 0n ? short : 0n)}`),
+      h("button", { class: "secondary", type: "button", onclick: () => setAmount(purpose.whole - balance) }, `Every round: ${usd(purpose.whole - balance)}`),
+    );
+  }
 
   // Watch the balance until the screen changes.
   const view = document.getElementById("view");

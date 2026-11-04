@@ -19,16 +19,16 @@ Screenshots from the automated browser test: two members with passkeys click thr
 
 **Live app:** _URL added at deploy_. Contract: _account added at deploy_.
 
-### 1. Run a circle with real money (about $2, 5 minutes)
+### 1. Run a circle with real money (about $6 in, nearly all of it back; 10 minutes)
 
 1. Open the app on your phone and tap **Create a passkey**. No email or phone number is asked for.
 2. Tap **Start a circle**: name it, $1 per round, 2 members, every 10 minutes. Tap **Continue**.
-3. Choose **USDT on BNB Smart Chain**, tap **Get a deposit address**, and send the amount shown from an exchange or wallet. When it arrives, tap **Create circle**. You now hold seat 1 and the invite link opens.
-4. Open the invite link in a second browser profile (or send it to a friend), create a passkey there, and join the same way. The circle starts: the ring shows both seats and the first round's deadline.
-5. Both members tap **Pay**. The second payment pays the $2 pot to seat 1 in the same transaction. Pay again for round 2 and seat 2 receives the pot; the circle finishes and both deposits come back.
-6. Tap **Cash out** to send what's in a circle's account back to an exchange or wallet.
+3. Tap **Every round: $3.00**, choose **USDT on BNB Smart Chain**, tap **Get a deposit address**, and send that amount from an exchange or wallet. When it arrives, tap **Create circle**. You hold seat 1 and the invite link opens.
+4. Open the invite link in a second browser profile (or send it to a friend), create a passkey there, and add $3 the same way. Tap **Join**. The circle starts: the ring shows both seats and the round's deadline.
+5. Both members tap **Pay**. The second payment pays the $2 pot to seat 1 in the same transaction. Pay round 2 and seat 2 receives the pot; the circle finishes and both $1 deposits come back.
+6. Tap **Cash out** to send a circle account's balance back to an exchange or wallet.
 
-Every action is a NEP-413 intent signed on the phone and submitted by Contri's relayer, so neither member ever holds NEAR.
+Every action is a NEP-413 intent signed on the phone and submitted by Contri's relayer, so neither member ever holds NEAR. To watch instead of pay, open **Live circles** in the app: every circle on the contract, read straight from the chain.
 
 ### 2. Check the screens offline (no money, no chain)
 
