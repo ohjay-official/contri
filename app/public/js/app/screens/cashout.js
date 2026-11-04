@@ -2,8 +2,8 @@
 // Cashing out a circle account to an exchange or wallet on any supported chain.
 
 import { formatAmount, parseAmount } from "../../lib/contri.js";
-import { signIntents, transfer } from "../../lib/intents.js";
-import { getConfig, relay, swap } from "../api.js";
+import { transfer } from "../../lib/intents.js";
+import { getConfig, relay, sign, swap } from "../api.js";
 import { usd } from "../state.js";
 import { busy, field, h, notice, show, sleep } from "../ui.js";
 import { balanceOf, local, signer } from "../wallet.js";
@@ -41,7 +41,7 @@ export async function cashOutScreen(index) {
       const req = read();
       const q = await swap("cashout", req);
       if (!q.depositAddress) throw new Error("1Click didn't give a deposit address. Try again.");
-      const r = await relay([await signIntents(s, [transfer(q.depositAddress, cfg.tokenId, req.amount)], { recipient: cfg.intentsId })]);
+      const r = await relay([await sign(s, [transfer(q.depositAddress, cfg.tokenId, req.amount)])]);
       await swap("submit", { txHash: r.hash, depositAddress: q.depositAddress }).catch(() => null);
       notice("Sent. It's on its way.");
       progress.textContent = `Sending ${q.receive} ${q.symbol} to your ${q.label} address.`;

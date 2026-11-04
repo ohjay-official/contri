@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fromBase58, fromBase64, fromHex, toBase58, toHex, uintLE, utf8 } from "../public/js/lib/bytes.js";
 import { actions, dueFor, formatAmount, parseAmount } from "../public/js/lib/contri.js";
-import { nep413Hash, signIntents, transfer } from "../public/js/lib/intents.js";
+import { nep413Hash, signIntents, transfer, versionedNonce } from "../public/js/lib/intents.js";
 import { decryptName, encryptName, inviteLink, inviteSigner, joinMessage, parseInvite, signJoin } from "../public/js/lib/invite.js";
 import { circleSigner, signerFromSecretKey, signerFromSeed, verify } from "../public/js/lib/keys.js";
 import { encodeTransaction, events } from "../public/js/lib/near.js";
@@ -165,4 +165,19 @@ test("events are read from logs", () => {
   const logs = ["refund: wrong amount", 'EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_created","data":[{"circle":4}]}'];
   assert.deepEqual(events(logs, "contri")[0].data, [{ circle: 4 }]);
   assert.equal(events(logs, "nep171").length, 0);
+});
+
+test("versioned nonces carry the salt and deadline NEAR Intents checks", async () => {
+  const n = versionedNonce("0a0b0c0d", Date.parse("2026-11-05T00:10:00Z"));
+  assert.equal(n.length, 32);
+  assert.equal(toHex(n.slice(0, 5)), "5628f6c600");
+  assert.equal(toHex(n.slice(5, 9)), "0a0b0c0d");
+  assert.equal(toHex(n.slice(9, 17)), toHex(uintLE(BigInt(Date.parse("2026-11-05T00:10:00Z")) * 1_000_000n, 8)));
+  const s = await signerFromSeed(SEED42);
+  const signed = await signIntents(s, [], { now: Date.parse("2026-11-05T00:00:00.400Z"), salt: "0a0b0c0d" });
+  const nonce = fromBase64(signed.payload.nonce);
+  assert.equal(toHex(nonce.slice(0, 4)), "5628f6c6");
+  // The nonce's deadline is the intent's deadline, to the second.
+  assert.equal(JSON.parse(signed.payload.message).deadline, "2026-11-05T00:10:00Z");
+  assert.equal(toHex(nonce.slice(9, 17)), toHex(uintLE(BigInt(Date.parse("2026-11-05T00:10:00Z")) * 1_000_000n, 8)));
 });

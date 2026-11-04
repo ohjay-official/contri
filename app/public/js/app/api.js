@@ -1,6 +1,8 @@
 // @ts-check
 // Calls to Contri's server: settings, chain reads, the relayer, 1Click and the keeper.
 
+import { signIntents } from "../lib/intents.js";
+
 /** @typedef {{ network: string, contractId: string, intentsId: string, tokenId: string, relaying: boolean }} AppConfig */
 
 /** @param {string} path @param {object} [body] */
@@ -57,3 +59,13 @@ export const swap = (action, body) => request("/api/swap", { action, ...body });
 
 /** Asks the keeper to settle a circle whose round deadline has passed. @param {number} circle */
 export const keep = (circle) => request("/api/keeper", { circle }).catch(() => null);
+
+/**
+ * Signs intents as a circle account with a versioned nonce, ready for `relay`.
+ * @param {import("../lib/keys.js").Signer} signer @param {object[]} intents
+ */
+export async function sign(signer, intents) {
+  const cfg = await getConfig();
+  const [salt] = await views([{ contract: "intents", method: "current_salt" }]);
+  return signIntents(signer, intents, { recipient: cfg.intentsId, salt });
+}

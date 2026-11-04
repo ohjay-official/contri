@@ -3,9 +3,8 @@
 // payouts, and this circle's money.
 
 import { actions, dueFor, parseAmount, payoutDateMs, potSize, roundDeadlineMs, seatOf, shortAccount } from "../../lib/contri.js";
-import { signIntents } from "../../lib/intents.js";
 import { inviteLink } from "../../lib/invite.js";
-import { getCircle, getConfig, keep, relay } from "../api.js";
+import { getCircle, getConfig, keep, relay, sign } from "../api.js";
 import { ring } from "../ring.js";
 import { every, fromNow, nameOf, refresh, slotFor, usd, when } from "../state.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
@@ -40,7 +39,7 @@ export async function circleScreen(id, openShare = false) {
   /** Signs as this circle's account and relays, then reloads the screen. @param {object[]} intents @param {string} done */
   const act = async (intents, done) => {
     if (!slot) throw new Error("You're not in this circle.");
-    const r = await relay([await signIntents(slot.signer, intents, { recipient: cfg.intentsId })]);
+    const r = await relay([await sign(slot.signer, intents)]);
     if (!r.events.length && r.notes.length) throw new Error(r.notes[0]);
     notice(done);
     await circleScreen(id);

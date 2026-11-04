@@ -7,7 +7,7 @@
 // signer: a `transfer` with a `msg` reaches `mt_on_transfer`, an `auth_call`
 // reaches `on_auth`.
 
-import { concat, randomBytes, sha256, toBase58, toBase64, uintLE, utf8 } from "./bytes.js";
+import { concat, fromHex, randomBytes, sha256, toBase58, toBase64, uintLE, utf8 } from "./bytes.js";
 
 /** @typedef {import("./keys.js").Signer} Signer */
 
@@ -37,19 +37,41 @@ export async function nep413Hash(message, nonce, recipient) {
   return sha256(concat(NEP413_TAG, borshString(message), nonce, borshString(recipient), Uint8Array.of(0)));
 }
 
+/** Marks a versioned nonce (NEAR Intents `VersionedNonce::VERSIONED_MAGIC_PREFIX`). */
+const VERSIONED_MAGIC = Uint8Array.of(0x56, 0x28, 0xf6, 0xc6);
+
+/**
+ * A NEAR Intents V1 nonce: magic, version 0, the contract's current salt, the
+ * deadline in nanoseconds (i64 LE), 15 random bytes. NEAR Intents rejects it
+ * after the deadline or once the salt is rotated out, so its record can be
+ * cleaned up, and 1Click requires it to sign in.
+ * @param {string} saltHex from `current_salt` on intents.near @param {number} deadlineMs
+ */
+export function versionedNonce(saltHex, deadlineMs) {
+  const salt = fromHex(saltHex);
+  if (salt.length !== 4) throw new Error("a salt is 4 bytes");
+  return concat(VERSIONED_MAGIC, Uint8Array.of(0), salt, uintLE(BigInt(deadlineMs) * 1_000_000n, 8), randomBytes(15));
+}
+
 /**
  * Signs a list of intents. The deadline is short, so a signed payload that
- * leaks can't be replayed later; each nonce is used once.
+ * leaks can't be replayed later; each nonce is used once. With `salt`, the
+ * nonce is a versioned one bound to that deadline; without, a legacy random one.
  * @param {Signer} signer
  * @param {object[]} intents
- * @param {{ recipient?: string, validForMs?: number, now?: number }} [opts]
+ * @param {{ recipient?: string, validForMs?: number, now?: number, salt?: string }} [opts]
  * @returns {Promise<SignedIntents>}
  */
-export async function signIntents(signer, intents, { recipient = "intents.near", validForMs = 10 * 60_000, now = Date.now() } = {}) {
-  const deadline = new Date(now + validForMs).toISOString().replace(/\.\d{3}Z$/, "Z");
+export async function signIntents(signer, intents, { recipient = "intents.near", validForMs = 10 * 60_000, now = Date.now(), salt } = {}) {
+  const deadlineMs = Math.floor((now + validForMs) / 1000) * 1000;
+  const deadline = new Date(deadlineMs).toISOString().replace(/\.\d{3}Z$/, "Z");
   const message = JSON.stringify({ signer_id: signer.accountId, deadline, intents });
-  const nonce = randomBytes(32);
-  nonce[0] = 0; // never the prefix NEAR Intents reserves for versioned nonces
+  let nonce;
+  if (salt) nonce = versionedNonce(salt, deadlineMs);
+  else {
+    nonce = randomBytes(32);
+    nonce[0] = 0; // never the prefix NEAR Intents reserves for versioned nonces
+  }
   const signature = await signer.sign(await nep413Hash(message, nonce, recipient));
   return {
     standard: "nep413",

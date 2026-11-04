@@ -59,9 +59,12 @@ async function chainNow() {
   return Number(BigInt(b.header.timestamp_nanosec) / 1_000_000n);
 }
 
-/** Signs as `who` and relays. @param {import("../../public/js/lib/keys.js").Signer} who @param {object[]} intents */
+/** NEAR Intents' current salt, for versioned nonces. */
+const salt = async () => /** @type {string} */ (await view("intents", "current_salt", {}));
+
+/** Signs as `who` (versioned nonce, as the app does) and relays. @param {import("../../public/js/lib/keys.js").Signer} who @param {object[]} intents */
 async function act(who, intents, what = "") {
-  const signed = await signIntents(who, intents, { now: await chainNow(), recipient: INTENTS });
+  const signed = await signIntents(who, intents, { now: await chainNow(), recipient: INTENTS, salt: await salt() });
   const r = await call(relayPost, { signed: [signed] });
   assert.ok(r.ok, `${what}: ${r.failure}`);
   console.log(`  ${what}: ${r.events.map((/** @type {any} */ e) => e.event).join(", ") || "no events"} ${r.notes.join(" | ")}`);

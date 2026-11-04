@@ -8,9 +8,8 @@
 
 import { toHex } from "../../lib/bytes.js";
 import { actions, dueFor, findEvent, seatOf } from "../../lib/contri.js";
-import { signIntents } from "../../lib/intents.js";
 import { encryptName, inviteSigner, signJoin } from "../../lib/invite.js";
-import { getCircle, getConfig, relay, swap } from "../api.js";
+import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { nameOf, usd } from "../state.js";
 import { busy, copy, h, notice, show, sleep } from "../ui.js";
 import { balanceOf, decodeSecret, local, remember, signer } from "../wallet.js";
@@ -50,7 +49,7 @@ export async function fundScreen(index) {
           inviteKeyHex: toHex((await inviteSigner(secret)).publicKey),
           name: await encryptName(secret, p.name),
         });
-        const r = await relay([await signIntents(s, intents, { recipient: cfg.intentsId })]);
+        const r = await relay([await sign(s, intents)]);
         const created = findEvent(r.events, "circle_created");
         if (!created) throw new Error(r.notes[0] ?? "The circle wasn't created and your money stayed in your balance.");
         await remember(index, { circle: created.circle, pending: undefined });
@@ -68,7 +67,7 @@ export async function fundScreen(index) {
       button: `Join and pay ${usd(deposit)} deposit`,
       run: async () => {
         const sig = l.secret && c.invite_only ? await signJoin(decodeSecret(l.secret), cfg.contractId, id, s.accountId, deposit) : null;
-        const r = await relay([await signIntents(s, a.join(id, deposit, sig), { recipient: cfg.intentsId })]);
+        const r = await relay([await sign(s, a.join(id, deposit, sig))]);
         if (!findEvent(r.events, "joined")) throw new Error(`${r.notes[0] ?? "You weren't added"}. Your deposit is back in your balance.`);
         await remember(index, { circle: id, pending: undefined });
         return `#/c/${id}`;
@@ -84,7 +83,7 @@ export async function fundScreen(index) {
         need: BigInt(c.contribution),
         button: `Pay ${usd(c.contribution)}`,
         run: async () => {
-          await relay([await signIntents(s, a.contribute(id, round, c.contribution), { recipient: cfg.intentsId })]);
+          await relay([await sign(s, a.contribute(id, round, c.contribution))]);
           return `#/c/${id}`;
         },
       };

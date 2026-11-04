@@ -55,6 +55,7 @@ export async function handle(name, request) {
           case "get_circles_for": return { ok: circles.filter((x) => x.members.some((m) => m.account_id === a.account_id) || x.organizer === a.account_id).map((x) => x.id) };
           case "mt_balance_of": return { ok: String(balances[a.account_id] ?? 0n) };
           case "get_circle": return { ok: circles[a.circle_id] ?? null };
+          case "current_salt": return { ok: "0a0b0c0d" };
           default: return { error: `mock has no ${c.method}` };
         }
       }),

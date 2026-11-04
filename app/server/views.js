@@ -13,7 +13,7 @@ const CONTRI_VIEWS = new Set([
   "get_config", "get_circle", "get_circles", "get_circles_for", "get_round_deadline", "get_record", "get_credit",
   "nft_token", "nft_tokens", "nft_tokens_for_owner", "nft_supply_for_owner", "nft_total_supply", "nft_metadata",
 ]);
-const INTENTS_VIEWS = new Set(["mt_balance_of", "mt_batch_balance_of"]);
+const INTENTS_VIEWS = new Set(["mt_balance_of", "mt_batch_balance_of", "current_salt"]);
 const MAX_CALLS = 25;
 
 /**
