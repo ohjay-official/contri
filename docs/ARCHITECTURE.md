@@ -6,19 +6,21 @@ The pot never sits with a person or a server. It sits in the Contri contract's b
 
 | Actor | What it is | What it can do |
 | --- | --- | --- |
-| Member | A person with a passkey (or a Tron/EVM wallet) | Sign intents: top up, contribute, join, list or buy a seat, cash out |
-| Contri contract | A NEAR smart contract (`contri.<owner>.near`) | Record contributions, enforce the turn order, pay out, swap seats |
-| Relayer | A small server that submits already-signed intents to `intents.near` and pays NEAR gas | Nothing on its own. It cannot forge a member signature or move funds |
-| Settler | Anyone. In practice a cron job | Call `settle_round` after a deadline. The contract decides what happens |
+| Member | A person with a passkey, or a NEAR account | Sign intents: join, contribute, list or buy a seat, leave, cash out |
+| Contri contract | A NEAR smart contract with no keys on its account once locked | Record contributions, enforce the turn order, pay out, swap seats |
+| Relayer (`app/server/relay.js`) | A Vercel function that submits already-signed intents to `intents.near` and pays the NEAR gas | Nothing on its own. It can't forge a member's signature or move funds, and it only relays Contri's own kinds of intents |
+| Keeper (`app/server/keeper.js`) | The same code on a 10-minute GitHub Actions schedule, and on demand from the app | Call `settle_round`, `pay_out` and `release_deposits` when a circle needs them. Anyone could; the contract decides what happens |
+| 1Click | NEAR Intents' cross-chain service | Turns a deposit on another chain into USDT in a member's Intents account, and back out |
 
 ## Member identity: no NEAR account needed
 
-NEAR Intents derives an account id from the signer's public key (`contracts/defuse/core/src/public_key.rs`, `to_implicit_account_id`):
+NEAR Intents treats an ed25519 public key's implicit account (the key in hex, 64 characters) as an account that key controls, with no registration. Contri gives every member one such account per circle:
 
-- secp256k1 keys (Tron and EVM wallets): `0x` + hex(keccak256(pubkey)[12..32]). For a Tron wallet this is the same 20 bytes as the Tron address.
-- P-256 keys (passkeys): `0x` + hex(keccak256("p256" || pubkey)[12..32]).
+1. The member's passkey gives the app a 32-byte secret through the WebAuthn PRF extension (`app/public/js/lib/passkey.js`). Only that passkey, on Contri's site, can produce it.
+2. The app derives the n-th circle key as `HKDF-SHA256(secret, "contri/circle/<contract>/<n>")` and imports it as an Ed25519 WebCrypto key (`app/public/js/lib/keys.js`). Its implicit account is the member's account in that circle.
+3. On a new phone the same synced passkey gives the same secret; the app checks accounts n = 0, 1, 2... on chain until three in a row are unused (`app/public/js/app/wallet.js`).
 
-So a member who signs in with a phone passkey already has an Intents account. They never create a NEAR account or hold NEAR for gas.
+So members never create a NEAR account, hold NEAR for gas, or see a seed phrase, and nothing on chain links one member's circles. Where a passkey can't give a PRF secret, a random key kept in the browser with a written-down recovery code takes its place.
 
 Members who do have a NEAR account can use it too: it signs intents with its own key, and it can also call `create_circle`, `list_seat`, `unlist_seat`, `cancel_circle` and `claim_credit` directly (see [METHODS.md](METHODS.md#called-directly-by-a-near-account)).
 
@@ -28,13 +30,13 @@ Members who do have a NEAR account can use it too: it signs intents with its own
 The app asks the 1Click API for a quote:
 - `originAsset`: what the member holds (for example USDT on Tron)
 - `destinationAsset`: the circle's asset inside Intents (USDT)
-- `recipientType: INTENTS`, `recipient`: the member's own Intents account
-- `depositType: ORIGIN_CHAIN`
+- `recipientType: INTENTS`, `recipient`: the member's circle account; refunds go to the same account (`refundType: INTENTS`), so no other address is asked for
+- `depositType: ORIGIN_CHAIN`, `swapType: FLEX_INPUT`, so a slightly different amount from an exchange withdrawal still goes through
 
-The member sends to the quote's deposit address from any wallet or exchange. The funds land in their own Intents balance.
+The member sends to the quote's deposit address from any wallet or exchange. The funds land in their circle account's Intents balance. The API key stays on the server (`app/server/oneclick.js`).
 
 ### 2. Contribute (trustless attribution)
-The member signs a `Transfer` intent with their passkey:
+The member's app signs a `Transfer` intent with the circle key:
 - `receiver_id`: the Contri contract
 - `tokens`: `{ <circle asset>: <contribution> }`
 - `msg` (notification): `contribute:<circle>:<round>`
@@ -49,29 +51,32 @@ Listing a seat for sale is an `AuthCall` intent: `intents.near` calls `contri.on
 ### 4. Payout
 After a round is complete, the contract moves the pot to the round's member by calling `intents.near` directly as the predecessor (an `mt_transfer` of its own balance to the member's Intents account). Accounts can act on their own Intents balance this way unless they turned it off (`ensure_auth_predecessor_id` in `contracts/defuse/src/contract/accounts/mod.rs`).
 
-Stretch: pay straight to a Tron address with `ft_withdraw` to the PoA token and the memo `WITHDRAW_TO:<address>` (`contracts/poa/token/src/lib.rs`).
 
 ### 5. Cash out
-The member cashes out from their Intents balance to any chain with a 1Click quote (`depositType: INTENTS`, `recipientType: DESTINATION_CHAIN`), signed with their passkey through `/v0/generate-intent` and `/v0/submit-intent` (`standard: webauthn`).
+The member cashes out from a circle account to any chain with a 1Click quote (`depositType: INTENTS`, `recipientType: DESTINATION_CHAIN`). The quote's deposit address is an account inside NEAR Intents; the app signs a plain `transfer` to it, the relayer submits it, and the app tells 1Click the transaction hash (`/v0/deposit/submit`).
 
-## Signing with a passkey
+Being tested: the same legs through Confidential Intents (`CONFIDENTIAL_INTENTS` deposit and recipient types). Signing in works on mainnet; quotes need a 1Click partner key. See [PRIVACY.md](PRIVACY.md).
 
-A passkey-signed intent is a `webauthn` payload (`contracts/defuse/core/src/payload/webauthn.rs`, test vector included there):
+## Signing an intent
+
+A member's app signs NEP-413 payloads with the circle key (`app/public/js/lib/intents.js`):
 
 ```json
 {
-  "standard": "webauthn",
-  "payload": "{\"signer_id\":\"0x…\",\"verifying_contract\":\"intents.near\",\"deadline\":\"<ISO time>\",\"nonce\":\"<base64 32 bytes>\",\"intents\":[{\"intent\":\"transfer\",\"receiver_id\":\"contri.<owner>.near\",\"tokens\":{\"nep141:usdt.tether-token.near\":\"5000000\"},\"msg\":\"contribute:0:0\",\"min_gas\":\"100000000000000\"}]}",
-  "public_key": "p256:<base58>",
-  "signature": "p256:<base58 r||s>",
-  "client_data_json": "…",
-  "authenticator_data": "<base64url>"
+  "standard": "nep413",
+  "payload": {
+    "message": "{\"signer_id\":\"<circle account>\",\"deadline\":\"<now + 10 min>\",\"intents\":[{\"intent\":\"transfer\",\"receiver_id\":\"<contri>\",\"tokens\":{\"nep141:usdt.tether-token.near\":\"5000000\"},\"msg\":\"contribute:0:0\",\"min_gas\":\"100000000000000\"}]}",
+    "nonce": "<base64, 32 bytes>",
+    "recipient": "intents.near"
+  },
+  "public_key": "ed25519:<base58>",
+  "signature": "ed25519:<base58>"
 }
 ```
 
-- The WebAuthn challenge is `base64url(sha256(payload))`.
-- `signer_id` is the passkey's implicit account (`0x` + keccak256("p256" || pubkey) last 20 bytes).
-- Nonces: legacy random 32-byte nonces are still accepted; the newer versioned nonce (magic prefix `5628f6c6` + salted, expirable nonce) uses `intents.near`'s current salt. Contri will use versioned nonces.
+- The signature covers `sha256(u32 2^31+413 || borsh(message) || nonce || borsh(recipient) || None)`.
+- The nonce is a versioned V1 nonce: magic `5628f6c6`, version 0, `intents.near`'s `current_salt`, the deadline in nanoseconds, then the signing time and 7 random bytes, laid out as the NEAR Intents SDK does. 1Click accepts the same signature to sign a member in (checked on mainnet by `scripts/probe-confidential.mjs`).
+- The relayer re-checks the signature, allows only transfers to Contri (with a message), plain transfers of the member's own money (cash-outs) and `auth_call`s to Contri, asks NEAR Intents to `simulate_intents`, and only then submits `execute_intents` with 300 Tgas.
 
 ## Message formats
 
@@ -109,12 +114,15 @@ Each turn is a seat token `<circle>:<turn>`, owned by the member's Intents accou
 
 | Claim | Status |
 | --- | --- |
-| Wallet and passkey keys map to Intents accounts | Verified in `near/intents` source |
+| An ed25519 key's implicit account is an Intents account with no registration | Verified in `near/intents` source |
 | `Transfer` can notify the receiver via `mt_on_transfer` | Tested end to end against NEAR Intents built from source (`contract/sandbox`) |
 | `AuthCall` passes a verified `signer_id` to `on_auth` | Tested end to end |
 | A contract can move its own Intents balance as predecessor | Tested end to end: payouts, seat sales, refunds of deposits |
 | An ed25519 key's implicit account signs NEP-413 intents, no NEAR account | Tested end to end |
 | A whole circle (create, joins, seat sale, payouts, missed payment, release, close) leaves no money behind | Tested end to end |
-| 1Click route Tron USDT to an Intents account, fees and minimums | To test (`scripts/probe-1click.mjs`) |
-| Passkey (`webauthn`) signed `Transfer` accepted end to end | To test with a $1 run |
-| Cash-out quote from Intents balance with a passkey signature | To test with a $1 run |
+| The app's own code (derived keys, invite signatures, encrypted names, versioned nonces, relayer, read proxy, keeper) runs a whole circle | Tested end to end (`the_app_runs_a_circle_through_its_relayer`) |
+| The relayer refuses intents it shouldn't pay for, and NEAR Intents' simulation catches overspending before gas is spent | Tested end to end |
+| The app's NEP-413 signing and versioned nonce are accepted by 1Click on mainnet | Tested (`scripts/probe-confidential.mjs`: sign-in returns a session, confidential balances readable) |
+| 1Click routes from BNB Chain, Solana and Tron into an Intents account, fees and minimums | Measured with dry quotes (`scripts/probe-1click.mjs`) |
+| Top-up, contribution and cash-out with real money on mainnet | To test with a $1 run after deploy |
+| Confidential top-up, contribution and cash-out quotes | Need a 1Click partner key; to test after |
