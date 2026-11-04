@@ -41,6 +41,8 @@ const circles = [
   },
 ];
 
+const SEAT_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%23243b7a'/%3E%3Cg fill='none' stroke-width='12' transform='rotate(-90 150 132)'%3E%3Ccircle cx='150' cy='132' r='78' stroke='%233b5394'/%3E%3Ccircle cx='150' cy='132' r='78' stroke='%23f3f4f0' stroke-dasharray='196 490'/%3E%3C/g%3E%3Cg font-family='monospace' text-anchor='middle'%3E%3Ctext x='150' y='144' font-size='34' fill='%23f3f4f0'%3E4/5%3C/text%3E%3Ctext x='150' y='246' font-size='15' fill='%23f3f4f0'%3EPAYS IN ROUND 4%3C/text%3E%3Ctext x='150' y='274' font-size='11' fill='%23a3b6f3'%3ECONTRI SEAT %230%3C/text%3E%3C/g%3E%3C/svg%3E";
+
 const balances = { [me0]: 3_200_000n, [me1]: 0n };
 
 /** @param {string} name @param {Request} request */
@@ -56,6 +58,7 @@ export async function handle(name, request) {
           case "mt_balance_of": return { ok: String(balances[a.account_id] ?? 0n) };
           case "get_circle": return { ok: circles[a.circle_id] ?? null };
           case "current_salt": return { ok: "0a0b0c0d" };
+          case "nft_token": return { ok: { token_id: a.token_id, owner_id: me0, metadata: { title: "Contri seat - turn 4 of 5", media: SEAT_SVG } } };
           default: return { error: `mock has no ${c.method}` };
         }
       }),

@@ -1,0 +1,29 @@
+name: keeper
+
+# Every 10 minutes: settle rounds whose deadline passed, retry stuck payouts,
+# return deposits after a circle ends. The contract allows anyone to do this;
+# this is Contri's own runner doing it so nobody has to remember.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Keep circles moving
+        env:
+          CONTRI_ACCOUNT_ID: ${{ secrets.CONTRI_ACCOUNT_ID }}
+          RELAYER_ACCOUNT_ID: ${{ secrets.RELAYER_ACCOUNT_ID }}
+          RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
+        run: node app/scripts/keep.js

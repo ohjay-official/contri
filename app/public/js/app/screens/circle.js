@@ -4,7 +4,7 @@
 
 import { actions, dueFor, parseAmount, payoutDateMs, potSize, roundDeadlineMs, seatOf, shortAccount } from "../../lib/contri.js";
 import { inviteLink } from "../../lib/invite.js";
-import { getCircle, getConfig, keep, relay, sign } from "../api.js";
+import { getCircle, getConfig, keep, relay, sign, views } from "../api.js";
 import { ring } from "../ring.js";
 import { every, fromNow, nameOf, refresh, slotFor, usd, when } from "../state.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
@@ -137,6 +137,22 @@ export async function circleScreen(id, openShare = false) {
     manage.push(cancel);
   }
 
+  // The member's seat NFT, drawn by the contract from the circle's live state.
+  let seatNft = null;
+  if (me && mySeat >= 0 && (c.status === "Active" || c.status === "Finished")) {
+    const [token] = await views([{ contract: "contri", method: "nft_token", args: { token_id: `${id}:${mySeat}` } }]).catch(() => [null]);
+    const media = token?.metadata?.media;
+    if (typeof media === "string" && media.startsWith("data:image/svg+xml")) {
+      seatNft = h("div", { class: "seat-nft" },
+        h("img", { src: media, alt: `Your seat: turn ${mySeat + 1} of ${c.size}`, width: 120, height: 120 }),
+        h("div", null,
+          h("h2", null, "Your seat"),
+          h("p", { class: "hint" }, `Turn ${mySeat + 1} is an NFT you own (token ${id}:${mySeat} on ${cfg.contractId}). The contract redraws it every round, and it changes hands when you sell your turn.`),
+        ),
+      );
+    }
+  }
+
   const s = me ? standing(c, me) : null;
   show(
     h("section", { class: "stack" },
@@ -147,6 +163,7 @@ export async function circleScreen(id, openShare = false) {
       s ? h("p", { class: `status ${s.tone}` }, s.text) : h("p", { class: "status quiet" }, "You're watching this circle; you're not a member."),
       primary.length ? h("div", { class: "actions" }, primary) : null,
       share,
+      seatNft,
       h("h2", null, c.status === "Open" && c.random_order ? "Members" : "Members, in turn order"),
       c.status === "Open" && c.random_order ? h("p", { class: "hint" }, "Turns are drawn at random on chain when the circle is full, so these seat numbers will change.") : null,
       members,

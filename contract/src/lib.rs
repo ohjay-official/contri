@@ -659,7 +659,7 @@ impl Contri {
     pub fn nft_metadata() {
         ret(concat!(
             r#"{"spec":"nft-1.0.0","name":"Contri Seats","symbol":"SEAT","icon":""#,
-            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173f35'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23f0b429' stroke-width='3' stroke-dasharray='5.07 2'/%3E%3C/svg%3E",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23243b7a'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23f3f4f0' stroke-width='3' stroke-dasharray='5.07 2'/%3E%3C/svg%3E",
             r#"","base_uri":null,"reference":null,"reference_hash":null}"#
         ));
     }
@@ -1479,14 +1479,14 @@ fn seat_image(c: &Circle, seat: u32, for_sale: bool) -> String {
     };
     format!(
         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E\
-         %3Crect width='300' height='300' fill='%23173f35'/%3E\
+         %3Crect width='300' height='300' fill='%23243b7a'/%3E\
          %3Cg fill='none' stroke-width='12' transform='rotate(-90 150 132)'%3E\
-         %3Ccircle cx='150' cy='132' r='78' stroke='%23245247'/%3E\
-         %3Ccircle cx='150' cy='132' r='78' stroke='%23f0b429' stroke-dasharray='{ring} 490'/%3E%3C/g%3E\
+         %3Ccircle cx='150' cy='132' r='78' stroke='%233b5394'/%3E\
+         %3Ccircle cx='150' cy='132' r='78' stroke='%23f3f4f0' stroke-dasharray='{ring} 490'/%3E%3C/g%3E\
          %3Cg font-family='monospace' text-anchor='middle'%3E\
-         %3Ctext x='150' y='144' font-size='34' fill='%23f6f1e7'%3E{}/{}%3C/text%3E\
-         %3Ctext x='150' y='246' font-size='15' fill='%23f6f1e7'%3E{status}%3C/text%3E\
-         %3Ctext x='150' y='274' font-size='11' fill='%2399b5ab'%3ECONTRI SEAT %23{}%3C/text%3E%3C/g%3E%3C/svg%3E",
+         %3Ctext x='150' y='144' font-size='34' fill='%23f3f4f0'%3E{}/{}%3C/text%3E\
+         %3Ctext x='150' y='246' font-size='15' fill='%23f3f4f0'%3E{status}%3C/text%3E\
+         %3Ctext x='150' y='274' font-size='11' fill='%23a3b6f3'%3ECONTRI SEAT %23{}%3C/text%3E%3C/g%3E%3C/svg%3E",
         seat + 1,
         c.size,
         c.id

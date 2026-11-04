@@ -354,3 +354,8 @@ details.share { border: 1.5px solid var(--adire); border-radius: var(--radius-l)
   @keyframes fill { from { stroke-dasharray: 0 800; } }
 }
 .band .after { margin-top: 1.25rem; color: var(--ink-2); }
+
+.seat-nft { display: grid; grid-template-columns: 120px 1fr; gap: 1rem; align-items: center; padding: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-l); }
+.seat-nft img { border-radius: var(--radius); background: var(--paper); }
+.seat-nft h2 { margin: 0 0 0.3rem; font-size: 1.1rem; }
+@media (max-width: 380px) { .seat-nft { grid-template-columns: 1fr; } }
