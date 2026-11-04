@@ -1,5 +1,5 @@
 // @ts-check
-// Routes:  /app#/  /app#/new  /app#/c/<circle>  /app#/add/<slot>  /app#/cash/<slot>  /app#/settings
+// Routes:  /app#/  /app#/explore  /app#/new  /app#/c/<circle>  /app#/add/<slot>  /app#/cash/<slot>  /app#/settings
 // and /join#<circle>.<secret> for invite links.
 
 import { parseInvite } from "../lib/invite.js";
@@ -7,6 +7,7 @@ import { getConfig } from "./api.js";
 import { cashOutScreen } from "./screens/cashout.js";
 import { circleScreen } from "./screens/circle.js";
 import { createScreen } from "./screens/create.js";
+import { exploreScreen } from "./screens/explore.js";
 import { fundScreen } from "./screens/fund.js";
 import { homeScreen } from "./screens/home.js";
 import { joinScreen } from "./screens/join.js";
@@ -17,6 +18,7 @@ import { restore, unlocked } from "./wallet.js";
 
 async function route() {
   const hash = location.hash || "#/";
+  if (hash === "#/explore") return exploreScreen();
   if (!unlocked()) return unlockScreen(() => route());
   /** @type {RegExpExecArray | null} */
   let m;

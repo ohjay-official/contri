@@ -107,6 +107,7 @@ p { margin: 0; }
 }
 .wordmark svg { width: 26px; height: 26px; color: var(--adire); }
 .wordmark .hole { fill: var(--paper); }
+.topbar nav { display: flex; gap: 1.1rem; }
 .topbar nav a { color: var(--ink-2); text-decoration: none; font-weight: 500; }
 .topbar nav a:hover { color: var(--ink); }
 
@@ -359,3 +360,14 @@ details.share { border: 1.5px solid var(--adire); border-radius: var(--radius-l)
 .seat-nft img { border-radius: var(--radius); background: var(--paper); }
 .seat-nft h2 { margin: 0 0 0.3rem; font-size: 1.1rem; }
 @media (max-width: 380px) { .seat-nft { grid-template-columns: 1fr; } }
+
+.explore { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+@media (min-width: 640px) { .explore { grid-template-columns: 1fr 1fr; } }
+.explore-card { display: grid; grid-template-columns: 112px 1fr; gap: 1rem; align-items: center; padding: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-l); }
+.explore-card .ring { width: 112px; margin: 0; }
+.explore-card .ring-center { padding: 18%; }
+.explore-card .ring-center .big { font-size: 1.35rem; }
+.explore-card .ring-center span { font-size: 0.72rem; }
+.explore-card h2 { margin: 0; font-size: 1.1rem; }
+.stack.tight { gap: 0.3rem; }
+h1[tabindex="-1"]:focus { outline: none; }
