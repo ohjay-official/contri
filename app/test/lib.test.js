@@ -168,8 +168,9 @@ test("events are read from logs", () => {
 });
 
 test("versioned nonces carry the salt and deadline NEAR Intents checks", async () => {
-  const n = versionedNonce("0a0b0c0d", Date.parse("2026-11-05T00:10:00Z"));
+  const n = versionedNonce("0a0b0c0d", Date.parse("2026-11-05T00:10:00Z"), Date.parse("2026-11-05T00:00:00Z"));
   assert.equal(n.length, 32);
+  assert.equal(toHex(n.slice(17, 25)), toHex(uintLE(BigInt(Date.parse("2026-11-05T00:00:00Z")) * 1_000_000n, 8)), "signing time");
   assert.equal(toHex(n.slice(0, 5)), "5628f6c600");
   assert.equal(toHex(n.slice(5, 9)), "0a0b0c0d");
   assert.equal(toHex(n.slice(9, 17)), toHex(uintLE(BigInt(Date.parse("2026-11-05T00:10:00Z")) * 1_000_000n, 8)));

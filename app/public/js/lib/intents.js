@@ -42,15 +42,17 @@ const VERSIONED_MAGIC = Uint8Array.of(0x56, 0x28, 0xf6, 0xc6);
 
 /**
  * A NEAR Intents V1 nonce: magic, version 0, the contract's current salt, the
- * deadline in nanoseconds (i64 LE), 15 random bytes. NEAR Intents rejects it
- * after the deadline or once the salt is rotated out, so its record can be
- * cleaned up, and 1Click requires it to sign in.
- * @param {string} saltHex from `current_salt` on intents.near @param {number} deadlineMs
+ * deadline in nanoseconds (i64 LE), then 15 bytes that are the signing time
+ * (8 bytes, nanoseconds LE) and 7 random bytes, as the NEAR Intents SDK lays
+ * them out. NEAR Intents rejects it after the deadline or once the salt is
+ * rotated out; 1Click checks the signing time when a member signs in.
+ * @param {string} saltHex from `current_salt` on intents.near @param {number} deadlineMs @param {number} [nowMs]
  */
-export function versionedNonce(saltHex, deadlineMs) {
+export function versionedNonce(saltHex, deadlineMs, nowMs = Date.now()) {
   const salt = fromHex(saltHex);
   if (salt.length !== 4) throw new Error("a salt is 4 bytes");
-  return concat(VERSIONED_MAGIC, Uint8Array.of(0), salt, uintLE(BigInt(deadlineMs) * 1_000_000n, 8), randomBytes(15));
+  const ns = (/** @type {number} */ ms) => uintLE(BigInt(Math.floor(ms)) * 1_000_000n, 8);
+  return concat(VERSIONED_MAGIC, Uint8Array.of(0), salt, ns(deadlineMs), ns(nowMs), randomBytes(7));
 }
 
 /**
@@ -67,7 +69,7 @@ export async function signIntents(signer, intents, { recipient = "intents.near",
   const deadline = new Date(deadlineMs).toISOString().replace(/\.\d{3}Z$/, "Z");
   const message = JSON.stringify({ signer_id: signer.accountId, deadline, intents });
   let nonce;
-  if (salt) nonce = versionedNonce(salt, deadlineMs);
+  if (salt) nonce = versionedNonce(salt, deadlineMs, now);
   else {
     nonce = randomBytes(32);
     nonce[0] = 0; // never the prefix NEAR Intents reserves for versioned nonces
