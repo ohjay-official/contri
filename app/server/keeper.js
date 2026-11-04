@@ -7,7 +7,7 @@
 // opens a circle that needs it. Anyone could run it; it holds no special rights.
 
 import { signerFromSecretKey } from "../public/js/lib/keys.js";
-import { outcome, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
+import { outcome, rpc, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
 import { RelayError } from "./relay.js";
 
 /** @typedef {import("./config.js").Config} Config */
@@ -36,10 +36,12 @@ const GAS = { settle_round: 150n * TGAS, pay_out: 100n * TGAS, release_deposits:
 
 /**
  * Checks one circle (`body.circle`) or every circle, and acts where needed.
- * @param {any} body @param {Config} c @param {number} [nowMs]
+ * @param {any} body @param {Config} c @param {number} [nowMs] defaults to the latest final block's time
  */
-export async function keep(body, c, nowMs = Date.now()) {
+export async function keep(body, c, nowMs) {
   if (!c.contractId || !c.relayerId || !c.relayerKey) throw new RelayError("the keeper isn't set up", 503);
+  // The contract goes by block time, so the keeper does too.
+  const now = nowMs ?? Number(BigInt((await rpc(c.rpcUrl, "block", { finality: "final" })).header.timestamp_nanosec) / 1_000_000n);
   /** @type {Circle[]} */
   let circles;
   if (body?.circle !== undefined) {
@@ -56,7 +58,7 @@ export async function keep(body, c, nowMs = Date.now()) {
     }
   }
 
-  const todo = circles.map((circle) => ({ circle: circle.id, method: needs(circle, nowMs) })).filter((t) => t.method);
+  const todo = circles.map((circle) => ({ circle: circle.id, method: needs(circle, now) })).filter((t) => t.method);
   if (!todo.length) return { done: [] };
   const keeper = await signerFromSecretKey(c.relayerKey, c.relayerId);
   const done = [];
