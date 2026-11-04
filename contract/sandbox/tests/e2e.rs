@@ -376,3 +376,29 @@ async fn the_app_runs_a_circle_through_its_relayer() -> Result<()> {
     ensure!(out.status.success(), "the app's end-to-end script failed");
     Ok(())
 }
+
+/// The real app in a real browser: two members with their own passkeys
+/// (virtual authenticators with PRF) sign up, start a circle, invite, join,
+/// pay and get paid by clicking through the app. See app/test/e2e/browser.js.
+/// Screenshots go to $SHOTS.
+#[tokio::test]
+async fn the_app_works_in_a_browser() -> Result<()> {
+    let env = setup().await?;
+    let script = concat!(env!("CARGO_MANIFEST_DIR"), "/../../app/test/e2e/browser.js");
+    let out = std::process::Command::new("node")
+        .arg(script)
+        .env("NEAR_RPC", env.worker.rpc_addr())
+        .env("NEAR_NETWORK", "sandbox")
+        .env("CONTRI_ACCOUNT_ID", env.contri.id().as_str())
+        .env("INTENTS_ID", env.intents.id().as_str())
+        .env("TOKEN_ID", &env.token)
+        .env("RELAYER_ACCOUNT_ID", env.root.id().as_str())
+        .env("RELAYER_KEY", env.root.secret_key().to_string())
+        .env("FUNDER_ID", env.usdt.id().as_str())
+        .env("FUNDER_KEY", env.usdt.as_account().secret_key().to_string())
+        .output()?;
+    println!("{}", String::from_utf8_lossy(&out.stdout));
+    eprintln!("{}", String::from_utf8_lossy(&out.stderr));
+    ensure!(out.status.success(), "the browser end-to-end script failed");
+    Ok(())
+}

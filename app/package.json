@@ -3,14 +3,18 @@
   "private": true,
   "type": "module",
   "description": "Contri's web app, relayer and keeper. No runtime dependencies.",
-  "engines": { "node": "22.x" },
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "node dev/server.js",
     "test": "node --test \"test/*.test.js\"",
-    "check": "tsc -p jsconfig.json"
+    "check": "tsc -p jsconfig.json",
+    "e2e:browser": "node test/e2e/browser.js"
   },
   "devDependencies": {
     "typescript": "6.0.2",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "playwright": "1.63.0"
   }
 }

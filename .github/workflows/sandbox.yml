@@ -14,6 +14,8 @@ on:
       - app/server/**
       - app/api/**
       - app/test/e2e/**
+      - app/public/**
+      - app/dev/**
       - .github/workflows/sandbox.yml
 
 permissions:
@@ -67,6 +69,12 @@ jobs:
           cargo near build non-reproducible-wasm --no-abi --out-dir "$GITHUB_WORKSPACE/wasm" 2>&1 | tail -20 | tee "$GITHUB_WORKSPACE/e2e-out/contri-build.log"
           ls -l "$GITHUB_WORKSPACE/wasm" | tee -a "$GITHUB_WORKSPACE/e2e-out/contri-build.log"
 
+      - name: Install the app and a test browser
+        working-directory: app
+        run: |
+          npm install --no-audit --no-fund 2>&1 | tail -2
+          npx playwright install --with-deps chromium 2>&1 | tail -2
+
       - name: End-to-end tests
         id: e2e
         if: steps.intents.outcome == 'success' && steps.contri.outcome == 'success'
@@ -76,6 +84,7 @@ jobs:
           INTENTS_WASM: ${{ github.workspace }}/wasm/defuse.wasm
           FT_WASM: ${{ github.workspace }}/intents/releases/fungible-token.wasm
           CONTRI_WASM: ${{ github.workspace }}/wasm/contri.wasm
+          SHOTS: ${{ github.workspace }}/e2e-out/shots
         run: |
           set -o pipefail
           cargo test -- --nocapture --test-threads=1 2>&1 | tee "$GITHUB_WORKSPACE/e2e-out/e2e.log"
