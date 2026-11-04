@@ -3,8 +3,9 @@ name: deploy
 # Mainnet. Three jobs:
 # - status (every push and every 30 minutes): which secrets are set (yes/no
 #   only, never values) and the public state of Contri's accounts.
-# - deploy (a commit message with [deploy]): builds the contract and deploys
-#   it with CONTRI_DEPLOYER_KEY, initializing it the first time.
+# - deploy (a commit message with [deploy], or by itself the first time, once
+#   the contract account is funded and CONTRI_DEPLOYER_KEY is set): builds the
+#   contract and deploys it, initializing it the first time.
 # - lock (a commit message with [lock]): deletes the contract account's key,
 #   so nobody, us included, can change the code again.
 # Reports go to the deploy-results branch.
@@ -26,6 +27,8 @@ env:
 jobs:
   status:
     runs-on: ubuntu-latest
+    outputs:
+      first_deploy: ${{ steps.accounts.outputs.first_deploy }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,7 +48,13 @@ jobs:
           JSON
           cat deploy-out/secrets.json
       - name: Accounts on mainnet
-        run: node app/scripts/status.js > deploy-out/accounts.json 2>&1 || true; cat deploy-out/accounts.json
+        id: accounts
+        run: |
+          node app/scripts/status.js > deploy-out/accounts.json 2>&1 || true
+          cat deploy-out/accounts.json
+          # First deploy happens by itself once the account is funded and its key is set.
+          FIRST=$(node -e 'try { const a = JSON.parse(require("fs").readFileSync("deploy-out/accounts.json", "utf8")); console.log(Boolean(a.contri && a.contri.code === false && a.contri.near >= 1.05 && a.contri.keys > 0)); } catch { console.log(false); }')
+          echo "first_deploy=$([ "$FIRST" = true ] && [ "${{ secrets.CONTRI_DEPLOYER_KEY != '' }}" = true ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - name: Publish to the deploy-results branch
         run: |
           cd deploy-out
@@ -56,9 +65,12 @@ jobs:
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" deploy-results
 
   deploy:
-    if: github.event_name == 'push' && (contains(github.event.head_commit.message, '[deploy]') || contains(github.event.head_commit.message, '[lock]'))
+    if: needs.status.outputs.first_deploy == 'true' || (github.event_name == 'push' && (contains(github.event.head_commit.message, '[deploy]') || contains(github.event.head_commit.message, '[lock]')))
     needs: status
     runs-on: ubuntu-latest
+    env:
+      DO_DEPLOY: ${{ needs.status.outputs.first_deploy == 'true' || contains(github.event.head_commit.message, '[deploy]') }}
+      DO_LOCK: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[lock]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -68,22 +80,22 @@ jobs:
         with:
           workspaces: contract
       - name: Install cargo-near
-        if: contains(github.event.head_commit.message, '[deploy]')
+        if: env.DO_DEPLOY == 'true'
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
       - name: Build
-        if: contains(github.event.head_commit.message, '[deploy]')
+        if: env.DO_DEPLOY == 'true'
         working-directory: contract
         run: |
           cargo test -q 2>&1 | tail -3
           cargo near build non-reproducible-wasm --no-abi 2>&1 | tail -5
           ls -l target/near/contri.wasm
       - name: Deploy
-        if: contains(github.event.head_commit.message, '[deploy]')
+        if: env.DO_DEPLOY == 'true'
         env:
           CONTRI_DEPLOYER_KEY: ${{ secrets.CONTRI_DEPLOYER_KEY }}
         run: node app/scripts/deploy.js contract/target/near/contri.wasm 2>&1 | tee deploy.log
       - name: Lock
-        if: contains(github.event.head_commit.message, '[lock]')
+        if: env.DO_LOCK == 'true'
         env:
           CONTRI_DEPLOYER_KEY: ${{ secrets.CONTRI_DEPLOYER_KEY }}
         run: node app/scripts/deploy.js --lock 2>&1 | tee deploy.log

@@ -29,8 +29,8 @@ if (process.argv[2] === "--lock") {
 } else {
   const wasm = new Uint8Array(await readFile(process.argv[2]));
   const fresh = account.code_hash === "11111111111111111111111111111111";
-  // Storage: 1 NEAR per 100 kB. Leave room for circles.
-  const needed = BigInt(wasm.length + account.storage_usage + 20_000) * 10n ** 19n;
+  // Storage: 1 NEAR per 100 kB, plus room for the first few circles.
+  const needed = BigInt(wasm.length + account.storage_usage + 5_000) * 10n ** 19n;
   if (BigInt(account.amount) < needed) throw new Error(`needs about ${near(needed.toString())} NEAR, has ${near(account.amount)}`);
   /** @type {import("../public/js/lib/near.js").Action[]} */
   const actions = [{ deployContract: { code: wasm } }];

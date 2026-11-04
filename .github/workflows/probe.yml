@@ -1,6 +1,8 @@
 name: probe-1click
 
 on:
+  schedule:
+    - cron: "41 */2 * * *"
   workflow_dispatch:
   push:
     branches: [main]
