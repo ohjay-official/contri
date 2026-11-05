@@ -42,12 +42,49 @@ async function account(id) {
 
 const existing = await account(c.contractId);
 
+/** Bytes the contract's NEAR covers beyond what it stores. @param {any} a */
+const headroom = (a) => Number(BigInt(a.amount) / 10n ** 19n) - a.storage_usage;
+/**
+ * The contract refuses new circles and members when its NEAR doesn't cover
+ * what they and running circles may store (see `ensure_room` in the contract).
+ * After an upgrade, the relayer tops it up to STORAGE_ROOM bytes of room if it
+ * can spare the NEAR and keep KEEP_GAS for members' gas. Anyone can also send
+ * NEAR to the contract, before or after it's locked.
+ */
+async function topUpStorage() {
+  const ROOM = 25_000;
+  const KEEP_GAS = (3n * YOCTO) / 10n;
+  const now = await account(c.contractId);
+  const short = ROOM - headroom(now);
+  if (short <= 0) return console.log(`${c.contractId} has room for ${headroom(now)} more bytes`);
+  const parentAccount = await account(c.relayerId);
+  const amount = storage(short);
+  if (!c.relayerKey || !parentAccount || BigInt(parentAccount.amount) < amount + KEEP_GAS) {
+    return console.log(`${c.contractId} has room for ${headroom(now)} bytes; send it ${near(amount)} NEAR for ${ROOM}`);
+  }
+  const parent = await signerFromSecretKey(c.relayerKey, c.relayerId);
+  const { hash } = await sendTransaction(c.rpcUrl, parent, c.contractId, [{ transfer: { deposit: amount } }], "FINAL");
+  console.log(`sent ${near(amount)} NEAR from ${c.relayerId} to ${c.contractId} for storage: ${hash}; room ${headroom(await account(c.contractId))} bytes`);
+}
+
 if (process.argv[2] === "--lock") {
   if (!existing) throw new Error(`${c.contractId} doesn't exist`);
-  await sendTransaction(c.rpcUrl, signer, c.contractId, [{ deleteKey: { publicKey: signer.publicKey } }], "FINAL");
+  // NEAR Intents lets an account register keys that sign intents for its balance.
+  // A lock with one registered would leave a way to move the contract's money.
+  /** @returns {Promise<string[]>} */
+  const intentsKeys = () => view(c.rpcUrl, c.intentsId, "public_keys_of", { account_id: c.contractId });
+  const before = await intentsKeys();
+  if (before.length) throw new Error(`${c.contractId} has keys registered on ${c.intentsId}: ${before.join(", ")}. Remove them before locking.`);
+  // Every access key goes, in one transaction: the deploy key and any other.
+  const list = await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: c.contractId });
+  const { fromBase58 } = await import("../public/js/lib/bytes.js");
+  const deletes = list.keys.map((/** @type {{ public_key: string }} */ k) => ({ deleteKey: { publicKey: fromBase58(k.public_key.replace(/^ed25519:/, "")) } }));
+  if (!list.keys.some((/** @type {{ public_key: string }} */ k) => k.public_key === signer.publicKeyStr)) throw new Error("the deploy key isn't on the account");
+  const { hash } = await sendTransaction(c.rpcUrl, signer, c.contractId, deletes, "FINAL");
   const keys = await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: c.contractId });
-  console.log(`locked ${c.contractId}: ${keys.keys.length} access keys left`);
-  if (keys.keys.length) throw new Error("the account still has keys");
+  const after = await intentsKeys();
+  console.log(`locked ${c.contractId} in ${hash}: ${keys.keys.length} access keys left, ${after.length} keys on ${c.intentsId}`);
+  if (keys.keys.length || after.length) throw new Error("the account still has keys");
 } else {
   const wasm = new Uint8Array(await readFile(process.argv[2]));
   const init = { functionCall: { method: "new", args: { intents_id: c.intentsId, token_id: c.tokenId }, gas: 30n * TGAS, deposit: 0n } };
@@ -84,6 +121,7 @@ if (process.argv[2] === "--lock") {
     if (fresh) actions.push(init);
     const { hash } = await sendTransaction(c.rpcUrl, signer, c.contractId, actions, "FINAL");
     console.log(`${fresh ? "deployed and initialized" : "upgraded"}: ${hash}`);
+    await topUpStorage();
   }
   console.log(JSON.stringify(await view(c.rpcUrl, c.contractId, "get_config")));
 }
