@@ -377,3 +377,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 .name-form { grid-column: 2 / -1; display: flex; gap: 0.5rem; }
 .name-form input { min-height: 40px; padding: 0.4rem 0.6rem; }
 .name-form button { min-height: 40px; padding: 0.4rem 0.9rem; }
+
+.built-on { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--ink); font-weight: 600; text-decoration: none; }
+.built-on svg { width: 18px; height: 18px; }
+.built-on:hover { text-decoration: underline; text-underline-offset: 0.18em; }
