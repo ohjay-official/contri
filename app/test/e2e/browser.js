@@ -120,7 +120,10 @@ try {
   await bayo.page.goto(link);
   await bayo.page.waitForSelector(".facts");
   assert.equal(await bayo.page.locator("h1").textContent(), "Ikeja friends");
-  assert.ok(!bayo.page.url().includes("#"), "the invite secret is removed from the address bar");
+  assert.ok(!bayo.page.url().includes(link.split("#")[1]), "the invite secret is removed from the address bar");
+  await bayo.page.reload();
+  await bayo.page.waitForSelector(".facts");
+  assert.equal(await bayo.page.locator("h1").textContent(), "Ikeja friends", "a reload keeps the invite");
   await bayo.shot("invite");
   await bayo.page.click("text=Join this circle");
   await bayo.page.click("text=Create a passkey");

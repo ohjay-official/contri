@@ -36,4 +36,6 @@ export const publicConfig = (c) => ({
   intentsId: c.intentsId,
   tokenId: c.tokenId,
   relaying: Boolean(c.relayerId && c.relayerKey),
+  // Public on chain anyway; lets anyone check it can still pay for gas.
+  relayer: c.relayerId || null,
 });

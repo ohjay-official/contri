@@ -1,7 +1,8 @@
 // @ts-check
 // Your circles: what each one needs from you now.
 
-import { dueFor, payoutDateMs, potSize, roundDeadlineMs, seatOf } from "../../lib/contri.js";
+import { dueFor, needs, payoutDateMs, potSize, roundDeadlineMs, seatOf } from "../../lib/contri.js";
+import { keep } from "../api.js";
 import { privateBalance } from "../private.js";
 import { every, fromNow, nameOf, refresh, state, usd, when } from "../state.js";
 import { h, show } from "../ui.js";
@@ -28,6 +29,13 @@ export function standing(c, me) {
 export async function homeScreen() {
   show(h("section", { class: "stack" }, h("h1", null, "Your circles"), h("p", { class: "loading" }, "Loading your circles")));
   await refresh();
+  // A circle past a deadline, or finished with deposits to send back: ask the
+  // keeper now, so it doesn't wait for the next scheduled run.
+  const late = [...state.circles.values()].filter((c) => needs(c, Date.now()));
+  if (late.length) {
+    for (const c of late) await keep(c.id);
+    await refresh();
+  }
   const slots = state.slots ?? [];
   const known = await local();
 

@@ -6,6 +6,7 @@
 // a circle ends (release_deposits). It runs on a schedule and whenever the app
 // opens a circle that needs it. Anyone could run it; it holds no special rights.
 
+import { needs } from "../public/js/lib/contri.js";
 import { signerFromSecretKey } from "../public/js/lib/keys.js";
 import { outcome, rpc, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
 import { RelayError } from "./relay.js";
@@ -13,24 +14,7 @@ import { RelayError } from "./relay.js";
 /** @typedef {import("./config.js").Config} Config */
 /** @typedef {import("../public/js/lib/contri.js").Circle} Circle */
 
-/**
- * What a circle needs now, if anything.
- * @param {Circle} c @param {number} nowMs
- * @returns {"settle_round" | "pay_out" | "release_deposits" | null}
- */
-export function needs(c, nowMs) {
-  if (c.paying) return null;
-  if (c.status === "Active") {
-    if (c.members.every((m) => m.paid_this_round)) return "pay_out";
-    const deadline = c.round_deadline ? Number(BigInt(c.round_deadline) / 1_000_000n) : Infinity;
-    return nowMs > deadline ? "settle_round" : null;
-  }
-  if (c.status === "Finished" || c.status === "Cancelled") {
-    const owed = c.members.some((m) => BigInt(m.deposit) > 0n) || c.backers.some((b) => BigInt(b.due) > 0n);
-    return owed ? "release_deposits" : null;
-  }
-  return null;
-}
+export { needs };
 
 const GAS = { settle_round: 150n * TGAS, pay_out: 100n * TGAS, release_deposits: 250n * TGAS };
 

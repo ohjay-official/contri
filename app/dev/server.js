@@ -3,6 +3,9 @@
 // runs the /api handlers. With MOCK=1, the API answers from dev/mock.js
 // (made-up circles, nothing on chain) so screens can be checked offline.
 //
+// Routing and headers come from vercel.json, the file production uses, so a
+// route or header that's wrong there is wrong here too, and tests catch it.
+//
 //   node dev/server.js            real API, using env settings
 //   MOCK=1 node dev/server.js     mock API
 
@@ -14,13 +17,21 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../public/", import.meta.url));
 const PORT = Number(process.env.PORT ?? 8787);
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff": "font/woff", ".json": "application/json", ".png": "image/png", ".txt": "text/plain", ".webmanifest": "application/manifest+json" };
-const REWRITES = { "/app": "/app.html", "/join": "/app.html", "/": "/index.html" };
+const VERCEL = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
+/** @type {Record<string, string>} */
+const REWRITES = Object.fromEntries((VERCEL.rewrites ?? []).map((/** @type {{ source: string, destination: string }} */ r) => [r.source, r.destination]));
+/** @type {Record<string, string>} */
+const HEADERS = Object.fromEntries((VERCEL.headers ?? []).find((/** @type {{ source: string }} */ h) => h.source === "/(.*)")?.headers.map((/** @type {{ key: string, value: string }} */ h) => [h.key, h.value]) ?? []);
+// Production is served over HTTPS; locally these would break plain http.
+delete HEADERS["Strict-Transport-Security"];
+if (HEADERS["Content-Security-Policy"]) HEADERS["Content-Security-Policy"] = HEADERS["Content-Security-Policy"].replace(/; upgrade-insecure-requests/, "");
 const mock = process.env.MOCK ? await import("./mock.js") : null;
 
 /** @param {string} path */
 async function file(path) {
   const clean = normalize(path).replace(/^(\.\.[/\\])+/, "");
-  for (const p of [clean, `${clean}.html`]) {
+  // cleanUrls: /privacy serves privacy.html, / serves index.html.
+  for (const p of clean === "/" ? ["/index.html"] : [clean, `${clean}.html`]) {
     const full = join(ROOT, p);
     if (!full.startsWith(ROOT)) return null;
     try {
@@ -48,13 +59,14 @@ createServer(async (req, res) => {
     res.end(Buffer.from(await response.arrayBuffer()));
     return;
   }
-  const path = REWRITES[/** @type {keyof typeof REWRITES} */ (url.pathname)] ?? url.pathname;
+  const path = REWRITES[url.pathname] ?? url.pathname;
   const f = await file(path);
   if (!f) {
-    res.writeHead(404, { "content-type": "text/plain" });
-    res.end("not found");
+    const notFound = await file("/404.html");
+    res.writeHead(404, { ...HEADERS, "content-type": notFound?.type ?? "text/plain" });
+    res.end(notFound?.body ?? "not found");
     return;
   }
-  res.writeHead(200, { "content-type": f.type, "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'" });
+  res.writeHead(200, { ...HEADERS, "content-type": f.type });
   res.end(f.body);
 }).listen(PORT, () => console.log(`Contri on http://localhost:${PORT}${mock ? " (mock API)" : ""}`));

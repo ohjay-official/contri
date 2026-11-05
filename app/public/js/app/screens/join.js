@@ -1,7 +1,7 @@
 // @ts-check
 // Opening an invite link: see the circle, then join with a deposit.
-// The link's secret is read from the address bar once, kept on this device,
-// and removed from the address bar so it isn't shared by accident.
+// The link's secret is read from the address bar once and kept for this tab
+// (main.js), then on this device once the member joins.
 
 import { potSize } from "../../lib/contri.js";
 import { decryptName } from "../../lib/invite.js";
@@ -13,7 +13,6 @@ import { unlockScreen } from "./unlock.js";
 
 /** @param {{ circle: number, secret: Uint8Array }} invite */
 export async function joinScreen(invite) {
-  history.replaceState(null, "", "/app");
   const c = await getCircle(invite.circle);
   if (!c) {
     show(h("section", { class: "stack narrow" }, h("h1", null, "This invite doesn't work"), h("p", null, "The circle in this link doesn't exist. Ask for a new link."), h("a", { class: "button secondary", href: "/app" }, "Open Contri")));

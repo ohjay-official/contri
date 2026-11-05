@@ -123,3 +123,23 @@ export const shortAccount = (account) => (/^[0-9a-f]{64}$/.test(account) ? `${ac
 
 /** Contri events in a transaction's logs. @param {{ event: string, data: any[] }[]} evs @param {string} name */
 export const findEvent = (evs, name) => evs.find((e) => e.event === name)?.data?.[0];
+
+/**
+ * What a circle needs from the keeper now, if anything. Shared by the
+ * keeper and the app, which asks the keeper when it sees a circle that needs it.
+ * @param {Circle} c @param {number} nowMs
+ * @returns {"settle_round" | "pay_out" | "release_deposits" | null}
+ */
+export function needs(c, nowMs) {
+  if (c.paying) return null;
+  if (c.status === "Active") {
+    if (c.members.every((m) => m.paid_this_round)) return "pay_out";
+    const deadline = c.round_deadline ? Number(BigInt(c.round_deadline) / 1_000_000n) : Infinity;
+    return nowMs > deadline ? "settle_round" : null;
+  }
+  if (c.status === "Finished" || c.status === "Cancelled") {
+    const owed = c.members.some((m) => BigInt(m.deposit) > 0n) || c.backers.some((b) => BigInt(b.due) > 0n);
+    return owed ? "release_deposits" : null;
+  }
+  return null;
+}

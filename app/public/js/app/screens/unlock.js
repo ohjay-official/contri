@@ -2,7 +2,8 @@
 // Opening Contri: a passkey, or a key kept on this device.
 
 import { recoveryCode, restoreDeviceSecret, passkeysAvailable, PrfUnavailable } from "../../lib/passkey.js";
-import { busy, field, h, notice, show } from "../ui.js";
+import { canUseKeys, inAppBrowser } from "../../lib/support.js";
+import { busy, copy, field, h, notice, show } from "../ui.js";
 import { secret, signInWithPasskey, signUpWithPasskey, useRestoredSecret, useThisDevice } from "../wallet.js";
 
 /** @param {() => void} done what to open once unlocked @param {string} [reason] a line about why, e.g. joining a circle */
@@ -27,10 +28,28 @@ export function unlockScreen(done, reason) {
   const restore = h("button", { class: "text" }, "Restore from a recovery code");
   restore.addEventListener("click", () => restoreScreen(done));
 
+  // Before any key is made: a browser that can't keep one safely, or can't make one at all.
+  const warning = h("div", { class: "stack" });
+  if (inAppBrowser()) {
+    warning.append(
+      h("div", { class: "callout stack" },
+        h("p", null, h("strong", null, "Open this page in Chrome or Safari")),
+        h("p", null, "You're in an app's built-in browser. Passkeys usually don't work here, and a key kept here can be wiped with the app's data, taking your way into your circles with it. Tap the app's menu and choose Open in browser, or copy the link into Chrome or Safari."),
+        h("div", { class: "actions" }, h("button", { class: "secondary", onclick: () => copy(location.href, "Link copied") }, "Copy link")),
+      ),
+    );
+  }
+  canUseKeys().then((ok) => {
+    if (ok) return;
+    for (const b of [create, signIn, device, restore]) /** @type {HTMLButtonElement} */ (b).disabled = true;
+    warning.append(h("p", { class: "callout" }, "This browser is too old to make Contri's keys. Update Chrome or Safari, or open Contri in another browser."));
+  });
+
   show(
     h("section", { class: "stack narrow" },
       h("h1", null, "Open Contri"),
       reason ? h("p", { class: "lead" }, reason) : null,
+      warning,
       h("p", null, "Contri signs you in with a passkey: the fingerprint, face or screen lock you already use on this phone. There is no email, phone number or password, and we keep nothing about you."),
       passkeysAvailable()
         ? h("div", { class: "actions" }, create, signIn)

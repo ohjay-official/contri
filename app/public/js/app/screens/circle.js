@@ -2,7 +2,7 @@
 // One circle: the ring, what you owe or receive, members, the turn market,
 // payouts, and this circle's money.
 
-import { actions, dueFor, parseAmount, payoutDateMs, potSize, roundDeadlineMs, seatOf, shortAccount } from "../../lib/contri.js";
+import { actions, dueFor, needs, parseAmount, payoutDateMs, potSize, roundDeadlineMs, seatOf, shortAccount } from "../../lib/contri.js";
 import { inviteLink } from "../../lib/invite.js";
 import { getCircle, getConfig, keep, relay, sign, views } from "../api.js";
 import { ring } from "../ring.js";
@@ -22,12 +22,11 @@ export async function circleScreen(id, openShare = false) {
   }
   // A round past its deadline with someone unpaid, or deposits still to return:
   // ask the keeper to do it, then show the result.
-  const deadline = roundDeadlineMs(c);
-  const owed = (c.status === "Finished" || c.status === "Cancelled") && (c.members.some((m) => m.deposit !== "0") || c.backers.some((b) => b.due !== "0"));
-  if ((c.status === "Active" && deadline && Date.now() > deadline && !c.paying) || owed) {
+  if (needs(c, Date.now())) {
     await keep(id);
     c = (await getCircle(id)) ?? c;
   }
+  const deadline = roundDeadlineMs(c);
 
   const cfg = await getConfig();
   const a = actions(cfg.contractId, cfg.tokenId);

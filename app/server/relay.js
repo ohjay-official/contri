@@ -107,9 +107,21 @@ export async function relay(body, c) {
   if (simulation?.invariant_violated) throw new RelayError("NEAR Intents would reject this: the intents don't balance");
 
   const relayer = await signerFromSecretKey(c.relayerKey, c.relayerId);
-  const { hash, result } = await sendTransaction(c.rpcUrl, relayer, c.intentsId, [
-    { functionCall: { method: "execute_intents", args: { signed }, gas: 300n * TGAS, deposit: 0n } },
-  ]);
+  /** @type {Awaited<ReturnType<typeof sendTransaction>>} */
+  let sent;
+  try {
+    sent = await sendTransaction(c.rpcUrl, relayer, c.intentsId, [
+      { functionCall: { method: "execute_intents", args: { signed }, gas: 300n * TGAS, deposit: 0n } },
+    ]);
+  } catch (e) {
+    const text = e instanceof Error ? e.message : String(e);
+    if (/NotEnoughBalance|LackBalanceForState/i.test(text)) throw new RelayError("Contri can't pay the network fee right now. Nothing was taken from your balance; try again later.", 503);
+    // Sent but not confirmed in time: it may still go through, so don't say it didn't.
+    if (/TIMEOUT|timed? ?out|HTTP 50\d|fetch failed/i.test(text)) throw new RelayError("NEAR is slow to confirm right now. Refresh in a minute to see whether it went through before trying again.", 504);
+    if (/InvalidTxError|InvalidNonce|Expired/i.test(text)) throw new RelayError("NEAR didn't accept the transaction. Nothing was taken from your balance; try again.", 502);
+    throw new RelayError("Something went wrong sending this to NEAR. Refresh in a minute to see whether it went through before trying again.", 502);
+  }
+  const { hash, result } = sent;
   const { logs, failure } = outcome(result);
   return {
     hash,

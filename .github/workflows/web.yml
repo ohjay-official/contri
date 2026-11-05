@@ -120,6 +120,24 @@ jobs:
           echo "{\"deployed\":true,\"commit\":\"${GITHUB_SHA}\",\"fingerprint\":\"${{ steps.decide.outputs.fingerprint }}\",\"url\":\"$ALIAS\",\"deployment\":\"${{ steps.deploy.outputs.url }}\",\"at\":\"$(date -u +%FT%TZ)\"}" > web-out/status.json
           cat web-out/status.json
 
+      # Every page, file, redirect and API route, then every screen in a real
+      # browser. A broken link, missing file, blocked script or failing screen
+      # fails the run (the results are still published below).
+      - name: Check every page, file and API route
+        if: steps.decide.outputs.go == 'true'
+        run: |
+          set -o pipefail
+          node scripts/site-check.mjs "$(cat web-out/domain.txt)" 2>&1 | tee web-out/site-check.txt
+
+      - name: Check every screen in a browser
+        if: steps.decide.outputs.go == 'true'
+        working-directory: app
+        run: |
+          set -o pipefail
+          npm install --no-audit --no-fund 2>&1 | tail -1
+          npx playwright install --with-deps chromium 2>&1 | tail -1
+          node scripts/live-browser.mjs "$(cat ../web-out/domain.txt)" ../web-out/screens 2>&1 | tee ../web-out/live-browser.txt
+
       - name: Publish to the web-results branch
         if: always() && (steps.decide.outputs.go == 'true' || env.VERCEL_TOKEN == '')
         run: |
