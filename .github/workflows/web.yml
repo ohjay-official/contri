@@ -1,0 +1,115 @@
+name: web
+
+# Deploys the site, app, relayer and keeper (app/) to Vercel with the Vercel
+# CLI, using a VERCEL_TOKEN secret, so nobody has to click through Vercel's
+# dashboard. Creates the Vercel project the first time, copies the server's
+# settings from GitHub secrets into it, and deploys to production.
+#
+# Runs on every push that changes app/, and every 30 minutes to pick up newly
+# added secrets (it only redeploys when the code or the secrets changed).
+# The result, with the live URL, goes to the web-results branch.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app/**
+      - .github/workflows/web.yml
+  schedule:
+    - cron: "11,41 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: web
+  cancel-in-progress: false
+
+env:
+  PROJECT: contri
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Decide whether to deploy
+        id: decide
+        env:
+          CONTRI_ACCOUNT_ID: ${{ secrets.CONTRI_ACCOUNT_ID }}
+          RELAYER_ACCOUNT_ID: ${{ secrets.RELAYER_ACCOUNT_ID }}
+          RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
+          ONECLICK_API_KEY: ${{ secrets.ONECLICK_API_KEY }}
+        run: |
+          mkdir -p web-out
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo '{"deployed":false,"reason":"VERCEL_TOKEN is not set"}' > web-out/status.json
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # A fingerprint of the code and the settings, so scheduled runs redeploy only
+          # when something changed. Only a hash is kept, never a value.
+          CODE=$(git log -1 --format=%H -- app)
+          SETTINGS=$(printf '%s|%s|%s|%s' "$CONTRI_ACCOUNT_ID" "$RELAYER_ACCOUNT_ID" "$RELAYER_KEY" "$ONECLICK_API_KEY" | sha256sum | cut -c1-16)
+          FINGERPRINT="$CODE-$SETTINGS"
+          LAST=$(git fetch -q origin web-results 2>/dev/null && git show FETCH_HEAD:status.json 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).fingerprint||"")}catch{console.log("")}})' || true)
+          echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$LAST" = "$FINGERPRINT" ]; then
+            echo "Nothing changed since the last deploy."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install the Vercel CLI
+        if: steps.decide.outputs.go == 'true'
+        run: npm install -g vercel@latest --no-audit --no-fund 2>&1 | tail -1 && vercel --version
+
+      - name: Create the Vercel project, link it, copy the server's settings
+        if: steps.decide.outputs.go == 'true'
+        working-directory: app
+        env:
+          CONTRI_ACCOUNT_ID: ${{ secrets.CONTRI_ACCOUNT_ID }}
+          RELAYER_ACCOUNT_ID: ${{ secrets.RELAYER_ACCOUNT_ID }}
+          RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
+          ONECLICK_API_KEY: ${{ secrets.ONECLICK_API_KEY }}
+        run: node scripts/vercel.js setup 2>&1 | tee ../web-out/setup.log
+
+      - name: Deploy to production
+        if: steps.decide.outputs.go == 'true'
+        id: deploy
+        working-directory: app
+        run: |
+          set -o pipefail
+          vercel deploy --prod --yes --token "$VERCEL_TOKEN" 2>&1 | tee ../web-out/deploy.log
+          URL=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.vercel\.app' ../web-out/deploy.log | tail -1)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          node scripts/vercel.js domain > ../web-out/domain.txt
+
+      - name: Check the live site
+        if: steps.decide.outputs.go == 'true'
+        run: |
+          ALIAS=$(cat web-out/domain.txt)
+          [ -z "$ALIAS" ] && ALIAS="${{ steps.deploy.outputs.url }}"
+          echo "Production: $ALIAS"
+          for P in / /app /privacy /api/config; do
+            printf '%s %s\n' "$(curl -s -o /dev/null -w '%{http_code}' "$ALIAS$P")" "$P"
+          done | tee web-out/checks.txt
+          curl -s "$ALIAS/api/config" > web-out/config.json || true
+          echo "{\"deployed\":true,\"commit\":\"${GITHUB_SHA}\",\"fingerprint\":\"${{ steps.decide.outputs.fingerprint }}\",\"url\":\"$ALIAS\",\"deployment\":\"${{ steps.deploy.outputs.url }}\",\"at\":\"$(date -u +%FT%TZ)\"}" > web-out/status.json
+          cat web-out/status.json
+
+      - name: Publish to the web-results branch
+        if: always() && (steps.decide.outputs.go == 'true' || env.VERCEL_TOKEN == '')
+        run: |
+          cd web-out
+          git init -q && git checkout -q -b web-results
+          git config user.name "contri-ci" && git config user.email "actions@users.noreply.github.com"
+          git add -A && git commit -q -m "web ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" web-results

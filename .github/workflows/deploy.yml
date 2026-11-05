@@ -43,7 +43,8 @@ jobs:
             "CONTRI_ACCOUNT_ID": ${{ secrets.CONTRI_ACCOUNT_ID != '' }},
             "CONTRI_DEPLOYER_KEY": ${{ secrets.CONTRI_DEPLOYER_KEY != '' }},
             "RELAYER_ACCOUNT_ID": ${{ secrets.RELAYER_ACCOUNT_ID != '' }},
-            "RELAYER_KEY": ${{ secrets.RELAYER_KEY != '' }}
+            "RELAYER_KEY": ${{ secrets.RELAYER_KEY != '' }},
+            "VERCEL_TOKEN": ${{ secrets.VERCEL_TOKEN != '' }}
           }
           JSON
           cat deploy-out/secrets.json
