@@ -312,6 +312,8 @@
 
 .card-scene { position: relative; height: calc(100vh - 82px); height: calc(100svh - 82px); min-height: 560px; overflow: hidden; background: #000; }
 .card-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; perspective: 1350px; pointer-events: none; user-select: none; }
+.card-scene { cursor: grab; user-select: none; -webkit-user-select: none; }
+.card-scene:active { cursor: grabbing; }
 .card-space { position: absolute; transform-style: preserve-3d; }
 .cc { position: absolute; inset: 0; transform-style: preserve-3d; }
 .cc > div { position: absolute; inset: 0; overflow: hidden; border-radius: 16px; }
@@ -336,3 +338,11 @@
 @media (max-width: 900px) { .card-scene-copy { right: 20px; bottom: 24px; max-width: none; text-align: center; } .card-scene { height: calc(100svh - 70px); } .card-stage { bottom: 30%; } }
 .card-scene + .prose { padding-top: 72px; }
 @media (max-width: 640px) { .cc-num { font-size: 8.5px; letter-spacing: 0.08em; } .cc-sub { font-size: 7px; } .cc-details { right: 12px; left: 12px; bottom: 10px; } .cc-brand { font-size: 17px; } .cc-step { font-size: 11px; } }
+
+.cs-controls { display: flex; align-items: center; gap: 8px; margin-top: 20px; }
+@media (max-width: 900px) { .cs-controls { justify-content: center; } }
+.cs-controls button { display: grid; place-items: center; width: 40px; min-height: 40px; height: 40px; padding: 0; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 10px; background: rgba(255, 255, 255, 0.06); color: var(--ink); cursor: pointer; }
+.cs-controls button:hover { border-color: rgba(255, 150, 110, 0.6); }
+.cs-controls svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cs-count { margin-left: 8px; color: var(--adire); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; }
+.cs-step { color: var(--ink-2); font-size: 14px; }

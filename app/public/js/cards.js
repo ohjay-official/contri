@@ -25,6 +25,9 @@ function cards(space) {
   let cardW = 336, cardH = 211;
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   let progress = 0;
+  // Dragging (or swiping) moves the cards by hand; a tap jumps to the next one.
+  let drag = /** @type {{ y: number, p: number, moved: boolean } | null} */ (null);
+  let target = -1;
 
   const chip = (/** @type {number} */ i) => `<svg class="cc-chip" viewBox="0 0 60 60" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M20 8H40V14C40.0016 14.5299 40.2128 15.0377 40.5875 15.4125C40.9623 15.7872 41.4701 15.9984 42 16H59V24H42C41.4701 24.0016 40.9623 24.2128 40.5875 24.5875C40.2128 24.9623 40.0016 25.4701 40 26V52H20V8ZM18 8H8.00039C4.47435 8 1.56576 10.6083 1.08 14H18V8ZM1 16V24V26V34V36V44H18V36H1V34H18V26H1V24H18V16H1ZM1.08 46C1.56576 49.3917 4.47435 52 8.00039 52H18V46H1.08ZM42 14V8H52.0004C55.5264 8 58.4342 10.6084 58.92 14H42ZM59 26H42V34H59V26ZM59 36H42V44H59V36ZM52.0004 52H42V46H58.92C58.4342 49.3916 55.5264 52 52.0004 52Z" fill="url(#cc-g${i})"/><defs><linearGradient id="cc-g${i}" x1="30" y1="8" x2="30" y2="52" gradientUnits="userSpaceOnUse"><stop stop-color="white"/><stop offset="1" stop-color="#999999"/></linearGradient></defs></svg>`;
 
@@ -85,15 +88,56 @@ function cards(space) {
 
   const ss = (/** @type {number} */ t) => t * t * (3 - 2 * t);
 
+  const scene = /** @type {HTMLElement} */ (stage.closest(".card-scene") ?? stage);
+  scene.addEventListener("pointerdown", (e) => {
+    if (/** @type {HTMLElement} */ (e.target).closest("a, button")) return;
+    drag = { y: e.clientY, p: progress, moved: false };
+    target = -1;
+  });
+  addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dy = e.clientY - drag.y;
+    if (Math.abs(dy) > 6) drag.moved = true;
+    // A finger scrolls the page; only a mouse drags the cards.
+    if (e.pointerType === "mouse") progress = drag.p - dy / (cardH + 36);
+  });
+  addEventListener("pointercancel", () => (drag = null));
+  addEventListener("pointerup", () => {
+    if (!drag) return;
+    target = drag.moved ? Math.round(progress) : Math.round(progress) + 1;
+    drag = null;
+  });
+  // Buttons for the steps, and the step showing now.
+  const go = (/** @type {number} */ by) => (target = (target >= 0 ? target : Math.round(progress)) + by);
+  document.querySelector(".cs-prev")?.addEventListener("click", () => go(-1));
+  document.querySelector(".cs-next")?.addEventListener("click", () => go(1));
+  const counter = document.querySelector(".cs-count");
+  const label = document.querySelector(".cs-step");
+  let shown = -1;
+
   const render = () => {
-    if (!still) progress += 0.0016;
+    if (drag) {
+      // held by the pointer
+    } else if (target !== -1) {
+      progress += (target - progress) * 0.12;
+      if (Math.abs(target - progress) < 0.001) {
+        progress = target;
+        target = -1;
+      }
+    } else if (!still) progress += 0.0055;
     mouse.x += (mouse.tx - mouse.x) * 0.08;
     mouse.y += (mouse.ty - mouse.y) * 0.08;
     const h = stage.clientHeight || innerHeight;
     const rounded = Math.round(progress);
     const diff = progress - rounded;
     // A brief rest with each card in front, then on to the next.
-    const active = rounded + (Math.sign(diff) * Math.pow(Math.abs(diff) * 2, 4.2)) / 2;
+    const active = drag || target !== -1 ? progress : rounded + (Math.sign(diff) * Math.pow(Math.abs(diff) * 2, 4.2)) / 2;
+    const front = ((Math.round(active) % N) + N) % N;
+    if (front !== shown && counter && label) {
+      shown = front;
+      counter.textContent = `0${front + 1} / 0${N}`;
+      label.textContent = STEPS[front].title;
+    }
     for (let i = 0; i < N; i++) {
       const card = els[i];
       let offset = i - active;

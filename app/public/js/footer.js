@@ -1,6 +1,6 @@
 // @ts-check
 // The footer: a small computer on a hill, in one five-second clip. On arrival
-// the screen switches on and rests on its colour bars. The o in Contri is a
+// the screen switches on, shows its colour bars, then settles on Contri's logo. The o in Contri is a
 // power button: pressing it plays the rest of the clip (dusk, night, the
 // screen collapsing to a point), and that last point of light flies up into
 // the o. Pressing it again switches the scene back on. Nothing in the scene is
@@ -29,6 +29,10 @@ function scene(foot) {
   /** @type {"off-screen" | "online" | "switching-off" | "offline"} */
   let mode = "off-screen";
   let flightStart = -1;
+  // The logo on the screen once the colour bars have played: it fades in, and out again when switching off.
+  let logo = 0;
+  const RING = new Path2D("M16 5a11 11 0 1 0 0.001 0Z");
+  
   let litStart = -1;
   const glints = Array.from({ length: 22 }, (_, i) => ({ x: Math.random(), y: Math.random() * 0.42, phase: Math.random() * 6.28, speed: 1.2 + Math.random() * 1.6, i }));
 
@@ -133,6 +137,47 @@ function scene(foot) {
       grad.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = grad;
       ctx.fillRect(a.x, a.y + p, b.x - a.x, band);
+      ctx.restore();
+    }
+
+    // After the colour bars, the screen settles on Contri's logo.
+    const wantLogo = mode === "online" && t >= IDLE - 0.05 ? 1 : 0;
+    logo += (wantLogo - logo) * (wantLogo ? 0.05 : 0.25);
+    if (logo > 0.01) {
+      const a = map(SCREEN.x0, SCREEN.y0), b = map(SCREEN.x1, SCREEN.y1);
+      const w2 = b.x - a.x, h2 = b.y - a.y;
+      ctx.save();
+      ctx.globalAlpha = logo;
+      ctx.beginPath();
+      ctx.roundRect(a.x, a.y, w2, h2, 18 * a.s);
+      ctx.clip();
+      const bg = ctx.createRadialGradient(a.x + w2 / 2, a.y + h2 / 2, 0, a.x + w2 / 2, a.y + h2 / 2, w2 * 0.7);
+      bg.addColorStop(0, "#2a1208");
+      bg.addColorStop(1, "#070403");
+      ctx.fillStyle = bg;
+      ctx.fillRect(a.x, a.y, w2, h2);
+      const size = Math.min(w2, h2) * 0.55;
+      ctx.translate(a.x + w2 / 2 - size / 2, a.y + h2 / 2 - size / 2);
+      ctx.scale(size / 32, size / 32);
+      ctx.shadowColor = "rgba(255,122,76,0.8)";
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = "#ff7a4c";
+      ctx.fillStyle = "#ff7a4c";
+      ctx.lineWidth = 4;
+      ctx.stroke(RING);
+      for (const [x, y, r, hole] of [[16, 5, 4.5, false], [25.5, 21.5, 3.5, true], [6.5, 21.5, 3.5, true]]) {
+        ctx.beginPath();
+        ctx.arc(/** @type {number} */ (x), /** @type {number} */ (y), /** @type {number} */ (r), 0, Math.PI * 2);
+        if (hole) {
+          ctx.fillStyle = "#160a05";
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "#ff7a4c";
+          ctx.fill();
+        }
+      }
       ctx.restore();
     }
 

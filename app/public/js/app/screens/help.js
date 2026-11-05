@@ -10,7 +10,7 @@
 import { swap } from "../api.js";
 import { STATUS } from "../private.js";
 import { busy, copy, h, show } from "../ui.js";
-import { moves } from "../wallet.js";
+import { moves, unlocked } from "../wallet.js";
 import { NETWORKS } from "./fund.js";
 
 /** What each kind of move is, in the member's words. */
@@ -30,7 +30,8 @@ const when = (ms) => new Date(ms).toLocaleString(undefined, { day: "numeric", mo
 const short = (a) => (a.length > 20 ? `${a.slice(0, 8)}…${a.slice(-4)}` : a);
 
 export async function helpScreen() {
-  const list = await moves();
+  const signedIn = unlocked();
+  const list = signedIn ? await moves() : [];
   // Cash-outs from the private balance record the network's id; show its name and coin.
   const net = (/** @type {string | undefined} */ n) => NETWORKS.find((x) => x.id === n);
   const network = (/** @type {string | undefined} */ n) => net(n)?.label ?? n;
@@ -109,7 +110,9 @@ export async function helpScreen() {
       h("h2", null, "Your top-ups and cash-outs"),
       items.length
         ? h("ul", { class: "circle-list" }, items)
-        : h("p", { class: "hint" }, "Nothing yet. Top-ups and cash-outs you make on this phone show here."),
+        : signedIn
+          ? h("p", { class: "hint" }, "Nothing yet. Top-ups and cash-outs you make on this phone show here.")
+          : h("p", { class: "hint" }, "Open Contri on this phone to see the top-ups and cash-outs you made from it. ", h("a", { href: "#/" }, "Open Contri")),
       h("h2", null, "Something not right?"),
       h("ul", { class: "stack" },
         h("li", null, "A top-up usually arrives within a few minutes. If it says Waiting for your deposit long after you sent it, check you sent the right coin on the right network."),

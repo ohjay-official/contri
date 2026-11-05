@@ -5,7 +5,6 @@
 
 import { potSize } from "../../lib/contri.js";
 import { getConfig, views } from "../api.js";
-import { ring } from "../ring.js";
 import { every, usd, when } from "../state.js";
 import { h, show } from "../ui.js";
 
@@ -26,16 +25,19 @@ export async function exploreScreen() {
     .slice()
     .reverse()
     .map((c) => {
-      const center = h("span", null,
-        h("span", { class: "big" }, c.status === "Open" ? `${c.members.length}/${c.size}` : c.status === "Active" ? `${c.round + 1}/${c.size}` : c.status === "Finished" ? "Done" : "Off"),
-        h("span", null, c.status === "Open" ? "joined" : c.status === "Active" ? "round" : c.status.toLowerCase()),
-      );
+      const status = { Open: "Filling up", Active: "Running", Finished: "Finished", Cancelled: "Cancelled" }[c.status] ?? c.status;
+      const last = c.payouts.length ? when(Number(BigInt(c.payouts[c.payouts.length - 1].at) / 1_000_000n)) : null;
       return h("li", { class: `explore-card ${c.status.toLowerCase()}` },
-        ring(c, null, center),
-        h("div", { class: "stack tight" },
-          h("h2", null, `Circle ${c.id}`),
-          h("p", { class: "sub" }, `${usd(c.contribution)} ${every(c.period_secs)}, ${c.size} members, pot ${usd(potSize(c))}`),
-          h("p", { class: "hint" }, `${c.payouts.length} of ${c.size} payouts made${c.payouts.length ? `, last on ${when(Number(BigInt(c.payouts[c.payouts.length - 1].at) / 1_000_000n))}` : ""}. ${c.invite_only ? "Invite only." : "Open to anyone."} ${c.random_order ? "Turns drawn at random." : "Turns in join order."}`),
+        dial(c),
+        h("div", { class: "ec-body" },
+          h("div", { class: "ec-top" }, h("h2", null, `Circle ${c.id}`), h("span", { class: `ec-status ${c.status.toLowerCase()}` }, status)),
+          h("p", { class: "ec-pot" }, usd(potSize(c)), h("span", null, " pot")),
+          h("p", { class: "ec-meta" }, `${usd(c.contribution)} ${every(c.period_secs)} · ${c.size} members`),
+          h("ul", { class: "ec-tags" },
+            h("li", null, c.invite_only ? "Invite only" : "Open to anyone"),
+            h("li", null, c.random_order ? "Turns drawn at random" : "Turns in join order"),
+            last ? h("li", null, `Last payout ${last}`) : null,
+          ),
         ),
       );
     });
@@ -72,4 +74,49 @@ function intro() {
     h("video", { class: "video-bg", src: "/media/circles.mp4", poster: "/media/circles.jpg", autoplay: true, muted: true, loop: true, playsinline: true, "aria-hidden": "true" }),
     h("div", { class: "video-intro-copy" }, heading, sub),
   );
+}
+
+/**
+ * A circle as a dial: one segment per turn, lit as turns are paid (or, while
+ * it fills up, per member who has joined), the current turn pulsing, and a
+ * ring of ticks turning slowly around it.
+ * @param {import("../../lib/contri.js").Circle} c
+ */
+function dial(c) {
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (/** @type {string} */ tag, /** @type {Record<string, string | number>} */ attrs) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+    return e;
+  };
+  const svg = el("svg", { viewBox: "0 0 120 120", class: "dial", "aria-hidden": "true" });
+  const ticks = el("g", { class: "dial-ticks" });
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * Math.PI * 2;
+    const r0 = i % 5 ? 56 : 54;
+    ticks.append(el("line", { x1: 60 + r0 * Math.cos(a), y1: 60 + r0 * Math.sin(a), x2: 60 + 58 * Math.cos(a), y2: 60 + 58 * Math.sin(a) }));
+  }
+  svg.append(ticks);
+  const n = Math.max(1, c.size);
+  const lit = c.status === "Open" ? c.members.length : c.status === "Finished" ? n : c.status === "Active" ? c.round : 0;
+  const R = 44, gap = n > 1 ? 0.12 : 0;
+  for (let i = 0; i < n; i++) {
+    const a0 = -Math.PI / 2 + (i / n) * Math.PI * 2 + gap / 2;
+    const a1 = -Math.PI / 2 + ((i + 1) / n) * Math.PI * 2 - gap / 2;
+    const p = (/** @type {number} */ a) => `${(60 + R * Math.cos(a)).toFixed(2)} ${(60 + R * Math.sin(a)).toFixed(2)}`;
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    const d = n === 1 ? `M 60 ${60 - R} A ${R} ${R} 0 1 1 59.99 ${60 - R}` : `M ${p(a0)} A ${R} ${R} 0 ${large} 1 ${p(a1)}`;
+    const cls = i < lit ? "seg lit" : c.status === "Active" && i === c.round ? "seg now" : "seg";
+    const seg = el("path", { d, class: cls });
+    seg.style.setProperty("--i", String(i));
+    svg.append(seg);
+  }
+  const big = c.status === "Open" ? `${c.members.length}/${c.size}` : c.status === "Cancelled" ? "Off" : `${Math.min(c.payouts.length, c.size)}/${c.size}`;
+  const label = c.status === "Open" ? "joined" : c.status === "Cancelled" ? "cancelled" : "turns paid";
+  const t1 = el("text", { x: 60, y: 60, class: "dial-big", "text-anchor": "middle", "dominant-baseline": "central" });
+  t1.textContent = big;
+  const t2 = el("text", { x: 60, y: 80, class: "dial-small", "text-anchor": "middle" });
+  t2.textContent = label;
+  svg.append(t1, t2);
+  return svg;
 }

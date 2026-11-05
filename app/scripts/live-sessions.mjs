@@ -52,8 +52,9 @@ for (const p of PROFILES) {
   /** @param {import("playwright").Page} page @param {string} what */
   const unlockedOnSettings = async (page, what) => {
     // Either settings (unlocked) or the passkey screen (locked); not whatever was showing before.
-    const h1 = await page.waitForSelector("h1:text-is('Your key'), h1:text-is('Open Contri')", { timeout: 30_000 }).then((e) => e.textContent());
-    if (h1 !== "Your key") problems.push(`${what}: shows "${h1}" instead of staying unlocked`);
+    // Your key opens without signing in too; unlocked, it offers the recovery code.
+    const seen = await page.waitForSelector("button:has-text('Show my recovery code'), h1:text-is('Open Contri'), a:has-text('Open Contri to see your key')", { timeout: 30_000 }).then((e) => e.textContent());
+    if (seen !== "Show my recovery code") problems.push(`${what}: shows "${seen}" instead of staying unlocked`);
   };
   /** @type {import("playwright").BrowserContext | null} */
   let ctx = null;
@@ -92,8 +93,8 @@ for (const p of PROFILES) {
     await page.waitForSelector("h1:has-text('Open Contri')", { timeout: 30_000 });
     const again = await ctx.newPage();
     await again.goto(base + "/app#/settings");
-    const h1 = await again.waitForSelector("h1:text-is('Your key'), h1:text-is('Open Contri')", { timeout: 30_000 }).then((e) => e.textContent());
-    if (h1 !== "Open Contri") problems.push(`after locking, a new tab shows "${h1}"`);
+    const seen = await again.waitForSelector("button:has-text('Show my recovery code'), h1:text-is('Open Contri'), a:has-text('Open Contri to see your key')", { timeout: 30_000 }).then((e) => e.textContent());
+    if (seen === "Show my recovery code") problems.push("after locking, a new tab still shows the recovery code button");
     await ctx.close();
   } catch (e) {
     problems.push(e instanceof Error ? e.message.split("\n")[0] : String(e));

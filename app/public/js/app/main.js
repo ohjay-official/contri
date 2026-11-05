@@ -34,6 +34,9 @@ const savedInvite = () => {
 async function route() {
   const hash = location.hash || "#/";
   if (hash === "#/explore") return exploreScreen();
+  // Help and Your key open without signing in: help for anyone, and what a key is before you have one.
+  if (hash === "#/help") return helpScreen();
+  if (hash === "#/settings" && !unlocked()) return settingsScreen();
   if (hash === "#/invite") {
     const invite = savedInvite();
     return invite ? joinScreen(invite) : void (location.hash = "#/");
@@ -45,7 +48,6 @@ async function route() {
   if (hash === "#/" || hash === "#") return homeScreen();
   if (hash === "#/new") return createScreen();
   if (hash === "#/settings") return settingsScreen();
-  if (hash === "#/help") return helpScreen();
   if ((m = /^#\/c\/(\d+)(\?share)?$/.exec(hash))) return circleScreen(Number(m[1]), Boolean(m[2]));
   if ((m = /^#\/add\/(\d+)$/.exec(hash))) return fundScreen(Number(m[1]));
   if ((m = /^#\/cash\/(\d+)$/.exec(hash))) return cashOutScreen(Number(m[1]));

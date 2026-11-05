@@ -5,10 +5,11 @@
 import { forgetDeviceSecret, recoveryCode } from "../../lib/passkey.js";
 import { busy, h, show } from "../ui.js";
 import { refresh, state } from "../state.js";
-import { confirmWithPasskey, lock, markRecoverySeen, mode, recoverySeen, secret } from "../wallet.js";
+import { confirmWithPasskey, lock, markRecoverySeen, mode, recoverySeen, secret, unlocked } from "../wallet.js";
 
 export async function settingsScreen() {
-  const passkey = mode() === "passkey";
+  const signedIn = unlocked();
+  const passkey = !signedIn || mode() === "passkey";
   // With a passkey, locking asks for it next time. With a key kept on this
   // device there's nothing to ask for, so the only real lock is removing the
   // key, after which the recovery code is the way back.
@@ -29,7 +30,7 @@ export async function settingsScreen() {
   };
   signOut.addEventListener("click", () => (passkey ? leave() : (confirmRemove.hidden = false)));
 
-  const code = h("p", { class: "code-block", translate: "no", hidden: true }, recoveryCode(secret()));
+  const code = h("p", { class: "code-block", translate: "no", hidden: true }, signedIn ? recoveryCode(secret()) : "");
   const reveal = h("button", { class: "secondary" }, "Show my recovery code");
   reveal.addEventListener("click", () =>
     busy(reveal, code.hidden ? "Confirm with your passkey" : "Hiding", async () => {
@@ -40,7 +41,7 @@ export async function settingsScreen() {
     }).then(() => (reveal.textContent = code.hidden ? "Show my recovery code" : "Hide it")),
   );
 
-  const seen = await recoverySeen().catch(() => false);
+  const seen = signedIn ? await recoverySeen().catch(() => false) : false;
   // Circles this key is in: shown at once from the last refresh, or filled in
   // when a fresh look comes back, so the screen never waits on the network.
   /** @param {import("../state.js").Slot[]} slots */
@@ -49,7 +50,8 @@ export async function settingsScreen() {
     return n ? `${n} circle${n === 1 ? "" : "s"}, one account each` : "Ready for your first circle";
   };
   const countTag = h("span", { class: "glass-tag tag-count" }, state.slots ? count(state.slots) : "Counting your circles");
-  if (!state.slots) refresh().then((st) => (countTag.textContent = count(st.slots ?? [])), () => (countTag.textContent = "One account per circle"));
+  if (!signedIn) countTag.textContent = "One account per circle";
+  else if (!state.slots) refresh().then((st) => (countTag.textContent = count(st.slots ?? [])), () => (countTag.textContent = "One account per circle"));
 
   const n = state.slots ? new Set(state.slots.flatMap((x) => x.circles)).size : 0;
   /** A number that scrambles while the card is hovered, then settles on its real value. */
@@ -73,9 +75,11 @@ export async function settingsScreen() {
       h("section", { class: "key-intro" },
         h("div", { class: "key-heading" },
           h("h1", { class: "headline-sans" }, "Your key"),
-          h("p", { class: "headline-serif" }, passkey ? "lives in your passkey." : "lives on this device."),
+          h("p", { class: "headline-serif" }, !signedIn ? "is yours alone." : passkey ? "lives in your passkey." : "lives on this device."),
         ),
-        h("p", null, passkey
+        h("p", null, !signedIn
+          ? "Contri signs you in with a passkey: the fingerprint, face or screen lock you already use. Every circle you join gets its own account made from it, and nobody else holds it, not even Contri."
+          : passkey
           ? "Nobody else holds it, not even Contri. Every circle account, and your private balance, comes from it, on this phone, each time you open the app."
           : "It's kept in this browser, without a passkey. Every circle account, and your private balance, comes from it."),
       ),
@@ -101,6 +105,13 @@ export async function settingsScreen() {
         ),
       ),
       )),
+      !signedIn
+        ? h("section", { class: "stack narrow key-controls" },
+            h("h2", null, "Not signed in on this device"),
+            h("p", null, "Open Contri to create your key or sign in with it. Your recovery code and this device's settings show here once you have."),
+            h("div", { class: "actions" }, h("a", { class: "button primary", href: "#/" }, "Open Contri to see your key")),
+          )
+        :
       h("section", { class: "stack narrow key-controls" },
         h("h2", null, "Your recovery code"),
         h("p", null,
