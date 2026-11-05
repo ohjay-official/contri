@@ -51,11 +51,14 @@ for (const p of PROFILES) {
   const watch = (/** @type {import("playwright").Page} */ page) => page.on("pageerror", (e) => problems.push(`script error: ${e.message}`));
   /** @param {import("playwright").Page} page @param {string} what */
   const unlockedOnSettings = async (page, what) => {
-    const h1 = await page.waitForSelector("h1", { timeout: 30_000 }).then((e) => e.textContent());
+    // Either settings (unlocked) or the passkey screen (locked); not whatever was showing before.
+    const h1 = await page.waitForSelector("h1:text-is('Your key'), h1:text-is('Open Contri')", { timeout: 30_000 }).then((e) => e.textContent());
     if (h1 !== "Your key") problems.push(`${what}: shows "${h1}" instead of staying unlocked`);
   };
+  /** @type {import("playwright").BrowserContext | null} */
+  let ctx = null;
   try {
-    let ctx = await open();
+    ctx = await open();
     let page = ctx.pages()[0] ?? (await ctx.newPage());
     watch(page);
     await page.goto(base + "/app");
@@ -66,9 +69,11 @@ for (const p of PROFILES) {
     await page.goto(base + "/app#/settings");
     await unlockedOnSettings(page, "after unlocking");
 
-    // 1. The tab is dropped and opened again.
+    // 1. The tab is dropped and opened again. (The new tab opens first: some
+    // engines close a persistent browser when its last tab closes.)
+    const next = await ctx.newPage();
     await page.close();
-    page = await ctx.newPage();
+    page = next;
     watch(page);
     await page.goto(base + "/app#/settings");
     await unlockedOnSettings(page, "after the tab was dropped");
@@ -86,13 +91,18 @@ for (const p of PROFILES) {
     await page.waitForSelector("h1:has-text('Open Contri')", { timeout: 30_000 });
     const again = await ctx.newPage();
     await again.goto(base + "/app#/settings");
-    const h1 = await again.waitForSelector("h1", { timeout: 30_000 }).then((e) => e.textContent());
+    const h1 = await again.waitForSelector("h1:text-is('Your key'), h1:text-is('Open Contri')", { timeout: 30_000 }).then((e) => e.textContent());
     if (h1 !== "Open Contri") problems.push(`after locking, a new tab shows "${h1}"`);
     await ctx.close();
   } catch (e) {
     problems.push(e instanceof Error ? e.message.split("\n")[0] : String(e));
+    await ctx?.close().catch(() => null);
   }
-  rmSync(dir, { recursive: true, force: true });
+  try {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
+  } catch {
+    // A browser still holding a file: the temporary folder is left behind.
+  }
   if (problems.length) failed++;
   console.log(`${problems.length ? "FAIL" : "ok  "} ${p.name} (${p.engine})`);
   for (const x of problems) console.log(`       ${x}`);
