@@ -107,7 +107,7 @@ jobs:
           ALIAS=$(cat web-out/domain.txt)
           [ -z "$ALIAS" ] && ALIAS="${{ steps.deploy.outputs.url }}"
           echo "Production: $ALIAS"
-          for P in / /app /privacy /api/config; do
+          for P in / /app /join /privacy /terms /how-it-works /api/config; do
             printf '%s %s\n' "$(curl -sS -o /dev/null -w '%{http_code}' "$ALIAS$P" 2>&1)" "$P"
           done | tee web-out/checks.txt
           # The custom domain's certificate, if any (Vercel issues it once DNS points here).
