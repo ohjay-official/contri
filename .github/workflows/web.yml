@@ -36,8 +36,9 @@ env:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Pinned: Playwright's browser dependencies install reliably on 24.04.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -137,13 +138,21 @@ jobs:
           set -o pipefail
           node scripts/site-check.mjs "$(cat web-out/domain.txt)" 2>&1 | tee web-out/site-check.txt
 
-      - name: Check every screen in a browser
+      - name: Install browsers
         if: steps.decide.outputs.go == 'true'
         working-directory: app
+        timeout-minutes: 8
         run: |
           set -o pipefail
           npm install --no-audit --no-fund 2>&1 | tail -1
-          npx playwright install --with-deps chromium webkit firefox 2>&1 | tail -1
+          npx playwright install --with-deps chromium webkit firefox 2>&1 | tail -3
+
+      - name: Check every screen in a browser
+        if: steps.decide.outputs.go == 'true'
+        working-directory: app
+        timeout-minutes: 8
+        run: |
+          set -o pipefail
           node scripts/live-browser.mjs "$(cat ../web-out/domain.txt)" ../web-out/screens 2>&1 | tee ../web-out/live-browser.txt
 
       # Staying unlocked through a dropped tab and a browser restart, on Android
@@ -152,6 +161,7 @@ jobs:
       - name: Check staying unlocked on every browser
         if: steps.decide.outputs.go == 'true'
         working-directory: app
+        timeout-minutes: 8
         run: |
           set -o pipefail
           node scripts/live-sessions.mjs "$(cat ../web-out/domain.txt)" 2>&1 | tee ../web-out/live-sessions.txt
