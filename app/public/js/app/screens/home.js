@@ -2,6 +2,7 @@
 // Your circles: what each one needs from you now.
 
 import { dueFor, payoutDateMs, potSize, roundDeadlineMs, seatOf } from "../../lib/contri.js";
+import { privateBalance } from "../private.js";
 import { every, fromNow, nameOf, refresh, state, usd, when } from "../state.js";
 import { h, show } from "../ui.js";
 import { local } from "../wallet.js";
@@ -82,6 +83,26 @@ export async function homeScreen() {
             h("p", null, "Start one and send the invite link to the people you save with. If someone sent you a link, open it on this phone to join."),
           ),
       h("div", { class: "actions" }, h("a", { class: "button primary", href: "#/new" }, "Start a circle")),
+      privateCard(),
     ),
+  );
+}
+
+/** The private balance, read after the screen shows so 1Click never holds it up. */
+function privateCard() {
+  const amount = h("strong", { class: "amount" }, "…");
+  const cash = h("a", { class: "button secondary", href: "#/private/cash", hidden: true }, "Cash out");
+  privateBalance().then(
+    (b) => {
+      amount.textContent = usd(b);
+      cash.hidden = b <= 0n;
+    },
+    () => (amount.textContent = "can't be read right now"),
+  );
+  return h("div", { class: "stack money" },
+    h("h2", null, "Private balance"),
+    h("p", { class: "balance-line" }, "In your private balance: ", amount),
+    h("p", { class: "hint" }, "Kept on NEAR Intents' private ledger, where nobody can see it. Pay any circle from it, and send payouts back to it."),
+    h("div", { class: "actions row" }, h("a", { class: "button secondary", href: "#/private/add" }, "Add privately"), cash),
   );
 }

@@ -2,7 +2,8 @@
 // Adding money to a circle account, then doing what it was for: creating a
 // circle, joining one, or paying a round.
 //
-// Money arrives through 1Click: the member sends USDT (or USDC) on a chain
+// Money arrives two ways: from the member's private balance (one tap, about
+// ten seconds), or through 1Click: the member sends USDT (or USDC) on a chain
 // their exchange or wallet supports to a one-time deposit address, and it
 // lands as USDT in this circle's account on NEAR Intents.
 
@@ -10,6 +11,7 @@ import { toHex } from "../../lib/bytes.js";
 import { actions, dueFor, findEvent, formatAmount, parseAmount, seatOf } from "../../lib/contri.js";
 import { encryptName, inviteSigner, signJoin } from "../../lib/invite.js";
 import { getCircle, getConfig, relay, sign, swap } from "../api.js";
+import { follow, moveOut, privateBalance, STATUS } from "../private.js";
 import { nameOf, usd } from "../state.js";
 import { busy, copy, field, h, notice, show, sleep } from "../ui.js";
 import { balanceOf, decodeSecret, local, remember, signer } from "../wallet.js";
@@ -24,6 +26,33 @@ export const NETWORKS = [
   { id: "tron", label: "Tron (TRC20)", symbol: "USDT", note: "Minimum about $2.60, and higher fees" },
   { id: "eth", label: "Ethereum (ERC20)", symbol: "USDT", note: "High network fees" },
 ];
+
+/** The list of networks to send from, first one chosen. */
+export function networkPicker() {
+  const el = h("div", { class: "networks", role: "radiogroup", "aria-label": "Network you're sending from" },
+    NETWORKS.map((n, i) => {
+      const input = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "network", value: n.id, checked: i === 0 }));
+      return h("label", { class: "choice" }, input, h("span", null, h("strong", null, `${n.symbol} on ${n.label}`), h("span", { class: "hint" }, n.note)));
+    }),
+  );
+  const value = () => /** @type {HTMLInputElement | null} */ (el.querySelector("input:checked"))?.value ?? "bsc";
+  return { el, value };
+}
+
+/**
+ * Where and how much to send, for a 1Click deposit address.
+ * @param {{ depositAddress: string, depositMemo: string | null, send: string, symbol: string, label: string, seconds: number, deadline: string }} q
+ * @param {string} extra what happens to more or less than asked
+ */
+export function depositDetails(q, extra) {
+  return [
+    h("p", null, `Send `, h("strong", null, `${q.send} ${q.symbol}`), ` on `, h("strong", null, q.label), ` to:`),
+    h("p", { class: "code-block", translate: "no" }, q.depositAddress),
+    h("div", { class: "actions row" }, h("button", { class: "secondary", onclick: () => copy(q.depositAddress, "Address copied") }, "Copy address")),
+    q.depositMemo ? h("p", null, "Memo, required: ", h("strong", { class: "code" }, q.depositMemo)) : null,
+    h("p", { class: "hint" }, `Only send ${q.symbol} on ${q.label} to this address. ${extra} It usually arrives about ${Math.max(1, Math.round(q.seconds / 60))} minute${q.seconds > 90 ? "s" : ""} after your exchange or wallet sends it. Use this address once, before ${new Date(q.deadline).toLocaleString()}.`),
+  ];
+}
 
 /** @param {number} index the circle account (slot) */
 export async function fundScreen(index) {
@@ -106,12 +135,7 @@ export async function fundScreen(index) {
   );
 
   const depositBox = h("div", { class: "deposit" });
-  const networkList = h("div", { class: "networks", role: "radiogroup", "aria-label": "Network you're sending from" },
-    NETWORKS.map((n, i) => {
-      const input = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "network", value: n.id, checked: i === 0 }));
-      return h("label", { class: "choice" }, input, h("span", null, h("strong", null, `${n.symbol} on ${n.label}`), h("span", { class: "hint" }, n.note)));
-    }),
-  );
+  const networks = networkPicker();
   const getAddress = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary" }, "Get a deposit address"));
   const amountInput = h("input", { type: "text", inputmode: "decimal", autocomplete: "off" });
   /** @param {bigint} v */
@@ -132,22 +156,40 @@ export async function fundScreen(index) {
 
   getAddress.addEventListener("click", () =>
     busy(getAddress, "Getting an address", async () => {
-      const network = /** @type {HTMLInputElement | null} */ (networkList.querySelector("input:checked"))?.value ?? "bsc";
+      const network = networks.value();
       const want = parseAmount(amountInput.value);
       if (want < 1_000_000n) throw new Error("Add at least $1: smaller amounts cost more in fees than they're worth.");
       const q = await swap("topup", { network, account: s.accountId, amount: want.toString() });
       depositAddress = q.depositAddress;
-      depositBox.replaceChildren(
-        ...[h("p", null, `Send at least `, h("strong", null, `${q.send} ${q.symbol}`), ` on `, h("strong", null, q.label), ` to:`),
-        h("p", { class: "code-block", translate: "no" }, q.depositAddress),
-        h("div", { class: "actions row" }, h("button", { class: "secondary", onclick: () => copy(q.depositAddress, "Address copied") }, "Copy address")),
-        q.depositMemo ? h("p", null, "Memo, required: ", h("strong", { class: "code" }, q.depositMemo)) : null,
-        h("p", { class: "hint" }, `Only send ${q.symbol} on ${q.label} to this address. Sending more is fine: the extra stays in your balance. It usually arrives about ${Math.max(1, Math.round(q.seconds / 60))} minute${q.seconds > 90 ? "s" : ""} after your exchange or wallet sends it. Use this address once, before ${new Date(q.deadline).toLocaleString()}.`)].filter((x) => x !== null),
-      );
+      depositBox.replaceChildren(...depositDetails(q, "Sending more is fine: the extra stays in this circle's account.").filter((x) => x !== null));
       progress.textContent = "Waiting for your deposit";
       depositBox.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     }),
   );
+
+  // From the private balance: shown once it's known to hold something.
+  const privateBox = h("div", { class: "stack", hidden: true });
+  const showPrivate = (/** @type {bigint} */ held) => {
+    const short = purpose ? purpose.need - balance : 0n;
+    const move = short > 0n && short < held ? short : held;
+    const moveBtn = /** @type {HTMLButtonElement} */ (h("button", { class: "primary" }, `Move ${usd(move)} here`));
+    moveBtn.addEventListener("click", () =>
+      busy(moveBtn, "Moving", async () => {
+        const q = await moveOut({ to: s.accountId }, move);
+        notice("Moving from your private balance");
+        progress.textContent = `Moving ${usd(move)} from your private balance. It takes about ${q.seconds} seconds.`;
+        privateBox.hidden = true;
+        const screen = privateBox.closest("section");
+        if (screen) follow(q.depositAddress, (st) => st !== "SUCCESS" && (progress.textContent = STATUS[st] ?? progress.textContent), screen);
+      }),
+    );
+    privateBox.replaceChildren(
+      h("h2", null, "From your private balance"),
+      h("p", { class: "balance-line" }, "In your private balance: ", h("strong", { class: "amount" }, usd(held))),
+      h("div", { class: "actions" }, moveBtn),
+    );
+    privateBox.hidden = held <= 0n;
+  };
 
   const nearAccount = h("details", { class: "more" },
     h("summary", null, "Already have USDT on NEAR Intents?"),
@@ -163,19 +205,22 @@ export async function fundScreen(index) {
       h("p", { class: "balance-line" }, "In this circle's account: ", balanceEl, purpose ? ` of ${usd(purpose.need)} needed` : null),
       progress,
       h("div", { class: "actions" }, actionBtn),
-      h("h2", null, "Add money"),
+      privateBox,
+      h("h2", null, "From an exchange or wallet"),
       field("How much, in dollars", amountInput, "Adding enough for every round at once saves a network fee each round. Anything not used stays in this account, and you can cash it out."),
       amountChoices,
       h("p", null, "Choose the network you're sending from. Withdrawing from an exchange works: pick the same network there."),
-      networkList,
+      networks.el,
       h("div", { class: "actions" }, getAddress),
       depositBox,
+      h("p", { class: "hint" }, "Want the exchange you pay from kept off the public chain? ", h("a", { href: `#/private/add/${index}` }, "Add to your private balance"), " first, then move it here."),
       nearAccount,
     ),
   );
 
   // Suggested amounts: what's missing now, or enough for the whole circle.
   balance = await balanceOf(index).catch(() => 0n);
+  if (!purpose || purpose.need > balance) privateBalance().then(showPrivate, () => null);
   const short = purpose ? purpose.need - balance : 5_000_000n;
   setAmount(short);
   if (purpose && purpose.whole - balance > short) {
@@ -203,14 +248,3 @@ export async function fundScreen(index) {
     stopped = !screen?.isConnected;
   }
 }
-
-/** 1Click's swap states, in the member's words. @type {Record<string, string>} */
-const STATUS = {
-  PENDING_DEPOSIT: "Waiting for your deposit",
-  KNOWN_DEPOSIT_TX: "Your deposit is on its way",
-  INCOMPLETE_DEPOSIT: "Less arrived than this address needs. Check the amount you sent.",
-  PROCESSING: "Deposit received. Converting it to USDT.",
-  SUCCESS: "Arrived",
-  REFUNDED: "The deposit couldn't be converted and was refunded to this circle's account.",
-  FAILED: "The deposit failed. Keep this deposit address: it is how the deposit can be traced.",
-};

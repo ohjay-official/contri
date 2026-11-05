@@ -3,7 +3,7 @@
 // Never used in production. The member is the device key below; open the app,
 // choose "Keep my key on this device", and dev/screens.js seeds the rest.
 
-import { toBase58 } from "../public/js/lib/bytes.js";
+import { randomBytes, toBase58, toBase64 } from "../public/js/lib/bytes.js";
 import { encryptName } from "../public/js/lib/invite.js";
 import { circleSigner } from "../public/js/lib/keys.js";
 import { json } from "../server/http.js";
@@ -44,6 +44,11 @@ const circles = [
 const SEAT_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%23243b7a'/%3E%3Cg fill='none' stroke-width='12' transform='rotate(-90 150 132)'%3E%3Ccircle cx='150' cy='132' r='78' stroke='%233b5394'/%3E%3Ccircle cx='150' cy='132' r='78' stroke='%23f3f4f0' stroke-dasharray='196 490'/%3E%3C/g%3E%3Cg font-family='system-ui' text-anchor='middle'%3E%3Ctext x='150' y='144' font-size='34' fill='%23f3f4f0'%3E4/5%3C/text%3E%3Ctext x='150' y='246' font-size='15' fill='%23f3f4f0'%3EPays in round 4%3C/text%3E%3Ctext x='150' y='274' font-size='11' fill='%23a3b6f3'%3EContri seat %230%3C/text%3E%3C/g%3E%3C/svg%3E";
 
 const balances = { [me0]: 3_200_000n, [me1]: 0n };
+const TOKEN = "nep141:usdt.tether-token.near";
+// The private balance, and a move out of it waiting for its signature.
+let privateHeld = 12_500_000n;
+/** @type {{ to: string | null, amount: bigint } | null} */
+let pendingMove = null;
 
 /** @param {string} name @param {Request} request */
 export async function handle(name, request) {
@@ -67,7 +72,29 @@ export async function handle(name, request) {
   }
   if (name === "swap") {
     if (body.action === "topup") return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress: "0x7d3A5bE2c1f0aB4E9c8D6F21a0B3c4D5e6F70819", depositMemo: null, send: "1.81", minSend: "1.79", receive: "1.80", deadline: new Date(Date.now() + 86_400_000).toISOString(), seconds: 40 });
-    if (body.action === "status") return json({ status: "PENDING_DEPOSIT" });
+    if (body.action === "status") return json({ status: body.depositAddress === other(16) || body.depositAddress === other(17) ? "SUCCESS" : "PENDING_DEPOSIT" });
+    if (body.action === "psignin") return json({ session: "mock.session.token.for.the.private.balance", expiresIn: 900 });
+    if (body.action === "pbalance") return json({ amount: String(privateHeld) });
+    if (body.action === "ptopup") return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress: "0x1c4B2a9E7d3F60b5A8c1D2e3F4a5B6c7D8e9F0a1", depositMemo: null, send: "10.06", receive: "10.05", deadline: new Date(Date.now() + 86_400_000).toISOString(), seconds: 35 });
+    if (body.action === "pmove") {
+      if (body.dry) return json({ receive: "9.98", fee: "0.02", seconds: 13 });
+      pendingMove = { to: body.to ?? null, amount: BigInt(body.amount) };
+      const message = JSON.stringify({ deadline: new Date(Date.now() + 3 * 86_400_000).toISOString(), intents: [{ intent: "transfer", receiver_id: other(16), tokens: { [`imt:${"51e8".repeat(16)}:${TOKEN}`]: body.amount } }], signer_id: body.vault });
+      return json({ receive: "1.00", fee: "0", seconds: 10, depositAddress: other(16), intent: { standard: "nep413", payload: { message, nonce: toBase64(randomBytes(32)), recipient: "intents.far" } } });
+    }
+    if (body.action === "psubmit") {
+      if (pendingMove) {
+        privateHeld -= pendingMove.amount;
+        if (pendingMove.to) balances[pendingMove.to] = (balances[pendingMove.to] ?? 0n) + pendingMove.amount;
+        pendingMove = null;
+      }
+      return json({ intentHash: "mock" });
+    }
+    if (body.action === "phome") {
+      balances[body.from] = (balances[body.from] ?? 0n) - BigInt(body.amount);
+      privateHeld += BigInt(body.amount);
+      return json({ depositAddress: other(17), receive: "1.00", seconds: 10 });
+    }
     if (body.action === "cashout") return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress: body.dry ? null : other(15), receive: "3.19", fee: "0.01", seconds: 13 });
   }
   if (name === "relay") return json({ hash: "mock", ok: true, failure: null, events: [{ event: "contributed", data: [{}] }], notes: [] });

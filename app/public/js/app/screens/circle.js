@@ -225,7 +225,7 @@ export async function circleScreen(id, openShare = false) {
             h("p", { class: "hint" }, "Payouts and returned deposits land here. This account is used for this circle only, so it isn't linked to your other circles."),
             h("div", { class: "actions row" },
               h("a", { class: "button secondary", href: `#/add/${slot.index}` }, "Add money"),
-              balance > 0n ? h("a", { class: "button secondary", href: `#/cash/${slot.index}` }, "Cash out") : null,
+              balance > 0n ? h("a", { class: "button secondary", href: `#/cash/${slot.index}` }, "Move money out") : null,
             ),
           )
         : null,

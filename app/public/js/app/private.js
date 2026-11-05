@@ -1,0 +1,114 @@
+// @ts-check
+// The member's private balance: USDT on NEAR Intents' private ledger
+// (Confidential Intents), held by one account derived from the passkey.
+// Nobody looking at the public chain can see it, or link it to the member's
+// circle accounts or to the exchange it came from.
+//
+// Every move out of it is an intent 1Click builds and this phone signs, after
+// checking it moves exactly what the member asked (lib/private.js).
+
+import { fromBase64, toBase58 } from "../lib/bytes.js";
+import { nep413Hash, transfer } from "../lib/intents.js";
+import { checkPrivateMove } from "../lib/private.js";
+import { getConfig, relay, sign, swap } from "./api.js";
+import { sleep } from "./ui.js";
+import { signer, vault } from "./wallet.js";
+
+/** A 1Click session to read the private balance: about 15 minutes, kept in memory only. */
+/** @type {{ token: string, until: number, account: string } | null} */
+let session = null;
+
+async function signIn() {
+  const v = await vault();
+  if (session?.account === v.accountId && session.until > Date.now() + 30_000) return session.token;
+  // An empty intent, signed by the private account: proves it's the member's, moves nothing.
+  const signed = await sign(v, [], { validForMs: 4 * 60_000 });
+  const r = await swap("psignin", { signed });
+  session = { token: r.session, until: Date.now() + Number(r.expiresIn ?? 900) * 1000, account: v.accountId };
+  return session.token;
+}
+
+/** The private balance, in token units. */
+export async function privateBalance() {
+  try {
+    return BigInt((await swap("pbalance", { session: await signIn() })).amount);
+  } catch {
+    // The session may have expired early: sign in once more.
+    session = null;
+    return BigInt((await swap("pbalance", { session: await signIn() })).amount);
+  }
+}
+
+/**
+ * A one-time deposit address that adds `amount` (token units) to the private balance.
+ * @param {string} network @param {bigint} amount
+ */
+export async function addPrivately(network, amount) {
+  const v = await vault();
+  return swap("ptopup", { network, vault: v.accountId, amount: amount.toString() });
+}
+
+/**
+ * Moves money out of the private balance: to one of the member's circle
+ * accounts (`{ to }`), or to an address on another chain (`{ network, address }`).
+ * @param {{ to: string } | { network: string, address: string }} destination @param {bigint} amount
+ * @returns {Promise<{ depositAddress: string, receive: string, fee: string, seconds: number }>}
+ */
+export async function moveOut(destination, amount) {
+  const [cfg, v] = await Promise.all([getConfig(), vault()]);
+  const want = amount.toString();
+  const q = await swap("pmove", { vault: v.accountId, amount: want, ...destination });
+  const payload = q.intent?.payload;
+  if (q.intent?.standard !== "nep413" || typeof payload?.message !== "string") throw new Error("1Click sent something unexpected to sign. Nothing was moved.");
+  try {
+    checkPrivateMove(payload.message, { signer: v.accountId, tokenId: cfg.tokenId, depositAddress: q.depositAddress, amount: want });
+  } catch (e) {
+    throw new Error(`Not signed: ${e instanceof Error ? e.message : e}. Nothing was moved.`);
+  }
+  const signature = await v.sign(await nep413Hash(payload.message, fromBase64(payload.nonce), payload.recipient));
+  await swap("psubmit", { signed: { standard: "nep413", payload, public_key: v.publicKeyStr, signature: `ed25519:${toBase58(signature)}` } });
+  return q;
+}
+
+/**
+ * Moves money from a circle account into the private balance: a plain
+ * transfer, signed by the circle account, to a 1Click deposit account.
+ * @param {number} index the circle account (slot) @param {bigint} amount
+ */
+export async function moveHome(index, amount) {
+  const [cfg, v, s] = await Promise.all([getConfig(), vault(), signer(index)]);
+  const q = await swap("phome", { from: s.accountId, vault: v.accountId, amount: amount.toString() });
+  const r = await relay([await sign(s, [transfer(q.depositAddress, cfg.tokenId, amount)])]);
+  await swap("submit", { txHash: r.hash, depositAddress: q.depositAddress }).catch(() => null);
+  return /** @type {{ depositAddress: string, receive: string, seconds: number }} */ (q);
+}
+
+/** 1Click's swap states, in the member's words. @type {Record<string, string>} */
+export const STATUS = {
+  PENDING_DEPOSIT: "Waiting for your deposit",
+  KNOWN_DEPOSIT_TX: "Your deposit is on its way",
+  INCOMPLETE_DEPOSIT: "Less arrived than this address needs. Check the amount you sent.",
+  PROCESSING: "Received. Moving it on.",
+  SUCCESS: "Arrived",
+  REFUNDED: "It couldn't go through, so the money was refunded.",
+  FAILED: "It failed. Keep this deposit address: it is how the money can be traced.",
+};
+
+/**
+ * Follows a 1Click deposit address until it finishes, the screen closes, or
+ * `minutes` pass. Calls `onStatus` with each new state. Returns the last state.
+ * @param {string} depositAddress @param {(status: string) => void} onStatus @param {Element} screen @param {number} [minutes]
+ */
+export async function follow(depositAddress, onStatus, screen, minutes = 30) {
+  let last = "";
+  for (let i = 0; i < minutes * 12 && screen.isConnected; i++) {
+    const st = await swap("status", { depositAddress }).catch(() => null);
+    if (st?.status && st.status !== last) {
+      last = st.status;
+      onStatus(last);
+    }
+    if (["SUCCESS", "REFUNDED", "FAILED"].includes(last)) break;
+    await sleep(5000);
+  }
+  return last;
+}

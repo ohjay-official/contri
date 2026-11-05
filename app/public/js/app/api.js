@@ -54,18 +54,21 @@ export async function relay(signed) {
   return r;
 }
 
-/** @param {"topup" | "cashout" | "status" | "submit"} action @param {object} body */
+/**
+ * 1Click, through Contri's server: top-ups, cash-outs, and the private balance.
+ * @param {"topup" | "cashout" | "status" | "submit" | "psignin" | "pbalance" | "ptopup" | "pmove" | "psubmit" | "phome"} action @param {object} body
+ */
 export const swap = (action, body) => request("/api/swap", { action, ...body });
 
 /** Asks the keeper to settle a circle whose round deadline has passed. @param {number} circle */
 export const keep = (circle) => request("/api/keeper", { circle }).catch(() => null);
 
 /**
- * Signs intents as a circle account with a versioned nonce, ready for `relay`.
- * @param {import("../lib/keys.js").Signer} signer @param {object[]} intents
+ * Signs intents with a versioned nonce, ready for `relay`.
+ * @param {import("../lib/keys.js").Signer} signer @param {object[]} intents @param {{ validForMs?: number }} [opts]
  */
-export async function sign(signer, intents) {
+export async function sign(signer, intents, opts = {}) {
   const cfg = await getConfig();
   const [salt] = await views([{ contract: "intents", method: "current_salt" }]);
-  return signIntents(signer, intents, { recipient: cfg.intentsId, salt });
+  return signIntents(signer, intents, { recipient: cfg.intentsId, salt, ...opts });
 }

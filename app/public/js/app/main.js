@@ -1,5 +1,6 @@
 // @ts-check
 // Routes:  /app#/  /app#/explore  /app#/new  /app#/c/<circle>  /app#/add/<slot>  /app#/cash/<slot>  /app#/settings
+// the private balance: /app#/private/add(/<slot>)  /app#/private/cash
 // and /join#<circle>.<secret> for invite links.
 
 import { parseInvite } from "../lib/invite.js";
@@ -11,6 +12,7 @@ import { exploreScreen } from "./screens/explore.js";
 import { fundScreen } from "./screens/fund.js";
 import { homeScreen } from "./screens/home.js";
 import { joinScreen } from "./screens/join.js";
+import { privateAddScreen } from "./screens/private.js";
 import { settingsScreen } from "./screens/settings.js";
 import { unlockScreen } from "./screens/unlock.js";
 import { h, notice, show } from "./ui.js";
@@ -28,6 +30,8 @@ async function route() {
   if ((m = /^#\/c\/(\d+)(\?share)?$/.exec(hash))) return circleScreen(Number(m[1]), Boolean(m[2]));
   if ((m = /^#\/add\/(\d+)$/.exec(hash))) return fundScreen(Number(m[1]));
   if ((m = /^#\/cash\/(\d+)$/.exec(hash))) return cashOutScreen(Number(m[1]));
+  if ((m = /^#\/private\/add(?:\/(\d+))?$/.exec(hash))) return privateAddScreen(m[1] === undefined ? null : Number(m[1]));
+  if (hash === "#/private/cash") return cashOutScreen("private");
   location.hash = "#/";
 }
 

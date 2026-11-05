@@ -12,7 +12,7 @@
 // from the passkey, and the money is on NEAR Intents.
 
 import { fromBase58, toBase58, toBase64Url, fromBase64 } from "../lib/bytes.js";
-import { circleSigner } from "../lib/keys.js";
+import { circleSigner, vaultSigner } from "../lib/keys.js";
 import { createPasskey, deviceSecret, unlockWithPasskey } from "../lib/passkey.js";
 import { getConfig, views } from "./api.js";
 
@@ -37,6 +37,8 @@ const SESSION = "contri.session";
 let session = null;
 /** @type {Map<number, Signer>} */
 const signers = new Map();
+/** @type {Signer | null} */
+let vaultKey = null;
 
 /** Picks up an unlocked session after a reload in the same tab. */
 export function restore() {
@@ -53,6 +55,7 @@ export function restore() {
 function start(secret, mode) {
   session = { secret, mode };
   signers.clear();
+  vaultKey = null;
   try {
     sessionStorage.setItem(SESSION, JSON.stringify({ secret: toBase58(secret), mode }));
   } catch {
@@ -84,6 +87,7 @@ export const useRestoredSecret = (s) => start(s, "device");
 export function lock() {
   session = null;
   signers.clear();
+  vaultKey = null;
   sessionStorage.removeItem(SESSION);
 }
 
@@ -96,6 +100,15 @@ export async function signer(index) {
     signers.set(index, s);
   }
   return s;
+}
+
+/** The member's private account (their private balance). */
+export async function vault() {
+  if (!vaultKey) {
+    const { contractId } = await getConfig();
+    vaultKey = await vaultSigner(secret(), contractId);
+  }
+  return vaultKey;
 }
 
 // ---- What this device remembers ----

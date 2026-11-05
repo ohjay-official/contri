@@ -5,6 +5,7 @@
 // app a secret (see passkey.js), and every key is derived from it with HKDF:
 //
 //   circle account n   HKDF(secret, "contri/circle/<contract>/<n>")
+//   private balance    HKDF(secret, "contri/vault/<contract>")
 //
 // Each derived key's account is its NEAR implicit account (the public key in
 // hex), so a member's circles share nothing on chain. The same passkey on a
@@ -64,6 +65,15 @@ export async function hkdf(secret, info, length = 32) {
  */
 export async function circleSigner(secret, contract, index) {
   return signerFromSeed(await hkdf(secret, `contri/circle/${contract}/${index}`));
+}
+
+/**
+ * The member's private account on NEAR Intents' private ledger (Confidential
+ * Intents): one per member, never used on the public chain.
+ * @param {Uint8Array} secret @param {string} contract
+ */
+export async function vaultSigner(secret, contract) {
+  return signerFromSeed(await hkdf(secret, `contri/vault/${contract}`));
 }
 
 /** @param {Uint8Array} publicKey @param {Uint8Array} message @param {Uint8Array} signature */

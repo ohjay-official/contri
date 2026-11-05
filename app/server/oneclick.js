@@ -27,11 +27,11 @@ export const NETWORKS = {
   eth: { label: "Ethereum (ERC20)", symbol: "USDT", asset: "nep141:eth-0xdac17f958d2ee523a2206206994597c13d831ec7.omft.near", decimals: 6, address: /^0x[0-9a-fA-F]{40}$/ },
 };
 
-const TOKEN_DECIMALS = 6;
-const IMPLICIT_OR_NAMED = /^[0-9a-f]{64}$|^(([a-z\d]+[-_])*[a-z\d]+\.)+[a-z\d]+$/;
+export const TOKEN_DECIMALS = 6;
+export const IMPLICIT_OR_NAMED = /^[0-9a-f]{64}$|^(([a-z\d]+[-_])*[a-z\d]+\.)+[a-z\d]+$/;
 
 /** @param {Config} c @param {object} body */
-async function quote(c, body) {
+export async function quote(c, body) {
   /** @type {Record<string, string>} */
   const headers = { "Content-Type": "application/json", Accept: "application/json" };
   if (c.oneClickKey) headers["X-API-Key"] = c.oneClickKey;
@@ -42,20 +42,20 @@ async function quote(c, body) {
 }
 
 /** @param {unknown} v @param {string} what */
-function units(v, what) {
+export function units(v, what) {
   if (typeof v !== "string" || !/^\d{1,18}$/.test(v) || BigInt(v) === 0n) throw new RelayError(`invalid ${what}`);
   return BigInt(v);
 }
 
 /** @param {unknown} network */
-function net(network) {
+export function net(network) {
   const n = NETWORKS[/** @type {string} */ (network)];
   if (!n) throw new RelayError("unsupported network");
   return n;
 }
 
 /** @param {number} minutes */
-const deadline = (minutes) => new Date(Date.now() + minutes * 60_000).toISOString();
+export const deadline = (minutes) => new Date(Date.now() + minutes * 60_000).toISOString();
 
 /**
  * A deposit address that turns about `amount` (token units) sent on `network`
@@ -92,7 +92,7 @@ export async function topUp(body, c) {
     depositMemo: q.depositMemo ?? null,
     send: q.amountInFormatted,
     minSend: formatUnits(BigInt(q.minAmountIn), n.decimals),
-    receive: q.amountOutFormatted,
+    receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS),
     deadline: q.deadline,
     seconds: q.timeEstimate,
   };
@@ -128,7 +128,7 @@ export async function cashOut(body, c) {
     label: n.label,
     symbol: n.symbol,
     depositAddress: q.depositAddress ?? null,
-    receive: q.amountOutFormatted,
+    receive: formatDown(BigInt(q.amountOut), n.decimals),
     fee: q.withdrawFee ? formatUnits(BigInt(q.withdrawFee), n.decimals) : "0",
     seconds: q.timeEstimate,
   };
@@ -158,6 +158,12 @@ export async function submitDeposit(body, c) {
     body: JSON.stringify({ txHash: String(body.txHash), depositAddress: String(body.depositAddress) }),
   });
   return { ok: res.ok };
+}
+
+/** Rounded down to the cent: what arrives is never overstated. @param {bigint} v @param {number} decimals */
+export function formatDown(v, decimals) {
+  const cents = (v * 100n) / 10n ** BigInt(decimals);
+  return `${cents / 100n}.${(cents % 100n).toString().padStart(2, "0")}`;
 }
 
 /** @param {bigint} v @param {number} decimals */
