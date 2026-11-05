@@ -121,9 +121,17 @@ export async function relay(body, c) {
   };
 }
 
+/** NEAR Intents' reasons, in the member's words. */
+const REASONS = [
+  [/insufficient balance|overflow/i, "there isn't enough money in this circle's account yet"],
+  [/nonce.*(used|expired)|deadline|expired/i, "this request expired; try again"],
+  [/invalid signature|signature/i, "the signature didn't check out; reopen the app and try again"],
+];
+
 /** @param {unknown} e */
 function simulationReason(e) {
   const text = e instanceof Error ? e.message : String(e);
-  const m = /Smart contract panicked: ([^"\\]+)/.exec(text);
+  for (const [re, words] of REASONS) if (/** @type {RegExp} */ (re).test(text)) return /** @type {string} */ (words);
+  const m = /panic_msg: \\?"([^"\\]+)/.exec(text) ?? /Smart contract panicked: ([^"\\]+)/.exec(text);
   return m ? m[1] : text.slice(0, 200);
 }
