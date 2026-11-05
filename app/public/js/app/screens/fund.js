@@ -9,7 +9,7 @@
 
 import { toHex } from "../../lib/bytes.js";
 import { actions, dueFor, findEvent, formatAmount, parseAmount, seatOf } from "../../lib/contri.js";
-import { encryptName, inviteSigner, signJoin } from "../../lib/invite.js";
+import { decryptName, encryptName, inviteSigner, signJoin } from "../../lib/invite.js";
 import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { follow, moveOut, privateBalance, STATUS } from "../private.js";
 import { nameOf, usd } from "../state.js";
@@ -92,7 +92,7 @@ export async function fundScreen(index) {
     if (!c) throw new Error("That circle no longer exists.");
     const deposit = BigInt(c.contribution);
     purpose = {
-      title: `Join ${nameOf(id)}`,
+      title: `Join ${(l.secret && (await decryptName(decodeSecret(l.secret), c.name))) || nameOf(id)}`,
       need: deposit,
       whole: deposit + BigInt(c.contribution) * BigInt(c.size),
       button: `Join and pay ${usd(deposit)} deposit`,

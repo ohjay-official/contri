@@ -29,7 +29,8 @@ export async function refresh() {
   for (const l of Object.values(known)) {
     const id = l.circle ?? (l.pending?.kind === "join" ? l.pending.circle : undefined);
     if (id === undefined || !l.secret || state.names.has(id)) continue;
-    const c = state.circles.get(id);
+    // A circle being joined isn't one of the member's yet, so read it here.
+    const c = state.circles.get(id) ?? (l.pending ? (await views([{ contract: "contri", method: "get_circle", args: { circle_id: id } }]))[0] : null);
     if (c) {
       const name = await decryptName(decodeSecret(l.secret), c.name);
       if (name) state.names.set(id, name);

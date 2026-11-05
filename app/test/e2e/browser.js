@@ -127,6 +127,7 @@ try {
   await bayo.shot("invite");
   await bayo.page.click("text=Join this circle");
   await bayo.page.click("text=Create a passkey");
+  await bayo.page.waitForSelector("h1:has-text('Join Ikeja friends')");
   await fundAndAct(bayo, "Join and pay");
   await bayo.page.waitForSelector(".ring", { timeout: 30_000 });
   await bayo.page.waitForSelector("text=Add money to pay $5.00", { timeout: 30_000 });
