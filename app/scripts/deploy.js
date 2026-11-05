@@ -44,10 +44,22 @@ const existing = await account(c.contractId);
 
 if (process.argv[2] === "--lock") {
   if (!existing) throw new Error(`${c.contractId} doesn't exist`);
-  await sendTransaction(c.rpcUrl, signer, c.contractId, [{ deleteKey: { publicKey: signer.publicKey } }], "FINAL");
+  // NEAR Intents lets an account register keys that sign intents for its balance.
+  // A lock with one registered would leave a way to move the contract's money.
+  /** @returns {Promise<string[]>} */
+  const intentsKeys = () => view(c.rpcUrl, c.intentsId, "public_keys_of", { account_id: c.contractId });
+  const before = await intentsKeys();
+  if (before.length) throw new Error(`${c.contractId} has keys registered on ${c.intentsId}: ${before.join(", ")}. Remove them before locking.`);
+  // Every access key goes, in one transaction: the deploy key and any other.
+  const list = await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: c.contractId });
+  const { fromBase58 } = await import("../public/js/lib/bytes.js");
+  const deletes = list.keys.map((/** @type {{ public_key: string }} */ k) => ({ deleteKey: { publicKey: fromBase58(k.public_key.replace(/^ed25519:/, "")) } }));
+  if (!list.keys.some((/** @type {{ public_key: string }} */ k) => k.public_key === signer.publicKeyStr)) throw new Error("the deploy key isn't on the account");
+  const { hash } = await sendTransaction(c.rpcUrl, signer, c.contractId, deletes, "FINAL");
   const keys = await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: c.contractId });
-  console.log(`locked ${c.contractId}: ${keys.keys.length} access keys left`);
-  if (keys.keys.length) throw new Error("the account still has keys");
+  const after = await intentsKeys();
+  console.log(`locked ${c.contractId} in ${hash}: ${keys.keys.length} access keys left, ${after.length} keys on ${c.intentsId}`);
+  if (keys.keys.length || after.length) throw new Error("the account still has keys");
 } else {
   const wasm = new Uint8Array(await readFile(process.argv[2]));
   const init = { functionCall: { method: "new", args: { intents_id: c.intentsId, token_id: c.tokenId }, gas: 30n * TGAS, deposit: 0n } };

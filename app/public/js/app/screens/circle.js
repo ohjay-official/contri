@@ -246,7 +246,7 @@ export async function circleScreen(id, openShare = false) {
         ? h("div", { class: "stack money" },
             h("h2", null, "This circle's money"),
             h("p", { class: "balance-line" }, "In your account for this circle: ", h("strong", { class: "amount" }, usd(balance))),
-            h("p", { class: "hint" }, "Payouts and returned deposits land here. This account is used for this circle only, so it isn't linked to your other circles."),
+            h("p", { class: "hint" }, "Payouts and returned deposits land here. This account is used for this circle only, so nothing on chain links it to your other circles."),
             h("div", { class: "actions row" },
               h("a", { class: "button secondary", href: `#/add/${slot.index}` }, "Add money"),
               balance > 0n ? h("a", { class: "button secondary", href: `#/cash/${slot.index}` }, "Move money out") : null,
@@ -277,7 +277,7 @@ export function shareBox(c, name, link, open) {
   });
   return h("details", { class: "share", open },
     h("summary", null, "Invite people"),
-    h("p", null, "Anyone with this link can see the circle and join, so send it only to the people you're saving with. The part after # never reaches any server."),
+    h("p", null, "Anyone with this link can join the circle and read its name, so send it only to the people you're saving with. Browsers never send the part after # to Contri, but the app you share it through carries the whole link."),
     h("p", { class: "code-block", translate: "no" }, link),
     h("div", { class: "actions row" },
       canShare

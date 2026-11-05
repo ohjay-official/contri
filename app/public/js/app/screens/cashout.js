@@ -69,7 +69,7 @@ export async function cashOutScreen(from) {
     note.textContent = fromPrivate
       ? "The money leaves NEAR Intents' private ledger through 1Click. The public chain shows the payment to your address, not where it came from."
       : chain
-        ? "Your address is sent only to 1Click, which delivers the money there."
+        ? "Your address goes through Contri's server to 1Click, which delivers the money there by its confidential route, so it can't be looked up publicly."
         : "The money goes to NEAR Intents' private ledger. The public chain shows it leaving this circle's account, not where it went.";
   };
   toPrivate.addEventListener("change", sync);

@@ -65,7 +65,7 @@
       <section class="band" aria-labelledby="steps">
         <h2 id="steps">A circle in four steps</h2>
         <ol class="steps">
-          <li><h3>Start a circle and send the link</h3><p>Choose the amount, how many people and how often. Share the invite link on WhatsApp. Only people with the link can see or join the circle.</p></li>
+          <li><h3>Start a circle and send the link</h3><p>Choose the amount, how many people and how often. Share the invite link on WhatsApp. Only people with the link can join the circle or read its name.</p></li>
           <li><h3>Everyone pays from where their money is</h3><p>Send USDT or USDC from your exchange or wallet on BNB Chain, Solana, Tron, TON, Base and more. It arrives as USDT, usually within a couple of minutes.</p></li>
           <li><h3>The pot pays out by itself</h3><p>When the last person pays, the contract sends the whole pot to whoever's turn it is. Nobody has to hold it or remember to pass it on.</p></li>
           <li><h3>Need it sooner? Swap turns</h3><p>Put your turn up for sale, or buy an earlier turn from someone who can wait. You agree a price and the contract swaps your places.</p></li>
@@ -75,7 +75,7 @@
       <section class="band" aria-labelledby="missed">
         <h2 id="missed">When someone doesn't pay</h2>
         <div class="split">
-          <div><h3>Their deposit covers it</h3><p>Everyone puts down one contribution when they join. If someone misses a round, it comes out of their deposit and the pot still pays in full. Unused deposits come back when the circle ends.</p></div>
+          <div><h3>Their deposit covers it</h3><p>Everyone puts down one contribution when they join. If someone misses a round, it comes out of their deposit and the pot still pays in full. A second missed round isn't covered, and that pot is short. Unused deposits come back when the circle ends.</p></div>
           <div><h3>Everyone in the circle sees it</h3><p>Missed payments are recorded on chain against the seat that missed them, so the whole circle knows who paid and who didn't. No chasing, no arguments about who said what.</p></div>
         </div>
       </section>
@@ -89,8 +89,8 @@
             <tbody>
               <tr><th scope="row">Your name, phone number, email</th><td>Nobody. Contri never asks for them. You sign in with a passkey.</td></tr>
               <tr><th scope="row">Your circle's name</th><td>Only people with the invite link. It is encrypted on your phone before it is saved.</td></tr>
-              <tr><th scope="row">Your other circles</th><td>Nobody. Each circle uses its own account, made from your passkey, and nothing on chain connects them.</td></tr>
-              <tr><th scope="row">Who paid this round</th><td>Your circle, as it always has in ajo. Outside it, only an account number that leads nowhere.</td></tr>
+              <tr><th scope="row">Your other circles</th><td>Nobody looking at the chain. Each circle uses its own account, made from your passkey, and money comes in through NEAR Intents' confidential route, so no address connects them.</td></tr>
+              <tr><th scope="row">Who paid this round</th><td>Your circle, as it always has in ajo. Outside it, an account number that doesn't name anyone.</td></tr>
             </tbody>
           </table>
         </div>
@@ -100,11 +100,11 @@
       <section class="band" aria-labelledby="faq">
         <h2 id="faq">Frequently asked questions</h2>
         <div class="faq">
-          <details name="faq"><summary>Who holds the money?</summary><p>No person. Contributions go to a contract on NEAR, a program whose rules anyone can read. It only pays a pot to the member whose turn it is, and only returns deposits to the members who made them. Our team can't move it.</p></details>
-          <details name="faq"><summary>What does it cost?</summary><p>Contri takes no fee. Moving money in and out goes through NEAR Intents, which shows its network fee before you send, usually a few cents on BNB Chain or Solana. Contri pays the NEAR transaction fees for every payment you make in a circle.</p></details>
-          <details name="faq"><summary>What if Contri disappears?</summary><p>The contract keeps running without us. Anyone can trigger a payout once a round's deadline has passed, and your money is held in NEAR Intents under a key only your passkey can produce.</p></details>
-          <details name="faq"><summary>What if I lose my phone?</summary><p>Sign in on a new phone with the same passkey. Passkeys are synced by Google Password Manager and iCloud Keychain, and every circle account comes back from it. If your passkey is ever deleted, the recovery code you wrote down from Your key brings everything back.</p></details>
-          <details name="faq"><summary>What if a top-up doesn't arrive?</summary><p>Open Help in the app. It shows every top-up and cash-out you've made and where each one is. Anything that can't go through is refunded to your own account, never to anyone else. Still stuck? Copy the details from Help and send them to us.</p></details>
+          <details name="faq"><summary>Who holds the money?</summary><p>No person. Contributions go to a contract on NEAR, a program whose rules anyone can read. It only pays a pot to the member whose turn it is, and only returns deposits to the members who made them. Our team can't move it: the contract's account has no keys, which anyone can check on a NEAR explorer.</p></details>
+          <details name="faq"><summary>What does it cost?</summary><p>Contri takes no fee. Moving money in and out goes through NEAR Intents' 1Click, whose fees are usually a few cents on BNB Chain or Solana. The app shows what arrives before you send. Contri pays the NEAR transaction fees for every payment you make in a circle.</p></details>
+          <details name="faq"><summary>What if Contri disappears?</summary><p>The contract keeps running without us, and anyone can settle a round once its deadline has passed. Your money is held in NEAR Intents under keys made from your passkey, which works only on contri.ng, or from your recovery code. Write the recovery code down: if contri.ng ever went away, it is how you would reach your money with the open-source app.</p></details>
+          <details name="faq"><summary>What if I lose my phone?</summary><p>Sign in on a new phone with the same passkey. Passkeys are synced by Google Password Manager and iCloud Keychain, and every circle account comes back from it. If your passkey is ever deleted, the recovery code from Your key brings everything back, if you wrote it down.</p></details>
+          <details name="faq"><summary>What if a top-up doesn't arrive?</summary><p>Open Help in the app. It shows every top-up and cash-out made from this phone and where each one is. A swap that can't complete is refunded to your own circle account or private balance, never to anyone else. Coins sent on the wrong network may not come back. Still stuck? Copy the details from Help and send them to us.</p></details>
           <details name="faq"><summary>Is this a bank or an investment?</summary><p>No. Contri doesn't lend, pay interest or invest your money. It is software that runs a savings circle among people who already trust each other.</p></details>
         </div>
       </section>
