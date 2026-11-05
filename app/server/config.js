@@ -14,7 +14,8 @@ export function config() {
   const relayerId = env("RELAYER_ACCOUNT_ID", "");
   return {
     network,
-    rpcUrl: env("NEAR_RPC", network === "mainnet" ? "https://rpc.mainnet.fastnear.com" : "https://rpc.testnet.fastnear.com"),
+    // Several public RPC nodes, tried in order when one is busy or down.
+    rpcUrl: env("NEAR_RPC", network === "mainnet" ? "https://rpc.mainnet.fastnear.com,https://near.drpc.org,https://rpc.mainnet.near.org" : "https://rpc.testnet.fastnear.com,https://rpc.testnet.near.org"),
     // The contract lives in its own sub-account of the relayer's account
     // (`circles.<relayer>`), unless CONTRI_ACCOUNT_ID names another.
     contractId: env("CONTRI_ACCOUNT_ID", relayerId ? `circles.${relayerId}` : ""),

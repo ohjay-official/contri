@@ -15,20 +15,45 @@ export class RpcError extends Error {
   }
 }
 
-/** @param {string} url @param {string} method @param {unknown} params */
+/**
+ * One JSON-RPC call. `url` can list several endpoints, comma-separated: when
+ * one is busy (HTTP 429), down (5xx) or unreachable, the next is tried, twice
+ * round, so a public node's rate limit doesn't stop members' payments.
+ * Errors from NEAR itself (a failed call, a bad transaction) aren't retried.
+ * Resending a signed transaction is safe: NEAR runs it at most once.
+ * @param {string} url @param {string} method @param {unknown} params
+ */
 export async function rpc(url, method, params) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: "contri", method, params }),
-  });
-  if (!res.ok) throw new RpcError(`RPC ${method} failed with HTTP ${res.status}`, await res.text());
-  const body = await res.json();
-  if (body.error) {
-    const cause = body.error.cause?.name ?? body.error.name;
-    throw new RpcError(`RPC ${method}: ${cause}: ${JSON.stringify(body.error.data ?? body.error.cause?.info ?? "")}`, body.error);
+  const urls = url.split(",").map((u) => u.trim()).filter(Boolean);
+  /** @type {RpcError | null} */
+  let last = null;
+  for (let attempt = 0; attempt < urls.length * 2; attempt++) {
+    const endpoint = urls[attempt % urls.length];
+    if (attempt >= urls.length) await new Promise((r) => setTimeout(r, 400 * attempt));
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: "contri", method, params }),
+      });
+    } catch (e) {
+      last = new RpcError(`RPC ${method} couldn't reach ${new URL(endpoint).host}`, String(e));
+      continue;
+    }
+    if (res.status === 429 || res.status >= 500) {
+      last = new RpcError(`RPC ${method} failed with HTTP ${res.status}`, await res.text().catch(() => ""));
+      continue;
+    }
+    if (!res.ok) throw new RpcError(`RPC ${method} failed with HTTP ${res.status}`, await res.text());
+    const body = await res.json();
+    if (body.error) {
+      const cause = body.error.cause?.name ?? body.error.name;
+      throw new RpcError(`RPC ${method}: ${cause}: ${JSON.stringify(body.error.data ?? body.error.cause?.info ?? "")}`, body.error);
+    }
+    return body.result;
   }
-  return body.result;
+  throw last ?? new RpcError(`RPC ${method}: no endpoint`, null);
 }
 
 /**

@@ -38,7 +38,8 @@ async function route() {
     const invite = savedInvite();
     return invite ? joinScreen(invite) : void (location.hash = "#/");
   }
-  if (!unlocked()) return unlockScreen(() => route());
+  // Through run(), so anything that fails right after unlocking shows its error instead of a blank screen.
+  if (!unlocked()) return unlockScreen(() => run(route));
   /** @type {RegExpExecArray | null} */
   let m;
   if (hash === "#/" || hash === "#") return homeScreen();

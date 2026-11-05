@@ -94,3 +94,22 @@ test("members are asked to send whole cents, a little over what has to arrive", 
   assert.equal(toSend(1_000_000n, 6), 1_010_000n);
   assert.equal(toSend(5_000_000n, 6), 5_030_000n);
 });
+
+test("a busy RPC node falls over to the next one", async () => {
+  const { rpc } = await import("../public/js/lib/near.js");
+  const real = globalThis.fetch;
+  /** @type {string[]} */
+  const asked = [];
+  globalThis.fetch = /** @type {any} */ (async (/** @type {string} */ url) => {
+    asked.push(url);
+    if (url.includes("busy")) return new Response("slow down", { status: 429 });
+    return new Response(JSON.stringify({ jsonrpc: "2.0", id: "contri", result: "ok" }), { status: 200 });
+  });
+  try {
+    assert.equal(await rpc("https://busy.example,https://fine.example", "status", []), "ok");
+    assert.deepEqual(asked, ["https://busy.example", "https://fine.example"]);
+    await assert.rejects(rpc("https://busy.example", "status", []), /HTTP 429/);
+  } finally {
+    globalThis.fetch = real;
+  }
+});
