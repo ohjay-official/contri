@@ -16,7 +16,7 @@ import { encryptName } from "../public/js/lib/invite.js";
 import { circleSigner } from "../public/js/lib/keys.js";
 import { json } from "../server/http.js";
 
-export const CONTRACT = "contri.near";
+export const CONTRACT = "circles.contring.near";
 export const DEVICE_SECRET = new Uint8Array(32).fill(11);
 export const INVITE_SECRET = new Uint8Array(32).fill(5);
 export const deviceSecretB58 = toBase58(DEVICE_SECRET);
@@ -27,7 +27,8 @@ const me0 = (await circleSigner(DEVICE_SECRET, CONTRACT, 0)).accountId;
 const me1 = (await circleSigner(DEVICE_SECRET, CONTRACT, 1)).accountId;
 export const accounts = [me0, me1];
 
-const other = (/** @type {number} */ n) => n.toString(16).repeat(64).slice(0, 64);
+// Other members' accounts: 64 hex characters, like any implicit NEAR account.
+const other = (/** @type {number} */ n) => Array.from({ length: 64 }, (_, i) => ((n * 2654435761 + i * 40503 + (i * i * n) % 977) >>> 3) % 16).map((d) => d.toString(16)).join("");
 const T = (/** @type {number} */ days) => String(BigInt(Date.now() + days * 86_400_000) * 1_000_000n);
 const member = (/** @type {string} */ a, paid = false, missed = 0, deposit = "5000000") => ({ account_id: a, deposit, paid_this_round: paid, defaulted: missed > 0, missed });
 
@@ -65,7 +66,8 @@ let pendingMove = null;
 /** Top-ups waiting to "arrive": deposit address -> where and how much. @type {Map<string, { account: string, amount: bigint, at: number }>} */
 const arriving = new Map();
 let nextAddress = 1;
-const freshAddress = () => `0x${(nextAddress++).toString(16).padStart(40, "c")}`;
+// A made-up EVM address, different each time, that looks like one.
+const freshAddress = () => `0x${other(40 + nextAddress++).slice(0, 40).replace(/[a-f]/g, (c, i) => (i % 3 ? c : c.toUpperCase()))}`;
 
 /** Applies a signed intent to the made-up circles, as the contract would. Returns its events. @param {any} payload */
 function apply(payload) {

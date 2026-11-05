@@ -6,14 +6,17 @@ Contri runs a rotating savings circle (àjọ, esusu, susu, tanda, chit fund) wh
 
 Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: NFTs That Do Something, Real-World Money, Privacy & Private AI, Open Innovation.
 
+<p><img src="docs/img/hero.jpg" alt="The Contri landing page on a laptop"></p>
+
 <p>
-<img src="docs/img/start.png" width="200" alt="Starting a circle">
-<img src="docs/img/invite.png" width="200" alt="An invite, opened by a new member">
-<img src="docs/img/joined.png" width="200" alt="The circle running">
-<img src="docs/img/paid-out.png" width="200" alt="The pot paid out, with the seat NFT">
+<img src="docs/img/phone-start.jpg" width="160" alt="Starting a circle">
+<img src="docs/img/phone-circle.jpg" width="160" alt="A running circle: the pot, whose turn it is, and your seat">
+<img src="docs/img/phone-pay.jpg" width="160" alt="Paying in from seven networks">
+<img src="docs/img/phone-seat.jpg" width="160" alt="Your seat NFT and the members in turn order">
+<img src="docs/img/phone-live.jpg" width="160" alt="Live circles, read from the contract">
 </p>
 
-Screenshots from the automated browser test: two members with passkeys click through a circle in Chromium against the real NEAR Intents contract on a local NEAR network.
+The current app on a phone, with sample circles.
 
 ## How to test
 
