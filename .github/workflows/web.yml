@@ -28,6 +28,8 @@ concurrency:
 
 env:
   PROJECT: contri
+  # The site's own domain. Its DNS records are printed to web-results/domain-setup.log.
+  DOMAIN: contri.ng
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
 jobs:
@@ -80,6 +82,11 @@ jobs:
           RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
           ONECLICK_API_KEY: ${{ secrets.ONECLICK_API_KEY }}
         run: node scripts/vercel.js setup 2>&1 | tee ../web-out/setup.log
+
+      - name: Attach the custom domain
+        if: steps.decide.outputs.go == 'true'
+        working-directory: app
+        run: node scripts/vercel.js attach 2>&1 | tee ../web-out/domain-setup.log || true
 
       - name: Deploy to production
         if: steps.decide.outputs.go == 'true'

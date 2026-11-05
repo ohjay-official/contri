@@ -7,6 +7,7 @@
 //                                   copy the server's settings from the
 //                                   environment into its production env vars
 //   node scripts/vercel.js domain   print the project's production domain
+//   DOMAIN=x node scripts/vercel.js attach   add a custom domain, print its DNS records
 
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -73,6 +74,21 @@ if (command === "setup") {
   const custom = aliases.find((a) => !a.endsWith(".vercel.app"));
   const vercel = aliases.filter((a) => a.endsWith(".vercel.app")).sort((a, b) => a.length - b.length)[0];
   console.log(`https://${custom ?? vercel ?? `${PROJECT}.vercel.app`}`);
+} else if (command === "attach") {
+  // Adds DOMAIN (and www.DOMAIN, redirecting to it) to the project, then prints
+  // the DNS records the registrar needs. Safe to run again.
+  const domain = process.env.DOMAIN;
+  if (!domain) throw new Error("set DOMAIN");
+  for (const body of [{ name: domain }, { name: `www.${domain}`, redirect: domain, redirectStatusCode: 308 }]) {
+    const r = await api(`/v10/projects/${p.id}/domains`, { method: "POST", body: JSON.stringify(body) });
+    const already = r.status === 409 || /already/i.test(r.body?.error?.message ?? "");
+    console.log(`${body.name}: ${r.status < 300 ? "added" : already ? "already added" : `failed (${r.status} ${r.body?.error?.message ?? ""})`}`);
+  }
+  const apex = await api(`/v6/domains/${domain}/config`);
+  const www = await api(`/v6/domains/www.${domain}/config`);
+  const ipv4 = apex.body?.recommendedIPv4?.[0]?.value?.[0] ?? "76.76.21.21";
+  const cname = www.body?.recommendedCNAME?.[0]?.value ?? "cname.vercel-dns.com";
+  console.log(JSON.stringify({ records: [{ type: "A", host: "@", value: ipv4 }, { type: "CNAME", host: "www", value: cname.replace(/\.$/, "") }], configured: !apex.body?.misconfigured }, null, 2));
 } else {
-  throw new Error("usage: node scripts/vercel.js setup | domain");
+  throw new Error("usage: node scripts/vercel.js setup | domain | attach");
 }
