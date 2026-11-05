@@ -3,12 +3,12 @@
 // payouts, and this circle's money.
 
 import { actions, dueFor, needs, parseAmount, payoutDateMs, potSize, roundDeadlineMs, seatOf, shortAccount } from "../../lib/contri.js";
-import { inviteLink } from "../../lib/invite.js";
+import { decryptName, inviteLink, parseInvite } from "../../lib/invite.js";
 import { getCircle, getConfig, keep, relay, sign, views } from "../api.js";
 import { ring } from "../ring.js";
 import { every, fromNow, nameOf, refresh, slotFor, usd, when } from "../state.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
-import { decodeSecret, labels, local, setLabel } from "../wallet.js";
+import { decodeSecret, encodeSecret, labels, local, remember, setLabel } from "../wallet.js";
 import { standing } from "./home.js";
 
 /** @param {number} id @param {boolean} openShare */
@@ -188,11 +188,36 @@ export async function circleScreen(id, openShare = false) {
     }
   }
 
+  // A member whose phone doesn't have this circle's invite link (a new phone,
+  // or the browser cleared its storage) sees its number; the link brings the
+  // name back. Money never depends on it.
+  let nameBack = null;
+  if (slot && !secret) {
+    const linkInput = /** @type {HTMLInputElement} */ (h("input", { type: "url", autocomplete: "off", spellcheck: false, autocapitalize: "off", placeholder: "https://contri.ng/join#…" }));
+    const save = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary" }, "Show the name"));
+    save.addEventListener("click", () =>
+      busy(save, "Checking", async () => {
+        const invite = parseInvite(linkInput.value.includes("#") ? linkInput.value.slice(linkInput.value.indexOf("#")) : linkInput.value);
+        if (!invite || invite.circle !== id) throw new Error("That isn't this circle's invite link.");
+        if (!(await decryptName(invite.secret, c.name))) throw new Error("That link's key doesn't open this circle's name.");
+        await remember(slot.index, { secret: encodeSecret(invite.secret), circle: id });
+        location.reload();
+      }),
+    );
+    nameBack = h("details", { class: "more" },
+      h("summary", null, "Why is this circle's name hidden?"),
+      h("p", null, "The name is encrypted, and the key is in the circle's invite link. This phone doesn't have it, for example after moving to a new phone. Paste the invite link (ask anyone in the circle) to show the name again."),
+      field("Invite link", linkInput),
+      h("div", { class: "actions" }, save),
+    );
+  }
+
   const s = me ? standing(c, me) : null;
   show(
     h("section", { class: "stack" },
       h("a", { class: "back", href: "#/" }, "Your circles"),
       h("h1", null, nameOf(id)),
+      nameBack,
       h("p", { class: "sub" }, `${usd(c.contribution)} ${every(c.period_secs)}, ${c.size} members, pot ${usd(potSize(c))}`),
       ring(c, me, center),
       s ? h("p", { class: `status ${s.tone}` }, s.text) : h("p", { class: "status quiet" }, "You're watching this circle; you're not a member."),
