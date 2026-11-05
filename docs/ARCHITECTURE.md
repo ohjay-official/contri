@@ -1,6 +1,6 @@
 # Contri architecture
 
-The pot never sits with a person or a server. It sits in the Contri contract's balance on NEAR Intents (`intents.near`), and only the contract can move it.
+The pot never sits with a person or a server. It sits in the Contri contract's balance on NEAR Intents (`intents.near`), and only the contract can move it: the contract account has no keys, so nobody can change its code. See [SECURITY.md](SECURITY.md).
 
 ## Actors
 
@@ -8,7 +8,7 @@ The pot never sits with a person or a server. It sits in the Contri contract's b
 | --- | --- | --- |
 | Member | A person with a passkey, or a NEAR account | Sign intents: join, contribute, list or buy a seat, leave, cash out |
 | Contri contract | A NEAR smart contract with no keys on its account once locked | Record contributions, enforce the turn order, pay out, swap seats |
-| Relayer (`app/server/relay.js`) | A Vercel function that submits already-signed intents to `intents.near` and pays the NEAR gas | Nothing on its own. It can't forge a member's signature or move funds, and it only relays Contri's own kinds of intents |
+| Relayer (`app/server/relay.js`) | A Vercel function that submits already-signed intents to `intents.near` and pays the NEAR gas | Nothing on its own. It can't forge a member's signature or move funds. It relays only Contri's token: transfers to Contri with a message the contract reads, auth calls from that circle's members, and transfers to a 1Click deposit account Contri's server opened in the last 30 minutes (with the ticket it issued) |
 | Keeper (`app/server/keeper.js`) | The same code on a 10-minute GitHub Actions schedule, and on demand from the app | Call `settle_round`, `pay_out` and `release_deposits` when a circle needs them. Anyone could; the contract decides what happens |
 | 1Click | NEAR Intents' cross-chain service | Turns a deposit on another chain into USDT in a member's Intents account, and back out |
 
@@ -55,7 +55,7 @@ After a round is complete, the contract moves the pot to the round's member by c
 ### 5. Cash out
 The member cashes out from a circle account to any chain with a 1Click quote (`depositType: INTENTS`, `recipientType: DESTINATION_CHAIN`). The quote's deposit address is an account inside NEAR Intents; the app signs a plain `transfer` to it, the relayer submits it, and the app tells 1Click the transaction hash (`/v0/deposit/submit`).
 
-Being tested: the same legs through Confidential Intents (`CONFIDENTIAL_INTENTS` deposit and recipient types). Signing in works on mainnet; quotes need a 1Click partner key. See [PRIVACY.md](PRIVACY.md).
+The same legs also run through Confidential Intents for the private balance (`CONFIDENTIAL_INTENTS` deposit and recipient types). See [PRIVACY.md](PRIVACY.md).
 
 ## Signing an intent
 
@@ -85,7 +85,7 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 | Sent as | Message | Meaning |
 | --- | --- | --- |
 | `Transfer` notification | `create:<contribution>:<size>:<period_secs>:<order>:<invite key>:<name>` | Create a circle and take its first seat, sent with the organizer's deposit (one contribution), so creating costs real money. Order: `join` or `random` (drawn when the circle fills). Invite key: 64 hex (ed25519 public key) or `-` for an open circle. The name is encrypted by the app |
-| `Transfer` notification | `join:<circle>` or `join:<circle>:<invite signature>` | Pay the deposit and take the next seat. An invite-only circle needs the invite key's signature (128 hex) over `contri-join:<contract>:<circle>:<joiner>:<deposit>`; the deposit is the transferred amount, at most one contribution |
+| `Transfer` notification | `join:<circle>` or `join:<circle>:<invite signature>` | Pay the deposit and take the next seat. An invite-only circle needs the invite key's signature (128 hex) over `contri-join:<contract>:<circle>:<joiner>:<deposit>`; the deposit must be exactly one contribution |
 | `Transfer` notification or `mt_transfer_call` | `back:<circle>` | Back a circle with at least one contribution (for example from a DAO treasury) |
 | `Transfer` notification | `refill:<circle>` | Top up your own deposit, to at most every round but your own |
 | `Transfer` notification | `contribute:<circle>:<round>` | Pay this round |
@@ -97,7 +97,7 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 | `AuthCall` | `claim_credit` | Claim money from a transfer that failed |
 
 ## Missed payments
-A member's deposit is one contribution in an open circle. In an invite-only circle the organizer sets each person's deposit in their invite: less for someone they trust, or more for a stranger, up to every round but the member's own. A stranger asked for the full amount has prepaid all their future rounds, so the members paid last are protected from someone who takes the pot early and stops paying. After a round deadline, anyone can call `settle_round`. For each member who has not paid, the contract takes the missing amount from their deposit, then from the circle's community backing, marks them as having defaulted, and pays out. If both run out, the pot is short and the payout records the shortfall. A member can refill their deposit with `refill:<circle>`. A defaulting member loses their completed-circle record.
+Every member's deposit is one contribution, in open and invite-only circles alike: the invite key travels in the link, so a deposit set by the invite would be set by whoever holds the link. After a round deadline, anyone can call `settle_round`. For each member who has not paid, the contract takes the missing amount from their deposit, then from the circle's community backing, marks them as having defaulted, and pays out. If both run out, the pot is short and the payout records the shortfall. A member can refill their deposit with `refill:<circle>` (in the contract; not in the app yet). A round always gets a full period after the one before it closes, so a round settled late doesn't leave the next one already overdue. A defaulting member loses their completed-circle record.
 
 ## Community-backed circles
 Any account can put money behind a circle with `back:<circle>`: a cooperative's DAO treasury, a church, an employer. A Trezu or Sputnik DAO does it with one proposal that calls `mt_transfer_call` on `intents.near` (template in [integrations/trezu](../integrations/trezu)). The backing covers missed payments after deposits. When the circle ends or is cancelled, what is left is split back between the backers in proportion to what each put in, and `release_deposits` sends it.
@@ -124,5 +124,5 @@ Each turn is a seat token `<circle>:<turn>`, owned by the member's Intents accou
 | The relayer refuses intents it shouldn't pay for, and NEAR Intents' simulation catches overspending before gas is spent | Tested end to end |
 | The app's NEP-413 signing and versioned nonce are accepted by 1Click on mainnet | Tested (`scripts/probe-confidential.mjs`: sign-in returns a session, confidential balances readable) |
 | 1Click routes from BNB Chain, Solana and Tron into an Intents account, fees and minimums | Measured with dry quotes (`scripts/probe-1click.mjs`) |
-| Top-up, contribution and cash-out with real money on mainnet | To test with a $1 run after deploy |
-| Confidential top-up, contribution and cash-out quotes | Need a 1Click partner key; to test after |
+| Top-up, contribution and cash-out with real money on mainnet | Done on 5 November 2026 (transactions in the README) |
+| Confidential top-up, contribution and cash-out | Done on 5 November 2026 with real money: private top-up, private balance to a circle, circle to private balance, cash-out to BNB Smart Chain |

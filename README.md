@@ -17,7 +17,7 @@ Screenshots from the automated browser test: two members with passkeys click thr
 
 ## How to test
 
-**Live app:** https://contri.ng. **Contract:** [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near) on NEAR mainnet.
+**Live app:** https://contri.ng. **Contract:** [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near) on NEAR mainnet, locked: its account has no keys, so nobody (including Contri) can change it or move its money outside its rules.
 
 **Run with real money on 5 November 2026**, on an Android phone (Chrome) and an iPhone (Safari), with real passkeys. Circle 0: $1 a round, 2 members, every 10 minutes. The Android member paid through the private balance; the iPhone member topped up straight from a wallet on BNB Smart Chain.
 
@@ -62,8 +62,8 @@ The mock behaves like the real thing, in memory, and touches no chain: a top-up 
 ### 3. Run the tests
 
 ```
-cd contract && cargo test                 # 72 contract unit tests, incl. a JSON parser fuzzed against serde_json
-cd app && npm install && npm test         # 40 app and server tests: keys vs an independent ed25519, NEP-413, borsh, relayer rules, private-balance checks
+cd contract && cargo test                 # 78 contract unit tests, incl. a JSON parser fuzzed against serde_json
+cd app && npm install && npm test         # 45 app and server tests: keys vs an independent ed25519, NEP-413, borsh, relayer rules and tickets, private-balance checks
 cd app && npm run check                   # type-checks every .js file (JSDoc + tsc --strict)
 ```
 
@@ -98,6 +98,20 @@ After every deploy, `.github/workflows/web.yml` checks the live site the way vis
 
 Full design, what each party can see, the limits (amounts and timing), and what was ruled out: [docs/PRIVACY.md](docs/PRIVACY.md).
 
+## Security
+
+- **The contract is locked.** Its account has no access keys and NEAR Intents holds none for it, so the code can't change and only its rules move the money. The relayer only submits what members sign; if it stopped, anyone with NEAR could settle rounds and send deposits back.
+- **Reviewed before locking.** An independent review on 5 November 2026 found a critical storage issue (spam or one large circle could leave a payout callback without room, freezing a circle), a stalled empty-pot round, a relayer anyone could use for free, and five smaller issues. All were fixed, tested and deployed before the lock; each has a test named after it.
+- **Every circle can finish.** Members reserve the storage their payouts will need when they join, an empty round closes without a transfer, a round always gets a full period after the one before it, and anyone can settle a late round or release deposits.
+
+Who can do what, every finding and its fix, and what's still open: [docs/SECURITY.md](docs/SECURITY.md).
+
+## Sustainability
+
+- **Contri takes no fee, and costs little to run.** Storage is paid once in NEAR the contract holds (about 0.003 NEAR per member while a circle runs), and the relayer pays about 0.001 to 0.003 NEAR of gas per payment. A small fee per payout, or a sponsor for the relayer's gas, covers that at any scale; NEAR's contract rewards (30% of gas burnt on the contract) already offset part of it.
+- **Nothing to maintain on chain.** The contract can't be upgraded, so it can't be broken by an update either. The app and server are plain JavaScript with no runtime dependencies or build step.
+- **It runs without Contri.** The contract's methods and the app's signing code are public; anyone can run the relayer and keeper, or call the contract from any NEAR account.
+
 ## How NEAR is used
 
 - **NEAR Intents as the money layer.** Members' USDT lives in NEAR Intents. A contribution is a `Transfer` intent to the Contri contract with a message, which NEAR Intents delivers to `mt_on_transfer` with the verified signer. Payouts leave through Intents' `mt_transfer`.
@@ -114,12 +128,12 @@ Full design, what each party can see, the limits (amounts and timing), and what 
 
 | Path | What |
 | --- | --- |
-| `contract/` | The Rust contract (near-sdk 5, under 100 KB), its tests, ABI, and sandbox end-to-end tests |
+| `contract/` | The Rust contract (near-sdk 5, about 100 KB), its tests, ABI, and sandbox end-to-end tests |
 | `app/public/` | The website and app: plain ES modules, no runtime dependencies, no build step |
 | `app/public/js/lib/` | Keys, NEP-413 signing, invites, NEAR transactions; shared by the app and the server |
 | `app/api/`, `app/server/` | Relayer, read proxy, 1Click top-up and cash-out, the private balance, keeper (Vercel functions) |
 | `app/scripts/` | Mainnet deploy and lock |
-| `docs/` | [Architecture](docs/ARCHITECTURE.md), [contract methods](docs/METHODS.md), [privacy](docs/PRIVACY.md), [fees and gas](docs/FEES.md) |
+| `docs/` | [Architecture](docs/ARCHITECTURE.md), [contract methods](docs/METHODS.md), [privacy](docs/PRIVACY.md), [security](docs/SECURITY.md), [fees and gas](docs/FEES.md) |
 
 [DEMO.md](DEMO.md) has the 60-second demo script.
 

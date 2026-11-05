@@ -1,6 +1,6 @@
 # Contri: 60-second demo script
 
-Written before any code. If a feature is not in this script, it is not in the first build.
+Written before any code. The build added more than this script shows: random turn order, the private balance, and community backing in the contract.
 
 | Time | Voice | Screen |
 | --- | --- | --- |

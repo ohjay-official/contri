@@ -110,7 +110,7 @@ A circle:
 
 `name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. With `random_order`, the contract draws the turn order from NEAR's per-block random seed when the circle fills. After `fill_by`, anyone can cancel the circle if it is still open. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight. `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
 
-A member's `deposit` is one contribution in an open circle. In an invite-only circle the invite sets it, up to every round but the member's own: less for someone the organizer trusts, more for a stranger. Members creating a circle through NEAR Intents send `create:...` with their deposit and take the first seat.
+A member's `deposit` is one contribution, in every circle. In an invite-only circle the join also needs the invite key's signature over the joiner's account and that deposit. Members creating a circle through NEAR Intents send `create:...` with their deposit and take the first seat.
 
 ## Seats as NFTs
 

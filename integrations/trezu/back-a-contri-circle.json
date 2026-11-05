@@ -15,7 +15,7 @@
       "label": "Circle number",
       "type": "uint",
       "required": true,
-      "help": "The circle number shown on the circle's page in Contri"
+      "help": "The circle's number, from its address in Contri (contri.ng/app#/c/<number>)"
     },
     {
       "name": "amount",

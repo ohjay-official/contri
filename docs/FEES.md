@@ -22,8 +22,8 @@ The circle asset is USDT on NEAR inside NEAR Intents: `nep141:usdt.tether-token.
 ## What this means for Contri
 
 - Money stays inside NEAR Intents for the whole circle. Contributions and payouts between members and the Contri contract are internal transfers, so they cost only NEAR gas, which the relayer pays.
-- Members cash out once, when they want, and the app recommends BNB Chain or Solana.
-- Tron works for top-ups of about 2.56 USDT or more, but the app warns that cashing out to Tron costs about 1.56 USDT.
+- Members cash out once, when they want, and the app lists BNB Chain and Solana first when you top up.
+- Tron works for top-ups of about 2.56 USDT or more. Cashing out to Tron costs more than other networks (0.87 USDT on 5 November 2026); the cash-out screen shows the fee when you tap See what arrives.
 
 ## Bridge limits for Tron (PoA bridge `supported_tokens`)
 
@@ -46,11 +46,12 @@ Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stor
 | Invite-only circles (ed25519 invites) for privacy | 90 KB | 0.90 NEAR |
 | Community backing, trust deposits, refills; a bump allocator instead of wee_alloc | 95 KB | 0.95 NEAR |
 | Fair random draws, leaving before the start, fill deadlines, cleanup, live seat images | 99.4 KB | 0.99 NEAR |
-| Creating costs a deposit (no free spam), bigger deposits through invites | **99.8 KB** | **1.00 NEAR** (99,827 bytes) |
+| Creating costs a deposit (no free spam) | 99.8 KB | 1.00 NEAR (99,751 bytes deployed) |
+| Security fixes: storage reservations, $1 minimum, empty pots, one-contribution invites, fair backing, relative deadlines | **101.7 KB** | **1.02 NEAR** (101,652 bytes deployed) |
 
 The 193 KB step removed two things: direct calls for members with a NEAR account, and the embedded ABI. Both are back in the last row (the ABI is generated from typed declarations in `contract/interface`, see `contract/abi/README.md`). Nothing else was removed, and the later steps added NFT enumeration views, NEP-171 events and a round-deadline view. CI measures the size on every push (`ci-results` branch, `size.json`).
 
-Expected total to launch: just under 1 NEAR for the code, up to 0.03 NEAR per circle for its data (a 20-member circle with its full payout history is about 3 KB; a 5-member one under 1 KB), and gas for the relayer. Storage is locked, not spent: it comes back when the data or the contract is deleted. Circles created through NEAR Intents cost the organizer a deposit, and circles created by a NEAR account bring 0.01 NEAR for their own storage, so nobody can fill the contract's storage for free.
+Expected total to launch: just under 1 NEAR for the code, up to 0.03 NEAR per circle for its data (a 20-member circle with its full payout history is about 3 KB; a 5-member one under 1 KB), and gas for the relayer. Storage is locked, not spent. Freed storage goes back to the contract account's balance; the account is locked, so nobody can withdraw it. Each member reserves the bytes their payout record and track record will need when they join, and the contract refuses (and refunds) anything that would add storage its NEAR doesn't cover, counting those reservations and 2,000 spare bytes. Running circles never run out of room; when the contract is full, new circles wait until someone sends it NEAR. Contributions start at 1 USDT.
 
 ## Gas (measured)
 
