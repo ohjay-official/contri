@@ -65,7 +65,8 @@ jobs:
           git config user.name "contri-ci" && git config user.email "actions@users.noreply.github.com"
           git fetch -q "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" deploy-results 2>/dev/null && git checkout -q FETCH_HEAD -- deploy.log 2>/dev/null || true
           git add -A && git commit -q -m "status ${GITHUB_SHA}"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" deploy-results
+          # GitHub sometimes answers a push with a server error; try again.
+          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" deploy-results && break; [ "$i" = 3 ] && exit 1; sleep $((i * 5)); done
 
   deploy:
     if: needs.status.outputs.first_deploy == 'true' || (github.event_name == 'push' && (contains(github.event.head_commit.message, '[deploy]') || contains(github.event.head_commit.message, '[lock]')))
@@ -119,4 +120,5 @@ jobs:
           (echo "commit ${GITHUB_SHA} $(date -u +%FT%TZ)"; cat "$GITHUB_WORKSPACE/deploy.log" 2>/dev/null || echo "no log") > deploy.log
           git config user.name "contri-ci" && git config user.email "actions@users.noreply.github.com"
           git add -A && git commit -q -m "deploy ${GITHUB_SHA}"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" deploy-results
+          # GitHub sometimes answers a push with a server error; try again.
+          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" deploy-results && break; [ "$i" = 3 ] && exit 1; sleep $((i * 5)); done
