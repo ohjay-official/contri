@@ -67,7 +67,17 @@ createServer(async (req, res) => {
     res.end(notFound?.body ?? "not found");
     return;
   }
-  res.writeHead(200, { ...HEADERS, "content-type": f.type });
+  // Byte ranges, as Vercel serves them, so videos can seek.
+  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? "");
+  if (range) {
+    const size = f.body.length;
+    const start = range[1] ? Number(range[1]) : size - Number(range[2]);
+    const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+    res.writeHead(206, { ...HEADERS, "content-type": f.type, "accept-ranges": "bytes", "content-range": `bytes ${start}-${end}/${size}`, "content-length": end - start + 1 });
+    res.end(f.body.subarray(start, end + 1));
+    return;
+  }
+  res.writeHead(200, { ...HEADERS, "content-type": f.type, "accept-ranges": "bytes" });
   res.end(f.body);
 }).listen(PORT, () => {
   console.log(`Contri on http://localhost:${PORT}/app${mock ? " (mock API: made-up circles, nothing on chain)" : ""}`);
