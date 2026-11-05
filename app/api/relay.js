@@ -4,4 +4,4 @@
 import { handler } from "../server/http.js";
 import { relay } from "../server/relay.js";
 
-export const POST = handler(relay);
+export const POST = handler(relay, { name: "relay", perMinute: 20 });

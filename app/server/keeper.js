@@ -42,7 +42,12 @@ export async function keep(body, c, nowMs) {
     }
   }
 
-  const todo = circles.map((circle) => ({ circle: circle.id, method: needs(circle, now) })).filter((t) => t.method);
+  const all = circles.map((circle) => ({ circle: circle.id, method: needs(circle, now) })).filter((t) => t.method);
+  // A pay_out only retries a payout whose transfer failed. Settling and
+  // releasing come first, and at most two retries a run, so a circle whose
+  // transfers keep failing can't crowd out the others or burn the relayer's NEAR.
+  const retries = all.filter((t) => t.method === "pay_out").slice(0, 2);
+  const todo = [...all.filter((t) => t.method !== "pay_out"), ...retries];
   if (!todo.length) return { done: [] };
   const keeper = await signerFromSecretKey(c.relayerKey, c.relayerId);
   const done = [];

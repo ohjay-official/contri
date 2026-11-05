@@ -4,4 +4,4 @@
 import { handler } from "../server/http.js";
 import { views } from "../server/views.js";
 
-export const POST = handler(views);
+export const POST = handler(views, { name: "rpc", perMinute: 240 });

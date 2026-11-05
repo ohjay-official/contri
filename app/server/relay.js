@@ -2,10 +2,16 @@
 // The relayer: submits members' signed intents to NEAR Intents and pays the
 // gas, so members never need NEAR.
 //
-// It only relays what a Contri member needs: transfers to the Contri
-// contract, Contri auth calls, and plain transfers out (a cash-out to a 1Click
-// deposit account). Every payload's signature is checked here, then simulated
-// by NEAR Intents (`simulate_intents`), before any gas is spent.
+// It only relays what a Contri member needs, in Contri's token:
+//   - transfers to the Contri contract, with a message Contri understands;
+//   - Contri auth calls from a member or the organizer of that circle (or from
+//     someone with a credit to claim);
+//   - plain transfers to a 1Click deposit account this server opened in the
+//     last half hour (a cash-out, or a move into the private balance), which
+//     come with the ticket /api/swap gave for it (see ticket.js).
+// Every payload's signature is checked here, then simulated by NEAR Intents
+// (`simulate_intents`), before any gas is spent. Requests are also limited
+// per caller and per signer (see limit.js).
 //
 // Nothing is logged or stored: no IP addresses, no accounts, no payloads.
 
@@ -13,6 +19,8 @@ import { fromBase58, fromBase64, toHex } from "../public/js/lib/bytes.js";
 import { nep413Hash } from "../public/js/lib/intents.js";
 import { signerFromSecretKey, verify } from "../public/js/lib/keys.js";
 import { events, outcome, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
+import { allow } from "./limit.js";
+import { ticketed } from "./ticket.js";
 
 /** @typedef {import("./config.js").Config} Config */
 /** @typedef {import("../public/js/lib/intents.js").SignedIntents} SignedIntents */
@@ -30,12 +38,17 @@ const MAX_INTENTS = 2;
 const MAX_VALID_MS = 30 * 60_000;
 const MAX_MIN_GAS = 150n * TGAS;
 const ACCOUNT = /^(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
+const N = "\\d{1,20}";
+/** What Contri's `mt_on_transfer` reads (the contract's `parse_transfer`). */
+const TRANSFER_MSG = new RegExp(`^(create:${N}:${N}:${N}:(join|random):(-|[0-9a-fA-F]{64}):[\\s\\S]{1,256}|join:${N}(:[0-9a-fA-F]{128})?|contribute:${N}:${N}|buy_seat:${N}:${N}|back:${N}|refill:${N})$`);
+/** What Contri's `on_auth` reads (the contract's `parse_auth`). */
+const AUTH_MSG = new RegExp(`^(claim_credit|list_seat:${N}:${N}:${N}|unlist_seat:${N}:${N}|cancel:${N}|leave:${N})$`);
 
 /**
  * Checks one signed payload against what Contri relays. Returns the signer.
- * @param {unknown} p @param {Config} c @param {number} [nowMs]
+ * @param {unknown} p @param {Config} c @param {number} [nowMs] @param {unknown[]} [tickets] for transfers to 1Click deposit accounts
  */
-export async function checkPayload(p, c, nowMs = Date.now()) {
+export async function checkPayload(p, c, nowMs = Date.now(), tickets = []) {
   const s = /** @type {SignedIntents} */ (p);
   if (!s || s.standard !== "nep413" || typeof s.payload?.message !== "string") throw new RelayError("only NEP-413 signed intents are relayed");
   if (s.payload.recipient !== c.intentsId) throw new RelayError(`intents must be signed for ${c.intentsId}`);
@@ -51,6 +64,11 @@ export async function checkPayload(p, c, nowMs = Date.now()) {
   if (!(deadline > nowMs && deadline <= nowMs + MAX_VALID_MS)) throw new RelayError("the intent has expired or is valid for too long; sign it again");
   if (!Array.isArray(msg.intents) || msg.intents.length < 1 || msg.intents.length > MAX_INTENTS) throw new RelayError("unexpected number of intents");
   for (const i of msg.intents) checkIntent(i, c);
+  for (const i of msg.intents) {
+    if (i.intent === "transfer" && i.receiver_id !== c.contractId && !(await ticketed(c.relayerKey, i.receiver_id, tickets, nowMs))) {
+      throw new RelayError("money leaves Contri only for a deposit account Contri just set up; start again to get a new one");
+    }
+  }
 
   // The signature, here first so a bad one costs no RPC call. NEAR Intents
   // checks it again, along with the key's link to the account.
@@ -69,16 +87,19 @@ function checkIntent(i, c) {
     if (i.contract_id !== c.contractId) throw new RelayError("auth calls are relayed only to Contri");
     if (i.attached_deposit && i.attached_deposit !== "0") throw new RelayError("auth calls can't attach NEAR");
     if (i.min_gas !== undefined) throw new RelayError("unexpected gas setting");
+    if (typeof i.msg !== "string" || !AUTH_MSG.test(i.msg)) throw new RelayError("Contri wouldn't understand this request");
     return;
   }
   if (i?.intent === "transfer") {
     if (typeof i.receiver_id !== "string" || !ACCOUNT.test(i.receiver_id)) throw new RelayError("invalid receiver");
     const tokens = Object.entries(i.tokens ?? {});
     if (tokens.length !== 1 || !/^\d{1,30}$/.test(String(tokens[0][1])) || BigInt(tokens[0][1]) === 0n) throw new RelayError("a transfer moves one token");
+    if (tokens[0][0] !== c.tokenId) throw new RelayError("only Contri's token is relayed");
     const toContri = i.receiver_id === c.contractId;
     // Only Contri gets a call with the transfer; anything else is a plain move of the member's own money.
     if (!toContri && (i.msg !== undefined || i.min_gas !== undefined)) throw new RelayError("transfers with a message are relayed only to Contri");
     if (toContri && typeof i.msg !== "string") throw new RelayError("a transfer to Contri needs a message");
+    if (toContri && !TRANSFER_MSG.test(i.msg)) throw new RelayError("Contri wouldn't understand this payment");
     if (i.min_gas !== undefined && !(/^\d{1,20}$/.test(i.min_gas) && BigInt(i.min_gas) <= MAX_MIN_GAS)) throw new RelayError("too much gas asked");
     return;
   }
@@ -95,7 +116,13 @@ export async function relay(body, c) {
   if (!c.contractId || !c.relayerId || !c.relayerKey) throw new RelayError("the relayer isn't set up", 503);
   const signed = /** @type {any} */ (body)?.signed;
   if (!Array.isArray(signed) || signed.length < 1 || signed.length > MAX_PAYLOADS) throw new RelayError("send 1 or 2 signed payloads");
-  for (const p of signed) await checkPayload(p, c);
+  const given = /** @type {any} */ (body)?.tickets;
+  const tickets = Array.isArray(given) ? given.slice(0, 4) : [];
+  for (const p of signed) {
+    const signer = await checkPayload(p, c, Date.now(), tickets);
+    if (!allow(`relay-signer:${signer}`, 10)) throw new RelayError("Too many requests from this account. Wait a minute and try again.", 429);
+    await checkAuthCalls(p, signer, c);
+  }
 
   /** @type {any} */
   let simulation;
@@ -131,6 +158,25 @@ export async function relay(body, c) {
     // Contri logs why it refunded a payment (wrong amount, circle full, ...).
     notes: logs.filter((l) => !l.startsWith("EVENT_JSON:")),
   };
+}
+
+/**
+ * An auth call comes from someone it's about: a member or the organizer of
+ * the circle, or, to claim a credit, someone who has one. One view each.
+ * @param {any} p @param {string} signer @param {Config} c
+ */
+async function checkAuthCalls(p, signer, c) {
+  for (const i of JSON.parse(p.payload.message).intents) {
+    if (i.intent !== "auth_call") continue;
+    if (i.msg === "claim_credit") {
+      const owed = await view(c.rpcUrl, c.contractId, "get_credit", { account_id: signer }).catch(() => "0");
+      if (BigInt(owed ?? "0") === 0n) throw new RelayError("there's no credit to claim");
+      continue;
+    }
+    const circle = await view(c.rpcUrl, c.contractId, "get_circle", { circle_id: Number(i.msg.split(":")[1]) }).catch(() => null);
+    const involved = circle && (circle.organizer === signer || circle.members.some((/** @type {any} */ m) => m.account_id === signer));
+    if (!involved) throw new RelayError("only the circle's members can do that");
+  }
 }
 
 /** NEAR Intents' reasons, in the member's words. */

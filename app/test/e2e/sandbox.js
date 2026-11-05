@@ -21,6 +21,7 @@ import { signIntents, transfer } from "../../public/js/lib/intents.js";
 import { decryptName, encryptName, inviteSigner, newSecret, signJoin } from "../../public/js/lib/invite.js";
 import { circleSigner, signerFromSecretKey } from "../../public/js/lib/keys.js";
 import { rpc, sendTransaction, TGAS } from "../../public/js/lib/near.js";
+import { issueTicket } from "../../server/ticket.js";
 import { toHex } from "../../public/js/lib/bytes.js";
 
 const env = /** @param {string} k */ (k) => {
@@ -63,9 +64,9 @@ async function chainNow() {
 const salt = async () => /** @type {string} */ (await view("intents", "current_salt", {}));
 
 /** Signs as `who` (versioned nonce, as the app does) and relays. @param {import("../../public/js/lib/keys.js").Signer} who @param {object[]} intents */
-async function act(who, intents, what = "") {
+async function act(who, intents, what = "", tickets = /** @type {string[]} */ ([])) {
   const signed = await signIntents(who, intents, { now: await chainNow(), recipient: INTENTS, salt: await salt() });
-  const r = await call(relayPost, { signed: [signed] });
+  const r = await call(relayPost, { signed: [signed], tickets });
   assert.ok(r.ok, `${what}: ${r.failure}`);
   console.log(`  ${what}: ${r.events.map((/** @type {any} */ e) => e.event).join(", ") || "no events"} ${r.notes.join(" | ")}`);
   return r;
@@ -152,7 +153,10 @@ assert.equal(await balance(CONTRI), 0n);
 assert.deepEqual(await view("contri", "get_record", { account_id: bayo.accountId }), { completed: 0, defaults: 1, missed_payments: 1 });
 
 // Cash-out: a plain transfer of the member's own money out (to a 1Click deposit account on mainnet).
-await act(ada, [transfer(`cashout.${CONTRI}`, TOKEN, USDT)], "cash out");
+// The relayer pays for it only with the ticket /api/swap gives with the deposit account.
+const cashout = await signIntents(ada, [transfer(`cashout.${CONTRI}`, TOKEN, USDT)], { now: await chainNow(), recipient: INTENTS, salt: await salt() });
+await assert.rejects(call(relayPost, { signed: [cashout] }), /deposit account Contri just set up/);
+await act(ada, [transfer(`cashout.${CONTRI}`, TOKEN, USDT)], "cash out", [await issueTicket(env("RELAYER_KEY"), `cashout.${CONTRI}`)]);
 assert.equal(await balance(`cashout.${CONTRI}`), USDT);
 
 // The relayer refuses intents it shouldn't pay for, before spending gas.

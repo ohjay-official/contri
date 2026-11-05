@@ -27,6 +27,7 @@ import { verify } from "../public/js/lib/keys.js";
 import { checkPrivateMove } from "../public/js/lib/private.js";
 import { deadline, formatDown, formatUnits, IMPLICIT_OR_NAMED, net, quote, TOKEN_DECIMALS, toSend, units } from "./oneclick.js";
 import { RelayError } from "./relay.js";
+import { issueTicket } from "./ticket.js";
 
 /** @typedef {import("./config.js").Config} Config */
 
@@ -225,5 +226,6 @@ export async function privateHome(body, c) {
     referral: "contri",
   });
   if (!q.depositAddress) throw new RelayError("1Click didn't give a deposit address; try again", 502);
-  return { depositAddress: q.depositAddress, receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS), seconds: q.timeEstimate };
+  const ticket = await issueTicket(c.relayerKey, q.depositAddress);
+  return { depositAddress: q.depositAddress, ticket, receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS), seconds: q.timeEstimate };
 }

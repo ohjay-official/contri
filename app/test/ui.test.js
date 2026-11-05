@@ -78,3 +78,11 @@ test("an invite says what the circle is before the link", async () => {
   const c = circle({ contribution: "1000000", size: 2, period_secs: 600 });
   assert.equal(inviteMessage(c, "Test"), 'Join my savings circle "Test" on Contri: $1.00 every 10 minutes, 2 members, pot $2.00. Tap to join:');
 });
+
+test("a circle's name can't add lines to a calendar file", async () => {
+  const { icsText } = await import("../public/js/app/screens/circle.js");
+  const name = "Ajo\r\nBEGIN:VALARM\nTRIGGER:-PT1M\; x, y \\";
+  const out = icsText(name);
+  assert.ok(!/[\r\n]/.test(out));
+  assert.equal(out, "Ajo\\nBEGIN:VALARM\\nTRIGGER:-PT1M\\; x\\, y \\\\");
+});

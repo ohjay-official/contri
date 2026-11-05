@@ -12,6 +12,7 @@
 // Refunds go back to the member's circle account, so no other address is asked for.
 
 import { RelayError } from "./relay.js";
+import { issueTicket } from "./ticket.js";
 
 /** @typedef {import("./config.js").Config} Config */
 
@@ -46,8 +47,12 @@ export async function quote(c, body) {
 /** @param {unknown} v @param {string} what */
 export function units(v, what) {
   if (typeof v !== "string" || !/^\d{1,18}$/.test(v) || BigInt(v) === 0n) throw new RelayError(`invalid ${what}`);
+  if (BigInt(v) > MAX_UNITS) throw new RelayError("Contri moves up to $10,000 at a time");
   return BigInt(v);
 }
+
+/** The most one top-up, cash-out or move can be: $10,000 in USDT's six decimals. */
+const MAX_UNITS = 10_000_000_000n;
 
 /** @param {unknown} network */
 export function net(network) {
@@ -141,6 +146,8 @@ export async function cashOut(body, c) {
     label: n.label,
     symbol: n.symbol,
     depositAddress: q.depositAddress ?? null,
+    // Lets the relayer pay for the member's transfer to it (see ticket.js).
+    ticket: q.depositAddress ? await issueTicket(c.relayerKey, q.depositAddress) : null,
     receive: formatDown(BigInt(q.amountOut), n.decimals),
     fee: q.withdrawFee ? formatUnits(BigInt(q.withdrawFee), n.decimals) : "0",
     seconds: q.timeEstimate,

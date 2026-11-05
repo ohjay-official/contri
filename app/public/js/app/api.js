@@ -46,10 +46,11 @@ export const getCircle = async (id) => (await views([{ contract: "contri", metho
 /**
  * Submits signed intents. Returns Contri's events and notes (a refund's reason).
  * @param {import("../lib/intents.js").SignedIntents[]} signed
+ * @param {(string | null | undefined)[]} [tickets] for a transfer to a 1Click deposit account: the ticket /api/swap gave with it
  * @returns {Promise<{ hash: string, ok: boolean, failure: string | null, events: { event: string, data: any[] }[], notes: string[] }>}
  */
-export async function relay(signed) {
-  const r = await request("/api/relay", { signed });
+export async function relay(signed, tickets = []) {
+  const r = await request("/api/relay", { signed, tickets });
   if (!r.ok) throw new Error("NEAR Intents didn't accept that. Nothing was taken from your balance.");
   return r;
 }

@@ -4,6 +4,7 @@
 import { handler } from "../server/http.js";
 import { cashOut, submitDeposit, swapStatus, topUp } from "../server/oneclick.js";
 import { privateBalance, privateHome, privateMove, privateSignIn, privateSubmit, privateTopUp } from "../server/confidential.js";
+import { allow } from "../server/limit.js";
 import { RelayError } from "../server/relay.js";
 
 const ACTIONS = {
@@ -20,8 +21,16 @@ const ACTIONS = {
   phome: privateHome,
 };
 
-export const POST = handler(async (body, c) => {
-  const run = ACTIONS[/** @type {keyof typeof ACTIONS} */ (body?.action)];
-  if (!run) throw new RelayError("unknown action");
-  return run(body, c);
-});
+// Actions that make 1Click open a deposit account or sign in, as opposed to
+// quotes and lookups, which the app also polls.
+const CREATES = new Set(["topup", "cashout", "ptopup", "pmove", "phome", "psubmit"]);
+
+export const POST = handler(
+  async (body, c, who) => {
+    const run = ACTIONS[/** @type {keyof typeof ACTIONS} */ (body?.action)];
+    if (!run) throw new RelayError("unknown action");
+    if (who && CREATES.has(body.action) && !body.dry && !allow(`swap-create:${who}`, 12)) throw new RelayError("Too many requests. Wait a minute and try again.", 429);
+    return run(body, c);
+  },
+  { name: "swap", perMinute: 120 },
+);

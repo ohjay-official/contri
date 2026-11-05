@@ -114,7 +114,7 @@ export async function cashOutScreen(from) {
       } else {
         const c1 = await swap("cashout", { network: r.network, account: s?.accountId, amount: r.value.toString(), address: r.address });
         if (!c1.depositAddress) throw new Error("1Click didn't give a deposit address. Try again.");
-        const tx = await relay([await sign(/** @type {import("../../lib/keys.js").Signer} */ (s), [transfer(c1.depositAddress, cfg.tokenId, r.value)])]);
+        const tx = await relay([await sign(/** @type {import("../../lib/keys.js").Signer} */ (s), [transfer(c1.depositAddress, cfg.tokenId, r.value)])], [c1.ticket]);
         await swap("submit", { txHash: tx.hash, depositAddress: c1.depositAddress }).catch(() => null);
         await logMove({ kind: "cashout", depositAddress: c1.depositAddress, amount: `${c1.receive} ${n?.symbol} (after fees)`, network: n?.label, account: s?.accountId, to: r.address, tx: tx.hash });
         q = c1;

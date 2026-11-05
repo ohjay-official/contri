@@ -109,7 +109,7 @@ export async function moveOut(destination, amount) {
 export async function moveHome(index, amount) {
   const [cfg, v, s] = await Promise.all([getConfig(), vault(), signer(index)]);
   const q = await swap("phome", { from: s.accountId, vault: v.accountId, amount: amount.toString() });
-  const r = await relay([await sign(s, [transfer(q.depositAddress, cfg.tokenId, amount)])]);
+  const r = await relay([await sign(s, [transfer(q.depositAddress, cfg.tokenId, amount)])], [q.ticket]);
   await swap("submit", { txHash: r.hash, depositAddress: q.depositAddress }).catch(() => null);
   await logMove({ kind: "to-private", depositAddress: q.depositAddress, amount: `${q.receive} USDT`, account: s.accountId, tx: r.hash });
   return /** @type {{ depositAddress: string, receive: string, seconds: number }} */ (q);

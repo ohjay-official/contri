@@ -6,7 +6,9 @@ import { authCall, signIntents, transfer } from "../public/js/lib/intents.js";
 import { signerFromSeed } from "../public/js/lib/keys.js";
 import { needs } from "../server/keeper.js";
 import { formatUnits, toSend } from "../server/oneclick.js";
+import { allow } from "../server/limit.js";
 import { checkPayload, relay } from "../server/relay.js";
+import { issueTicket, ticketed } from "../server/ticket.js";
 import { views } from "../server/views.js";
 
 const TOKEN = "nep141:usdt.tether-token.near";
@@ -28,10 +30,47 @@ test("the relayer accepts what members sign", async () => {
     a.create({ contribution: 5_000_000n, size: 3, periodSecs: 60, random: false, inviteKeyHex: null, name: "v1.x" }),
     a.leave(0),
     a.listSeat(0, 1, 1n),
-    [transfer("1click-deposit.near", TOKEN, 5_000_000n)], // a cash-out
   ]) {
     assert.equal(await checkPayload(await sign(intents), c), member.accountId);
   }
+  // A cash-out: a plain transfer to the 1Click deposit account /api/swap opened, with its ticket.
+  const ticket = await issueTicket(c.relayerKey, "1click-deposit.near");
+  assert.equal(await checkPayload(await sign([transfer("1click-deposit.near", TOKEN, 5_000_000n)]), c, Date.now(), [ticket]), member.accountId);
+});
+
+test("money leaves only for a deposit account Contri opened in the last half hour", async () => {
+  const deposit = "a".repeat(64);
+  const out = await sign([transfer(deposit, TOKEN, 5_000_000n)]);
+  await assert.rejects(checkPayload(out, c), /deposit account Contri just set up/);
+  await assert.rejects(checkPayload(out, c, Date.now(), [await issueTicket(c.relayerKey, "b".repeat(64))]), /deposit account/);
+  await assert.rejects(checkPayload(out, c, Date.now(), [await issueTicket("another key", deposit)]), /deposit account/);
+  const old = await issueTicket(c.relayerKey, deposit, Date.now() - 31 * 60_000);
+  assert.equal(await ticketed(c.relayerKey, deposit, [old]), false, "expired");
+  assert.equal(await ticketed(c.relayerKey, deposit, ["9999999999999.00"]), false, "forged");
+  assert.equal(await checkPayload(out, c, Date.now(), ["junk", await issueTicket(c.relayerKey, deposit)]), member.accountId);
+});
+
+test("the relayer pays only for Contri's token and messages Contri reads", async () => {
+  const refused = async (/** @type {any} */ p, /** @type {RegExp} */ why) => assert.rejects(checkPayload(p, c), why);
+  await refused(await sign([transfer("contri.near", "nep141:other.near", 5_000_000n, { msg: "join:0" })]), /only Contri's token/);
+  await refused(await sign([transfer("contri.near", TOKEN, 5_000_000n, { msg: "x" })]), /wouldn't understand/);
+  await refused(await sign([transfer("contri.near", TOKEN, 5_000_000n, { msg: "join:0:zz" })]), /wouldn't understand/);
+  await refused(await sign([authCall("contri.near", "x")]), /wouldn't understand/);
+  await refused(await sign([authCall("contri.near", "leave:0:1")]), /wouldn't understand/);
+  for (const msg of ["back:0", "refill:3", "buy_seat:1:2", "contribute:0:4", `join:0:${"ab".repeat(64)}`, `create:1000000:2:60:random:${"0".repeat(64)}:v1.a:b`]) {
+    assert.equal(await checkPayload(await sign([transfer("contri.near", TOKEN, 1_000_000n, { msg })]), c), member.accountId, msg);
+  }
+  for (const msg of ["claim_credit", "cancel:0", "unlist_seat:0:1", "list_seat:0:1:5"]) {
+    assert.equal(await checkPayload(await sign([authCall("contri.near", msg)]), c), member.accountId, msg);
+  }
+});
+
+test("request limits count per caller over a minute", () => {
+  const t = 1_000_000;
+  for (let i = 0; i < 3; i++) assert.ok(allow("test:x", 3, t + i));
+  assert.equal(allow("test:x", 3, t + 10), false);
+  assert.ok(allow("test:y", 3, t + 10), "others aren't affected");
+  assert.ok(allow("test:x", 3, t + 60_001), "a minute later it's allowed again");
 });
 
 test("the relayer refuses anything else before spending gas", async () => {

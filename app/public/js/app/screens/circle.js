@@ -296,6 +296,14 @@ export const inviteMessage = (c, name) =>
   `Join my savings circle "${name}" on Contri: ${usd(c.contribution)} ${every(c.period_secs)}, ${c.size} members, pot ${usd(potSize(c))}. Tap to join:`;
 
 /**
+ * Text for an iCalendar property. A circle's name is whatever its organizer
+ * typed, so line breaks and backslashes are escaped too: otherwise a name
+ * could add lines (an alarm, an attendee) to the member's calendar.
+ * @param {string} s
+ */
+export const icsText = (s) => s.replace(/\\/g, "\\\\").replace(/[,;]/g, "\\$&").replace(/\r\n|\r|\n/g, "\\n");
+
+/**
  * An iCalendar file with one event per remaining round: due 2 hours before the
  * deadline, with an alarm, and the member's own payout round marked.
  * @param {import("../../lib/contri.js").Circle} c @param {string} name @param {number} seat
@@ -313,8 +321,8 @@ function calendar(c, name, seat) {
       `DTSTAMP:${stamp(Date.now())}`,
       `DTSTART:${stamp(due)}`,
       `DTEND:${stamp(deadline)}`,
-      `SUMMARY:${name}: pay ${usd(c.contribution)} for round ${r + 1}`.replace(/[,;]/g, "\\$&"),
-      `DESCRIPTION:Open Contri and pay before the round closes.${yours}`.replace(/[,;]/g, "\\$&"),
+      `SUMMARY:${icsText(`${name}: pay ${usd(c.contribution)} for round ${r + 1}`)}`,
+      `DESCRIPTION:${icsText(`Open Contri and pay before the round closes.${yours}`)}`,
       "BEGIN:VALARM", "ACTION:DISPLAY", "TRIGGER:-PT1H", "DESCRIPTION:Contri payment due", "END:VALARM",
       "END:VEVENT",
     );
