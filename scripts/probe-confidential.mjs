@@ -36,7 +36,9 @@ async function call(label, path, init = {}) {
     const text = await res.text();
     let body;
     try { body = JSON.parse(text); } catch { body = text.slice(0, 1500); }
-    out.steps.push({ label, path, status: res.status, request: init.body ? JSON.parse(init.body) : undefined, response: body });
+    // Session tokens are shortened in the published results: the repo is public.
+    const redact = (/** @type {any} */ v) => JSON.parse(JSON.stringify(v ?? null, (k, x) => (/token$/i.test(k) && typeof x === "string" ? `${x.slice(0, 12)}...` : x)));
+    out.steps.push({ label, path, status: res.status, request: init.body ? redact(JSON.parse(init.body)) : undefined, response: redact(body) });
     return { status: res.status, body };
   } catch (e) {
     out.steps.push({ label, path, error: String(e) });
