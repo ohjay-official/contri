@@ -11,7 +11,7 @@ import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { follow, moveHome, moveOut, privateBalance, STATUS } from "../private.js";
 import { usd } from "../state.js";
 import { busy, field, h, notice, show } from "../ui.js";
-import { balanceOf, local, logMove, signer, vault } from "../wallet.js";
+import { balanceOf, confirmWithPasskey, local, logMove, signer, vault } from "../wallet.js";
 import { NETWORKS } from "./fund.js";
 
 /**
@@ -99,6 +99,8 @@ export async function cashOutScreen(from) {
   go.addEventListener("click", () =>
     busy(go, "Sending", async () => {
       const r = read();
+      // Money leaving Contri for an outside address can't be pulled back: ask for the passkey again.
+      if (going() === "chain") await confirmWithPasskey();
       const n = NETWORKS.find((x) => x.id === r.network);
       /** @type {{ depositAddress: string, receive: string }} */
       let q;

@@ -100,6 +100,31 @@ if (depositAddress) {
   }
 }
 
+// 4. Can a direct top-up (to a public circle account) be confidential, so 1Click's
+// public status lookup doesn't show which circle account a deposit address pays?
+for (const swapType of ["FLEX_INPUT", "EXACT_INPUT"]) {
+  const r = await quote(`direct top-up ${swapType} + confidentiality basic (live)`, {
+    dry: false, swapType, originAsset: BSC_USDT, depositType: "ORIGIN_CHAIN", destinationAsset: USDT, amount: "3020000000000000000",
+    recipient: circleAccount, recipientType: "INTENTS", refundTo: circleAccount, refundType: "INTENTS", confidentiality: "basic",
+  });
+  const address = r.body?.quote?.depositAddress;
+  if (address) {
+    // The same lookup anyone can make, with no key.
+    const res = await fetch(`${BASE}/v0/status?depositAddress=${encodeURIComponent(address)}`);
+    const body = await res.json().catch(() => ({}));
+    out.steps.push({ label: `  public status of that address (no key)`, path: "/v0/status", status: res.status, response: { recipient: body?.quoteResponse?.quoteRequest?.recipient ?? body?.recipient ?? null, status: body?.status ?? body?.message } });
+  }
+}
+// And the plain direct top-up the app makes today, for comparison.
+const plain = await quote("direct top-up FLEX_INPUT, not confidential (live)", {
+  dry: false, swapType: "FLEX_INPUT", originAsset: BSC_USDT, depositType: "ORIGIN_CHAIN", destinationAsset: USDT, amount: "3020000000000000000",
+  recipient: circleAccount, recipientType: "INTENTS", refundTo: circleAccount, refundType: "INTENTS",
+});
+if (plain.body?.quote?.depositAddress) {
+  const res = await fetch(`${BASE}/v0/status?depositAddress=${encodeURIComponent(plain.body.quote.depositAddress)}`);
+  const body = await res.json().catch(() => ({}));
+  out.steps.push({ label: `  public status of that address (no key)`, path: "/v0/status", status: res.status, response: { recipient: body?.quoteResponse?.quoteRequest?.recipient ?? null, status: body?.status ?? body?.message } });
+}
 
 await mkdir("probe-out", { recursive: true });
 await writeFile("probe-out/confidential.json", JSON.stringify(out, null, 2));

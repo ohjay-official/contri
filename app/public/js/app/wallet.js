@@ -88,6 +88,18 @@ export function useThisDevice() {
 /** @param {Uint8Array} s */
 export const useRestoredSecret = (s) => start(s, "device");
 
+/**
+ * Asks for the passkey again before something that can't be undone (sending
+ * money outside Contri, showing the recovery code), so a phone left unlocked
+ * isn't enough to empty it. A key kept on the device has nothing to ask for.
+ */
+export async function confirmWithPasskey() {
+  if (session?.mode !== "passkey") return;
+  const again = await unlockWithPasskey();
+  const same = again.length === session.secret.length && again.every((b, i) => b === session?.secret[i]);
+  if (!same) throw new Error("That passkey isn't the one you signed in with.");
+}
+
 export async function lock() {
   session = null;
   signers.clear();

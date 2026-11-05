@@ -7,7 +7,7 @@
 //   1. the tab is dropped (a phone reloads it from the background),
 //   2. the browser is closed and opened again,
 // and Contri must still be unlocked on the same screen both times. Then
-// Lock Contri on this device must lock it everywhere.
+// Removing the key must lock it everywhere.
 //
 // Unlocking uses a key kept on this device: automated browsers outside
 // Chromium can't hold a passkey. The unlocked session is sealed and kept by
@@ -86,8 +86,9 @@ for (const p of PROFILES) {
     await page.goto(base + "/app#/settings");
     await unlockedOnSettings(page, "after the browser restarted");
 
-    // Locking locks it, here and in a new tab.
-    await page.click("text=Lock Contri on this device");
+    // Removing the key (the lock for a key kept on the device) locks it, here and in a new tab.
+    await page.click("text=Remove my key from this device");
+    await page.click("button:has-text('Remove it')");
     await page.waitForSelector("h1:has-text('Open Contri')", { timeout: 30_000 });
     const again = await ctx.newPage();
     await again.goto(base + "/app#/settings");

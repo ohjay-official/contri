@@ -76,6 +76,11 @@ export function deviceSecret() {
   return { secret, created: true };
 }
 
+/** Removes the key kept on this device: only the recovery code brings it back. */
+export function forgetDeviceSecret() {
+  localStorage.removeItem(DEVICE_KEY);
+}
+
 /** The device secret as a recovery code, for the member to write down. @param {Uint8Array} secret */
 export const recoveryCode = (secret) => toBase58(secret).replace(/(.{4})(?!$)/g, "$1-");
 

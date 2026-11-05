@@ -69,4 +69,7 @@ createServer(async (req, res) => {
   }
   res.writeHead(200, { ...HEADERS, "content-type": f.type });
   res.end(f.body);
-}).listen(PORT, () => console.log(`Contri on http://localhost:${PORT}${mock ? " (mock API)" : ""}`));
+}).listen(PORT, () => {
+  console.log(`Contri on http://localhost:${PORT}/app${mock ? " (mock API: made-up circles, nothing on chain)" : ""}`);
+  if (mock) console.log(`To see a member's circles: Other ways in > Restore from a recovery code, and paste\n  ${mock.MEMBER_CODE}\nOr choose Keep my key on this device to start fresh and create a circle.`);
+});
