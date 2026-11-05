@@ -41,12 +41,13 @@ export function networkPicker() {
 
 /**
  * Where and how much to send, for a 1Click deposit address.
- * @param {{ depositAddress: string, depositMemo: string | null, send: string, symbol: string, label: string, seconds: number, deadline: string }} q
+ * @param {{ depositAddress: string, depositMemo: string | null, send: string, symbol: string, label: string, seconds: number, deadline: string, receive?: string }} q
  * @param {string} extra what happens to more or less than asked
  */
 export function depositDetails(q, extra) {
   return [
     h("p", null, `Send `, h("strong", null, `${q.send} ${q.symbol}`), ` on `, h("strong", null, q.label), ` to:`),
+    q.receive ? h("p", { class: "hint" }, `About $${q.receive} arrives after fees.`) : null,
     h("p", { class: "code-block", translate: "no" }, q.depositAddress),
     h("div", { class: "actions row" }, h("button", { class: "secondary", onclick: () => copy(q.depositAddress, "Address copied") }, "Copy address")),
     q.depositMemo ? h("p", null, "Memo, required: ", h("strong", { class: "code" }, q.depositMemo)) : null,
@@ -200,8 +201,8 @@ export async function fundScreen(index) {
   const direct = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "route", value: "direct", checked: true }));
   const viaPrivate = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "route", value: "private" }));
   const routes = h("div", { class: "networks", role: "radiogroup", "aria-label": "How to add money" },
-    h("label", { class: "choice" }, direct, h("span", null, h("strong", null, "Straight from an exchange or wallet"), h("span", { class: "hint" }, "Quickest. The public chain can link this circle to the address you send from."))),
-    h("label", { class: "choice" }, viaPrivate, h("span", null, h("strong", null, "Privately, through your private balance"), h("span", { class: "hint" }, "Your exchange stays off the public chain. Add to your private balance, then move it here in one tap."))),
+    h("label", { class: "choice" }, direct, h("span", null, h("strong", null, "Straight from an exchange or wallet"), h("span", { class: "hint" }, "Quickest. It comes in through NEAR Intents' confidential route, so no address links your wallet to this circle."))),
+    h("label", { class: "choice" }, viaPrivate, h("span", null, h("strong", null, "Privately, through your private balance"), h("span", { class: "hint" }, "Most private. Keep money in your private balance and pay circles from it over time, so not even amounts and timing match your wallet."))),
   );
   const directForm = h("div", { class: "stack" },
     field("How much, in dollars", amountInput, "Adding enough for every round at once saves a network fee each round. Anything not used stays in this account, and you can cash it out."),

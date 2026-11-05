@@ -29,7 +29,7 @@ export async function privateAddScreen(then) {
 
   /** Shows a deposit address and follows it until the money arrives. @param {any} q */
   const showDeposit = (q) => {
-    depositBox.replaceChildren(...depositDetails(q, "Send exactly this amount. If it can't go through, the money comes back to your private balance.").filter((x) => x !== null));
+    depositBox.replaceChildren(...depositDetails(q, "Send exactly this amount. If 1Click can't complete it, it refunds the money into your private balance anyway.").filter((x) => x !== null));
     progress.textContent = STATUS.PENDING_DEPOSIT;
     const screen = depositBox.closest("section");
     if (!screen) return;

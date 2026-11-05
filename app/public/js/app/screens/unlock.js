@@ -50,7 +50,7 @@ export function unlockScreen(done, reason) {
       h("h1", null, "Open Contri"),
       reason ? h("p", { class: "lead" }, reason) : null,
       warning,
-      h("p", null, "Contri signs you in with a passkey: the fingerprint, face or screen lock you already use on this phone. There is no email, phone number or password, and we keep nothing about you."),
+      h("p", null, "Contri signs you in with a passkey: the fingerprint, face or screen lock you already use on this phone. There is no email, phone number or password, and Contri doesn't store anything about you."),
       passkeysAvailable()
         ? h("div", { class: "actions" }, create, signIn)
         : h("p", { class: "callout" }, "This browser can't use passkeys. Keep your key on this device below, or open Contri in Chrome or Safari."),

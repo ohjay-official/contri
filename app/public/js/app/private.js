@@ -1,8 +1,9 @@
 // @ts-check
 // The member's private balance: USDT on NEAR Intents' private ledger
 // (Confidential Intents), held by one account derived from the passkey.
-// Nobody looking at the public chain can see it, or link it to the member's
-// circle accounts or to the exchange it came from.
+// Nobody looking at the public chain can see it or link it to the exchange
+// it came from. 1Click and Contri's server see which circle accounts it pays,
+// and NEAR Intents' operators run the private ledger.
 //
 // Every move out of it is an intent 1Click builds and this phone signs, after
 // checking it moves exactly what the member asked (lib/private.js).
