@@ -26,7 +26,9 @@ Screenshots from the automated browser test: two members with passkeys click thr
 3. Tap **Every round: $3.00**, choose **USDT on BNB Smart Chain**, tap **Get a deposit address**, and send that amount from an exchange or wallet. When it arrives, tap **Create circle**. You hold seat 1 and the invite link opens.
 4. Open the invite link in a second browser profile (or send it to a friend), create a passkey there, and add $3 the same way. Tap **Join**. The circle starts: the ring shows both seats and the round's deadline.
 5. Both members tap **Pay**. The second payment pays the $2 pot to seat 1 in the same transaction. Pay round 2 and seat 2 receives the pot; the circle finishes and both $1 deposits come back.
-6. Tap **Cash out** to send a circle account's balance back to an exchange or wallet.
+6. Tap **Move money out** to send a circle account's balance to your private balance (free, about ten seconds) or to an exchange or wallet.
+
+**The private balance.** On the home screen, **Add privately** gives a deposit address that lands money on NEAR Intents' private ledger (Confidential Intents). When you then start, join or pay a circle, the add-money screen offers **Move $X here** from it, so the circle account is funded from the private ledger instead of your exchange. **Cash out** on the home screen sends it to any supported chain.
 
 Every action is a NEP-413 intent signed on the phone and submitted by Contri's relayer, so neither member ever holds NEAR. To watch instead of pay, open **Live circles** in the app: every circle on the contract, read straight from the chain.
 
@@ -69,9 +71,10 @@ End-to-end, against the real NEAR Intents contract built from [near/intents](htt
 - **No personal data.** Sign-in is a passkey. Contri never asks for a name, phone number or email, and the site loads no third-party scripts, fonts or trackers (strict CSP).
 - **One account per circle.** The app derives a separate ed25519 key for every circle from the passkey's PRF secret, so a member's circles can't be linked to each other on chain. A synced passkey brings them all back on a new phone.
 - **Invite-only, encrypted circles.** The invite link's secret (after `#`, never sent to a server) signs joins, which the contract checks with `env::ed25519_verify`, and encrypts the circle's name with AES-GCM before it goes on chain.
+- **A private balance.** Each member has one private account on NEAR Intents' private ledger (Confidential Intents), derived from the passkey. Money comes in from an exchange, goes out to circles, comes back with payouts and leaves to any chain, so the public chain never links a circle account to the exchange or wallet behind it. 1Click builds the intents that move it; the phone checks each one moves exactly what the member asked before signing.
 - **No logs, no RPC fingerprinting.** The phone reads the chain through Contri's server, which keeps no logs, so no RPC provider sees one IP address looking up several circle accounts.
 
-Being tested next: top-ups and cash-outs through NEAR Confidential Intents, so the public chain doesn't link a circle account to the exchange or wallet it was funded from. Full design, threat model and what was ruled out: [docs/PRIVACY.md](docs/PRIVACY.md).
+Full design, what each party can see, the limits (amounts and timing), and what was ruled out: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 ## How NEAR is used
 
@@ -79,6 +82,7 @@ Being tested next: top-ups and cash-outs through NEAR Confidential Intents, so t
 - **Signed intents from passkey-derived keys.** Each circle account is an ed25519 implicit account; the app signs NEP-413 payloads with WebCrypto. The relayer checks each payload against what Contri relays, simulates it with `simulate_intents`, then submits `execute_intents` and pays the gas.
 - **`AuthCall` intents** for leaving a circle, listing or unlisting a turn, cancelling, and claiming a failed transfer.
 - **1Click API** for top-ups from other chains (straight from an exchange withdrawal) and cash-outs to them.
+- **Confidential Intents** for the private balance: `CONFIDENTIAL_INTENTS` quotes, a session from `/v0/auth/authenticate` to read the balance, and `/v0/generate-intent` and `/v0/submit-intent` for moves the member's private account signs.
 - **Fair draws** from NEAR's per-block random seed when a circle fills.
 - **Seats as live NFTs.** NEP-171/177/181 views and events; each seat's picture is an SVG the contract draws from the circle's live state.
 - **Community backing from DAOs.** A Trezu or Sputnik DAO treasury can back a circle with one `mt_transfer_call` proposal; the backing covers missed payments ([integrations/trezu](integrations/trezu)).
@@ -91,7 +95,7 @@ Being tested next: top-ups and cash-outs through NEAR Confidential Intents, so t
 | `contract/` | The Rust contract (near-sdk 5, under 100 KB), its tests, ABI, and sandbox end-to-end tests |
 | `app/public/` | The website and app: plain ES modules, no runtime dependencies, no build step |
 | `app/public/js/lib/` | Keys, NEP-413 signing, invites, NEAR transactions; shared by the app and the server |
-| `app/api/`, `app/server/` | Relayer, read proxy, 1Click top-up and cash-out, keeper (Vercel functions) |
+| `app/api/`, `app/server/` | Relayer, read proxy, 1Click top-up and cash-out, the private balance, keeper (Vercel functions) |
 | `app/scripts/` | Mainnet deploy and lock |
 | `docs/` | [Architecture](docs/ARCHITECTURE.md), [contract methods](docs/METHODS.md), [privacy](docs/PRIVACY.md), [fees and gas](docs/FEES.md) |
 
