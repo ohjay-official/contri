@@ -670,3 +670,13 @@ body:has(> .topbar) { background: #000; }
 @media (min-width: 768px) { .help-page .help-cards { grid-template-columns: 1fr 1fr; } }
 .help-page .hcard { height: 300px; }
 .hcard-num { color: var(--adire); font-family: var(--serif); font-size: 28px; font-weight: 700; margin-bottom: 16px; }
+
+/* ---------- Moving between pages and screens ---------- */
+
+/* Pages cross-fade into each other where the browser supports it. */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 260ms; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+/* Each app screen rises in as it replaces the last. */
+#view > * { animation: view-in 280ms cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes view-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #view > * { animation: none; } @view-transition { navigation: none; } }

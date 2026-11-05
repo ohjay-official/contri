@@ -74,8 +74,11 @@ async function run(fn) {
 
 async function main() {
   await restore();
-  const cfg = await getConfig().catch(() => null);
-  if (cfg && !cfg.contractId) notice("Contri isn't connected to a contract yet. Nothing here will work until it is.", "error");
+  // Not waited for: the first screen shouldn't wait on the network.
+  getConfig().then(
+    (cfg) => !cfg.contractId && notice("Contri isn't connected to a contract yet. Nothing here will work until it is.", "error"),
+    () => null,
+  );
   if (location.pathname.startsWith("/join")) {
     const invite = parseInvite(location.hash);
     if (invite) {

@@ -346,3 +346,30 @@
 .cs-controls svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .cs-count { margin-left: 8px; color: var(--adire); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; }
 .cs-step { color: var(--ink-2); font-size: 14px; }
+.x-link { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: rgba(150, 150, 150, 0.28); color: var(--ink); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transition: background-color 200ms var(--ease); }
+.x-link:hover { background: rgba(150, 150, 150, 0.45); }
+.x-link svg { width: 15px; height: 15px; fill: currentColor; }
+
+/* ---------- Phone polish ---------- */
+@media (max-width: 520px) {
+  .orbits-wrap { --s: 0.46; }
+  .chip { width: 84px; height: 84px; font-size: 19px; }
+  .chip.lg { width: 100px; height: 100px; font-size: 21px; }
+  .chip.xl { width: 112px; height: 112px; font-size: 22px; }
+  .chip.sq { border-radius: 26px; }
+  .count { font-size: 96px; }
+  .count-label { max-width: 220px; font-size: 24px; }
+  .way { min-height: 0; padding: 24px; }
+  .way h3 { margin-top: 20px; }
+}
+@media (max-width: 767px) { .vortex { height: 92svh; min-height: 620px; } }
+.cta-card h2, .cta-card p { text-shadow: 0 1px 14px rgba(140, 40, 0, 0.35); }
+.cta-card p { opacity: 1; font-weight: 500; }
+@media (max-width: 900px) {
+  .card-scene-copy { bottom: 0; padding: 72px 0 24px; background: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 38%); }
+}
+/* The phone's sky canvas sits behind the clip, not over it. */
+.scene-sky { z-index: 0; }
+.scene-video { z-index: 1; }
+.scene-fx, .scene-tint { z-index: 2; }
+.scene-grid { z-index: 3; }

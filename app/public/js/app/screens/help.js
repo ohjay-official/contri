@@ -119,7 +119,7 @@ export async function helpScreen() {
         h("li", null, "If a payment into a circle didn't go through, your money stayed in that circle's account. Open the circle to try again."),
         h("li", null, "A top-up or cash-out that can't go through is refunded to your own account or private balance, never to anyone else."),
       ),
-      h("p", null, "Still stuck? Tap Copy details for support on the payment, and send it to Contri on ", h("a", { href: "https://x.com/Oh_Jay0", target: "_blank", rel: "noopener noreferrer" }, "X (@Oh_Jay0)"), ". Never send your recovery code: nobody from Contri will ever ask for it."),
+      h("p", null, "Still stuck? Tap Copy details for support on the payment, and send it to Contri on ", h("a", { href: "https://x.com/contri_ng", target: "_blank", rel: "noopener noreferrer" }, "X (@contri_ng)"), ". Never send your recovery code: nobody from Contri will ever ask for it."),
       ),
     ),
   );

@@ -124,7 +124,7 @@ function cards(space) {
         progress = target;
         target = -1;
       }
-    } else if (!still) progress += 0.0055;
+    } else if (!still) progress += 0.009;
     mouse.x += (mouse.tx - mouse.x) * 0.08;
     mouse.y += (mouse.ty - mouse.y) * 0.08;
     const h = stage.clientHeight || innerHeight;

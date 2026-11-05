@@ -22,7 +22,7 @@ function scene(foot) {
   const phone = matchMedia("(max-width: 760px)");
 
   // Moments in the clip, in seconds, and places in its 1920x1080 frame.
-  const ON = 0.6, IDLE = 2.3, LAUNCH = 4.72, FLIGHT = 0.78;
+  const ON = 0.6, IDLE = 2.3, LAUNCH = 4.72, FLIGHT = 0.6;
   const SCREEN = { x0: 806, y0: 505, x1: 1077, y1: 724 };
   const POINT = { x: 945, y: 594 };
 
@@ -38,7 +38,14 @@ function scene(foot) {
 
   if (still) return; // the poster and the text, as they are
 
-  video.src = (innerWidth <= 900 ? video.dataset.srcSmall : video.dataset.src) ?? "";
+  // The clip loads only when the footer is about to come into view, so it never slows the page down.
+  const load = () => {
+    if (video.src) return;
+    video.src = (innerWidth <= 900 ? video.dataset.srcSmall : video.dataset.src) ?? "";
+    video.load();
+  };
+  new IntersectionObserver(([e]) => e.isIntersecting && load(), { rootMargin: "100% 0px" }).observe(foot);
+  const RATE = 1.6; // the switch-on and the night fall, brisker than the clip
 
   /** Where a point of the clip's frame lands on the canvas (object-fit: cover, bottom-aligned). */
   const map = (/** @type {number} */ x, /** @type {number} */ y) => {
@@ -60,16 +67,32 @@ function scene(foot) {
   addEventListener("resize", size, { passive: true });
 
   const play = (/** @type {number} */ from) => {
+    if (video.readyState < 1) {
+      video.addEventListener("loadedmetadata", () => play(from), { once: true });
+      return;
+    }
     video.currentTime = from;
+    video.playbackRate = RATE;
     video.play().catch(() => {});
   };
 
+  // Every time the footer comes into view, the scene starts again from the switch-on.
   new IntersectionObserver(
     ([e]) => {
-      if (!e.isIntersecting || mode !== "off-screen") return;
-      foot.classList.add("arrived");
-      mode = "online";
-      play(ON);
+      if (e.isIntersecting) {
+        load();
+        foot.classList.add("arrived");
+        mode = "online";
+        flightStart = litStart = -1;
+        logo = 0;
+        button.setAttribute("aria-pressed", "false");
+        foot.style.setProperty("--lit", "0");
+        play(ON);
+      } else {
+        video.pause();
+        mode = "off-screen";
+        foot.classList.remove("arrived");
+      }
     },
     { threshold: 0.35 },
   ).observe(foot);
@@ -98,7 +121,7 @@ function scene(foot) {
       if (t > IDLE + 0.05) video.currentTime = IDLE;
     }
     if (mode === "switching-off") {
-      if (flightStart < 0 && t >= LAUNCH) flightStart = now;
+      if (flightStart < 0 && litStart < 0 && t >= LAUNCH && t < LAUNCH + 0.2) flightStart = now;
       if (video.ended || t >= video.duration - 0.02) mode = "offline";
     }
 
@@ -142,7 +165,7 @@ function scene(foot) {
 
     // After the colour bars, the screen settles on Contri's logo.
     const wantLogo = mode === "online" && t >= IDLE - 0.05 ? 1 : 0;
-    logo += (wantLogo - logo) * (wantLogo ? 0.05 : 0.25);
+    logo += (wantLogo - logo) * (wantLogo ? 0.09 : 0.3);
     if (logo > 0.01) {
       const a = map(SCREEN.x0, SCREEN.y0), b = map(SCREEN.x1, SCREEN.y1);
       const w2 = b.x - a.x, h2 = b.y - a.y;
