@@ -58,13 +58,16 @@ const borshKey = (publicKey) => concat(Uint8Array.of(0), publicKey); // 0 = ed25
 
 /**
  * @typedef {{ functionCall: { method: string, args: object | Uint8Array, gas: bigint, deposit: bigint } }
+ *   | { createAccount: true }
  *   | { deployContract: { code: Uint8Array } }
  *   | { transfer: { deposit: bigint } }
+ *   | { addFullAccessKey: { publicKey: Uint8Array } }
  *   | { deleteKey: { publicKey: Uint8Array } }} Action
  */
 
 /** @param {Action} a */
 function borshAction(a) {
+  if ("createAccount" in a) return Uint8Array.of(0);
   if ("deployContract" in a) return concat(Uint8Array.of(1), borshBytes(a.deployContract.code));
   if ("functionCall" in a) {
     const { method, args, gas, deposit } = a.functionCall;
@@ -72,6 +75,8 @@ function borshAction(a) {
     return concat(Uint8Array.of(2), borshString(method), borshBytes(raw), uintLE(gas, 8), uintLE(deposit, 16));
   }
   if ("transfer" in a) return concat(Uint8Array.of(3), uintLE(a.transfer.deposit, 16));
+  // AddKey: the key, then AccessKey { nonce: u64, permission: FullAccess (1) }.
+  if ("addFullAccessKey" in a) return concat(Uint8Array.of(5), borshKey(a.addFullAccessKey.publicKey), uintLE(0n, 8), Uint8Array.of(1));
   if ("deleteKey" in a) return concat(Uint8Array.of(6), borshKey(a.deleteKey.publicKey));
   throw new Error("unsupported action");
 }

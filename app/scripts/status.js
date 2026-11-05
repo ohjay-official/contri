@@ -15,9 +15,11 @@ async function account(id) {
   try {
     const a = await rpc(c.rpcUrl, "query", { request_type: "view_account", finality: "final", account_id: id });
     const keys = await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: id });
-    return { id, near: near(a.amount), storage_bytes: a.storage_usage, code: a.code_hash !== "11111111111111111111111111111111", keys: keys.keys.length };
+    return { id, exists: true, near: near(a.amount), storage_bytes: a.storage_usage, code: a.code_hash !== "11111111111111111111111111111111", keys: keys.keys.length };
   } catch (e) {
-    return { id, error: e instanceof Error ? e.message.slice(0, 200) : String(e) };
+    const message = e instanceof Error ? e.message : String(e);
+    if (/UNKNOWN_ACCOUNT|does not exist/i.test(message)) return { id, exists: false };
+    return { id, error: message.slice(0, 200) };
   }
 }
 

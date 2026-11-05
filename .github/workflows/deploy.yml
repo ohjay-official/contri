@@ -53,9 +53,11 @@ jobs:
         run: |
           node app/scripts/status.js > deploy-out/accounts.json 2>&1 || true
           cat deploy-out/accounts.json
-          # First deploy happens by itself once the account is funded and its key is set.
-          FIRST=$(node -e 'try { const a = JSON.parse(require("fs").readFileSync("deploy-out/accounts.json", "utf8")); console.log(Boolean(a.contri && a.contri.code === false && a.contri.near >= 1.05 && a.contri.keys > 0)); } catch { console.log(false); }')
-          echo "first_deploy=$([ "$FIRST" = true ] && [ "${{ secrets.CONTRI_DEPLOYER_KEY != '' }}" = true ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          # First deploy happens by itself once there's money and a key: either the
+          # relayer is funded (it creates circles.<relayer>), or a separate contract
+          # account exists with its own key.
+          FIRST=$(node -e 'try { const a = JSON.parse(require("fs").readFileSync("deploy-out/accounts.json", "utf8")); const c = a.contri, r = a.relayer; console.log(Boolean((c && c.exists === false && r && r.exists && r.near >= 1.3 && r.keys > 0) || (c && c.exists && c.code === false && c.near >= 1.05 && c.keys > 0))); } catch { console.log(false); }')
+          echo "first_deploy=$([ "$FIRST" = true ] && [ "${{ secrets.RELAYER_KEY != '' || secrets.CONTRI_DEPLOYER_KEY != '' }}" = true ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - name: Publish to the deploy-results branch
         run: |
           cd deploy-out
@@ -94,11 +96,13 @@ jobs:
         if: env.DO_DEPLOY == 'true'
         env:
           CONTRI_DEPLOYER_KEY: ${{ secrets.CONTRI_DEPLOYER_KEY }}
+          RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
         run: node app/scripts/deploy.js contract/target/near/contri.wasm 2>&1 | tee deploy.log
       - name: Lock
         if: env.DO_LOCK == 'true'
         env:
           CONTRI_DEPLOYER_KEY: ${{ secrets.CONTRI_DEPLOYER_KEY }}
+          RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
         run: node app/scripts/deploy.js --lock 2>&1 | tee deploy.log
       - name: Publish the log
         if: always()

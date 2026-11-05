@@ -402,3 +402,35 @@ async fn the_app_works_in_a_browser() -> Result<()> {
     ensure!(out.status.success(), "the browser end-to-end script failed");
     Ok(())
 }
+
+/// The mainnet deploy script, against the sandbox: from one funded account
+/// (the relayer), it creates `circles.<relayer>`, deploys and initializes
+/// Contri there, upgrades it in place, then locks it by deleting its key.
+#[tokio::test]
+async fn the_deploy_script_creates_upgrades_and_locks_the_contract() -> Result<()> {
+    let env = setup().await?;
+    let script = concat!(env!("CARGO_MANIFEST_DIR"), "/../../app/scripts/deploy.js");
+    let run = |arg: &str| {
+        std::process::Command::new("node")
+            .arg(script)
+            .arg(arg)
+            .env("NEAR_RPC", env.worker.rpc_addr())
+            .env("NEAR_NETWORK", "sandbox")
+            .env("INTENTS_ID", env.intents.id().as_str())
+            .env("TOKEN_ID", &env.token)
+            .env("RELAYER_ACCOUNT_ID", env.root.id().as_str())
+            .env("RELAYER_KEY", env.root.secret_key().to_string())
+            .output()
+    };
+    for (what, arg) in [("first deploy", std::env::var("CONTRI_WASM")?), ("upgrade", std::env::var("CONTRI_WASM")?), ("lock", "--lock".to_string())] {
+        let out = run(&arg)?;
+        println!("{what}:\n{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+        ensure!(out.status.success(), "{what} failed");
+    }
+    let id: AccountId = format!("circles.{}", env.root.id()).parse()?;
+    let config: Value = env.worker.view(&id, "get_config").await?.json()?;
+    ensure!(config["intents_id"] == env.intents.id().as_str(), "initialized for NEAR Intents: {config}");
+    let keys = env.worker.view_access_keys(&id).await?;
+    ensure!(keys.is_empty(), "locked: no keys left");
+    Ok(())
+}

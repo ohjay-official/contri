@@ -182,3 +182,13 @@ test("versioned nonces carry the salt and deadline NEAR Intents checks", async (
   assert.equal(JSON.parse(signed.payload.message).deadline, "2026-11-05T00:10:00Z");
   assert.equal(toHex(nonce.slice(9, 17)), toHex(uintLE(BigInt(Date.parse("2026-11-05T00:10:00Z")) * 1_000_000n, 8)));
 });
+
+test("account creation actions encode as borsh", () => {
+  const key = new Uint8Array(32).fill(9);
+  const bytes = encodeTransaction({
+    signerId: "a.near", publicKey: key, nonce: 1n, receiverId: "circles.a.near", blockHash: new Uint8Array(32),
+    actions: [{ createAccount: true }, { transfer: { deposit: 5n } }, { addFullAccessKey: { publicKey: key } }],
+  });
+  const tail = toHex(bytes).slice(-2 * (4 + 1 + 17 + 1 + 33 + 8 + 1));
+  assert.equal(tail, "03000000" + "00" + "03" + toHex(uintLE(5n, 16)) + "05" + "00" + "09".repeat(32) + "00".repeat(8) + "01");
+});

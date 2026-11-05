@@ -11,13 +11,16 @@ const env = (name, fallback) => {
 
 export function config() {
   const network = env("NEAR_NETWORK", "mainnet");
+  const relayerId = env("RELAYER_ACCOUNT_ID", "");
   return {
     network,
     rpcUrl: env("NEAR_RPC", network === "mainnet" ? "https://rpc.mainnet.fastnear.com" : "https://rpc.testnet.fastnear.com"),
-    contractId: env("CONTRI_ACCOUNT_ID", ""),
+    // The contract lives in its own sub-account of the relayer's account
+    // (`circles.<relayer>`), unless CONTRI_ACCOUNT_ID names another.
+    contractId: env("CONTRI_ACCOUNT_ID", relayerId ? `circles.${relayerId}` : ""),
     intentsId: env("INTENTS_ID", "intents.near"),
     tokenId: env("TOKEN_ID", "nep141:usdt.tether-token.near"),
-    relayerId: env("RELAYER_ACCOUNT_ID", ""),
+    relayerId,
     relayerKey: env("RELAYER_KEY", ""),
     oneClickUrl: env("ONECLICK_URL", "https://1click.chaindefuser.com"),
     oneClickKey: env("ONECLICK_API_KEY", ""),
