@@ -40,10 +40,16 @@ export async function settingsScreen() {
     }).then(() => (reveal.textContent = code.hidden ? "Show my recovery code" : "Hide it")),
   );
 
-  // Circles this key is in: from the last refresh, or a fresh look.
-  const slots = state.slots ?? (await refresh().catch(() => null))?.slots ?? [];
-  const inCircles = new Set(slots.flatMap((x) => x.circles)).size;
   const seen = await recoverySeen().catch(() => false);
+  // Circles this key is in: shown at once from the last refresh, or filled in
+  // when a fresh look comes back, so the screen never waits on the network.
+  /** @param {import("../state.js").Slot[]} slots */
+  const count = (slots) => {
+    const n = new Set(slots.flatMap((x) => x.circles)).size;
+    return n ? `${n} circle${n === 1 ? "" : "s"}, one account each` : "Ready for your first circle";
+  };
+  const countTag = h("span", { class: "glass-tag tag-count" }, state.slots ? count(state.slots) : "Counting your circles");
+  if (!state.slots) refresh().then((st) => (countTag.textContent = count(st.slots ?? [])), () => (countTag.textContent = "One account per circle"));
 
   show(
     h("div", { class: "key-page" },
@@ -64,7 +70,7 @@ export async function settingsScreen() {
           h("span", { class: "glass-tag tag-left" }, passkey ? "Passkey" : "This browser"),
           h("span", { class: "glass-tag tag-right" }, "No password"),
           h("span", { class: "glass-tag live" }, h("i", { class: "dot" }), h("span", null, "Unlocked here")),
-          h("span", { class: "glass-tag tag-count" }, inCircles ? `${inCircles} circle${inCircles === 1 ? "" : "s"}, one account each` : "Ready for your first circle"),
+          countTag,
           h("h2", { class: "kcard-title" }, "One key for ", h("strong", null, "every circle you're in.")),
         ),
         h("article", { class: "kcard kcard-middle", tabindex: "0", "aria-label": "Separate accounts" },
