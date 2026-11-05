@@ -1,0 +1,34 @@
+name: account
+
+# Shows a NEAR account's public state and its recent transactions (from the
+# NearBlocks API). Account ids and transactions are public.
+
+on:
+  workflow_dispatch:
+    inputs:
+      account:
+        description: NEAR account id
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  show:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: State and recent transactions
+        env:
+          ACCOUNT: ${{ inputs.account }}
+        run: |
+          curl -s https://rpc.mainnet.fastnear.com -H 'Content-Type: application/json' \
+            -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"query\",\"params\":{\"request_type\":\"view_account\",\"finality\":\"final\",\"account_id\":\"$ACCOUNT\"}}"
+          echo
+          curl -s "https://api.nearblocks.io/v1/account/$ACCOUNT/txns?per_page=15" | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)
+          for t in d.get("txns",[]):
+              acts=", ".join(f"{a.get(\"action\")}:{a.get(\"method\") or \"\"}:{int(a.get(\"deposit\") or 0)/1e24:.4f}" for a in t.get("actions") or [])
+              print(t.get("block_timestamp"), t.get("predecessor_account_id"), "->", t.get("receiver_account_id"), "|", acts)
+          ' || true
