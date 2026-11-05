@@ -73,7 +73,9 @@ if (command === "setup") {
   const aliases = /** @type {string[]} */ ([...(p.targets?.production?.alias ?? []), ...(p.alias ?? []).map((/** @type {any} */ a) => a.domain)]);
   const custom = aliases.find((a) => !a.endsWith(".vercel.app"));
   const vercel = aliases.filter((a) => a.endsWith(".vercel.app")).sort((a, b) => a.length - b.length)[0];
-  console.log(`https://${custom ?? vercel ?? `${PROJECT}.vercel.app`}`);
+  // The custom domain only once its DNS points here; until then the vercel.app one.
+  const live = custom ? !(await api(`/v6/domains/${custom}/config`)).body?.misconfigured : false;
+  console.log(`https://${(live && custom) || vercel || `${PROJECT}.vercel.app`}`);
 } else if (command === "attach") {
   // Adds DOMAIN (and www.DOMAIN, redirecting to it) to the project, then prints
   // the DNS records the registrar needs. Safe to run again.
