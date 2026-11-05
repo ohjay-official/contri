@@ -156,7 +156,7 @@ export async function relay(body, c) {
     failure: failure ? JSON.stringify(failure) : null,
     events: events(logs, "contri"),
     // Contri logs why it refunded a payment (wrong amount, circle full, ...).
-    notes: logs.filter((l) => !l.startsWith("EVENT_JSON:")),
+    notes: logs.filter((l) => !l.startsWith("EVENT_JSON:")).map(memberNote),
   };
 }
 
@@ -177,6 +177,18 @@ async function checkAuthCalls(p, signer, c) {
     const involved = circle && (circle.organizer === signer || circle.members.some((/** @type {any} */ m) => m.account_id === signer));
     if (!involved) throw new RelayError("only the circle's members can do that");
   }
+}
+
+/**
+ * A refund reason from the contract ("contri: refunding 5000000: circle is
+ * full"), in the member's words, without a full stop so the app can add to it.
+ * @param {string} log
+ */
+export function memberNote(log) {
+  const reason = log.replace(/^contri: refunding \d+: /, "");
+  if (/out of storage room/.test(reason)) return "Contri is full right now and can't take new circles or members. Try again later";
+  if (/at least 1 USDT/.test(reason)) return "The amount each round has to be at least $1";
+  return reason.charAt(0).toUpperCase() + reason.slice(1);
 }
 
 /** NEAR Intents' reasons, in the member's words. */

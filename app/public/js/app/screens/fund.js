@@ -83,7 +83,7 @@ export async function fundScreen(index) {
         });
         const r = await relay([await sign(s, intents)]);
         const created = findEvent(r.events, "circle_created");
-        if (!created) throw new Error(r.notes[0] ?? "The circle wasn't created and your money stayed in your balance.");
+        if (!created) throw new Error(r.notes[0] ? `${r.notes[0]}. Your money is back in your balance.` : "The circle wasn't created and your money stayed in your balance.");
         await remember(index, { circle: created.circle, pending: undefined });
         return `#/c/${created.circle}?share`;
       },

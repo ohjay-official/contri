@@ -7,7 +7,7 @@ import { signerFromSeed } from "../public/js/lib/keys.js";
 import { needs } from "../server/keeper.js";
 import { formatUnits, toSend } from "../server/oneclick.js";
 import { allow } from "../server/limit.js";
-import { checkPayload, relay } from "../server/relay.js";
+import { checkPayload, memberNote, relay } from "../server/relay.js";
 import { issueTicket, ticketed } from "../server/ticket.js";
 import { views } from "../server/views.js";
 
@@ -176,4 +176,10 @@ test("a transaction the node stopped waiting for is followed by hash, not sent a
   } finally {
     globalThis.fetch = real;
   }
+});
+
+test("the contract's refund reasons reach members in plain words", () => {
+  assert.equal(memberNote("contri: refunding 5000000: circle is full"), "Circle is full");
+  assert.equal(memberNote("contri: refunding 3000000: Contri is out of storage room right now"), "Contri is full right now and can't take new circles or members. Try again later");
+  assert.equal(memberNote("contri: refunding 999999: contribution must be at least 1 USDT"), "The amount each round has to be at least $1");
 });
