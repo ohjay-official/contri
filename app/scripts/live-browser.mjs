@@ -31,7 +31,11 @@ async function open(opts = {}) {
   const problems = [];
   page.on("pageerror", (e) => problems.push(`script error: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && problems.push(`console: ${m.text()}`));
-  page.on("requestfailed", (r) => problems.push(`request failed: ${r.url()} ${r.failure()?.errorText}`));
+  page.on("requestfailed", (r) => {
+    // A video the browser stops fetching (the page moved on, or it only needed the start) isn't a fault.
+    if (r.resourceType() === "media" && r.failure()?.errorText === "net::ERR_ABORTED") return;
+    problems.push(`request failed: ${r.url()} ${r.failure()?.errorText}`);
+  });
   page.on("response", (r) => r.status() >= 400 && problems.push(`HTTP ${r.status()}: ${r.request().method()} ${r.url()}`));
   return { ctx, page, problems };
 }
