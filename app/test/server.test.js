@@ -152,3 +152,28 @@ test("a busy RPC node falls over to the next one", async () => {
     globalThis.fetch = real;
   }
 });
+
+test("a transaction the node stopped waiting for is followed by hash, not sent again", async () => {
+  const { sendTransaction, toBase58 } = { ...(await import("../public/js/lib/near.js")), ...(await import("../public/js/lib/bytes.js")) };
+  const real = globalThis.fetch;
+  /** @type {string[]} */
+  const methods = [];
+  let polls = 0;
+  globalThis.fetch = /** @type {any} */ (async (/** @type {string} */ _url, /** @type {any} */ init) => {
+    const { method } = JSON.parse(init.body);
+    methods.push(method);
+    const ok = (/** @type {unknown} */ result) => new Response(JSON.stringify({ jsonrpc: "2.0", id: "contri", result }), { status: 200 });
+    const fail = (/** @type {string} */ name) => new Response(JSON.stringify({ jsonrpc: "2.0", id: "contri", error: { name: "HANDLER_ERROR", cause: { name } } }), { status: 200 });
+    if (method === "query") return ok({ nonce: 5, block_hash: toBase58(new Uint8Array(32).fill(1)) });
+    if (method === "send_tx") return fail("TIMEOUT_ERROR");
+    if (method === "tx") return ++polls < 2 ? fail("TIMEOUT_ERROR") : ok({ status: { SuccessValue: "" } });
+    return fail("UNKNOWN");
+  });
+  try {
+    const r = await sendTransaction("https://rpc.example", member, "contri.near", [{ transfer: { deposit: 1n } }], "FINAL");
+    assert.deepEqual(r.result.status, { SuccessValue: "" });
+    assert.deepEqual(methods, ["query", "send_tx", "tx", "tx"], "signed and sent once");
+  } finally {
+    globalThis.fetch = real;
+  }
+});

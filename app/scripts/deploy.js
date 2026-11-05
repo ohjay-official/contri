@@ -16,8 +16,9 @@
 
 import { readFile } from "node:fs/promises";
 import { config } from "../server/config.js";
+import { sha256, toBase58 } from "../public/js/lib/bytes.js";
 import { signerFromSecretKey } from "../public/js/lib/keys.js";
-import { RpcError, rpc, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
+import { outcome, RpcError, rpc, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
 
 const YOCTO = 10n ** 24n;
 const near = (/** @type {bigint | string} */ y) => (Number(BigInt(y) / 10n ** 20n) / 10_000).toFixed(4);
@@ -41,6 +42,36 @@ async function account(id) {
 }
 
 const existing = await account(c.contractId);
+
+/**
+ * A check of the deployed code on mainnet that needs no USDT: the relayer, as
+ * a NEAR account, is refused a circle under 1 USDT, then creates a circle (with
+ * the 0.01 NEAR storage fee), cancels it and closes it.
+ */
+async function smoke() {
+  const relayer = await signerFromSecretKey(c.relayerKey, c.relayerId);
+  /** @param {string} method @param {object} args @param {bigint} [deposit] */
+  const call = async (method, args, deposit = 0n) => {
+    const { hash, result } = await sendTransaction(c.rpcUrl, relayer, c.contractId, [{ functionCall: { method, args, gas: 50n * TGAS, deposit } }], "FINAL");
+    const { failure } = outcome(result);
+    const value = result.status?.SuccessValue ? Buffer.from(result.status.SuccessValue, "base64").toString() : null;
+    console.log(`smoke ${method}: ${hash} ${failure ? `failed: ${JSON.stringify(failure).slice(0, 160)}` : `ok ${value ?? ""}`}`);
+    return { failure, value };
+  };
+  const fee = YOCTO / 100n;
+  const base = { name: "Mainnet check before the lock", size: 2, period_secs: 600 };
+  const small = await call("create_circle", { ...base, contribution: "999999" }, fee);
+  if (!small.failure || !JSON.stringify(small.failure).includes("at least 1 USDT")) throw new Error("smoke: a circle under 1 USDT wasn't refused");
+  const made = await call("create_circle", { ...base, contribution: "1000000" }, fee);
+  if (made.failure || made.value === null) throw new Error("smoke: create_circle failed");
+  const id = Number(JSON.parse(made.value));
+  const open = await view(c.rpcUrl, c.contractId, "get_circle", { circle_id: id });
+  if (open?.status !== "Open" || open.organizer !== c.relayerId || open.round_deadline !== null) throw new Error(`smoke: unexpected circle ${JSON.stringify(open)}`);
+  if ((await call("cancel_circle", { circle_id: id })).failure) throw new Error("smoke: cancel_circle failed");
+  if ((await call("close_circle", { circle_id: id })).failure) throw new Error("smoke: close_circle failed");
+  if ((await view(c.rpcUrl, c.contractId, "get_circle", { circle_id: id })) !== null) throw new Error("smoke: the closed circle is still stored");
+  console.log(`smoke: passed (circle ${id} created, cancelled and closed)`);
+}
 
 /** Bytes the contract's NEAR covers beyond what it stores. @param {any} a */
 const headroom = (a) => Number(BigInt(a.amount) / 10n ** 19n) - a.storage_usage;
@@ -113,6 +144,13 @@ if (process.argv[2] === "--lock") {
   } else {
     console.log(`${c.contractId}: ${near(existing.amount)} NEAR, ${existing.storage_usage} bytes stored`);
     const fresh = existing.code_hash === "11111111111111111111111111111111";
+    if (toBase58(await sha256(wasm)) === existing.code_hash) {
+      console.log(`${c.contractId} already runs this code (${existing.code_hash})`);
+      await topUpStorage();
+      if (process.env.SMOKE === "true") await smoke();
+      console.log(JSON.stringify(await view(c.rpcUrl, c.contractId, "get_config")));
+      process.exit(0);
+    }
     // A fresh account stores the whole code; an upgrade replaces code of about the same size.
     const needed = storage(fresh ? wasm.length + existing.storage_usage + 5_000 : Math.max(existing.storage_usage, wasm.length) + 2_000);
     if (BigInt(existing.amount) < needed) throw new Error(`needs about ${near(needed)} NEAR, has ${near(existing.amount)}`);
@@ -122,6 +160,7 @@ if (process.argv[2] === "--lock") {
     const { hash } = await sendTransaction(c.rpcUrl, signer, c.contractId, actions, "FINAL");
     console.log(`${fresh ? "deployed and initialized" : "upgraded"}: ${hash}`);
     await topUpStorage();
+    if (process.env.SMOKE === "true") await smoke();
   }
   console.log(JSON.stringify(await view(c.rpcUrl, c.contractId, "get_config")));
 }

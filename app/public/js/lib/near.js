@@ -151,10 +151,33 @@ export async function sendTransaction(url, signer, receiverId, actions, waitUnti
       const result = await rpc(url, "send_tx", { signed_tx_base64: toBase64(signed), wait_until: waitUntil });
       return { hash: toBase58(hash), result };
     } catch (e) {
+      // Sent, but the node stopped waiting before it reached `waitUntil`: ask
+      // for it by hash rather than signing it again, which could run it twice.
+      if (e instanceof RpcError && /TIMEOUT_ERROR/.test(e.message)) {
+        return { hash: toBase58(hash), result: await awaitTransaction(url, toBase58(hash), signer.accountId, waitUntil, e) };
+      }
       const stale = e instanceof RpcError && /InvalidNonce|NonceTooLarge/.test(e.message);
       if (!stale || attempt >= 2) throw e;
     }
   }
+}
+
+/**
+ * A sent transaction's result once it reaches `waitUntil`, asked for by hash
+ * for up to about a minute. Throws `timedOut` if it doesn't get there.
+ * @param {string} url @param {string} hash @param {string} sender
+ * @param {"INCLUDED" | "EXECUTED_OPTIMISTIC" | "FINAL"} waitUntil @param {RpcError} timedOut
+ */
+async function awaitTransaction(url, hash, sender, waitUntil, timedOut) {
+  for (let i = 0; i < 6; i++) {
+    try {
+      return await rpc(url, "tx", { tx_hash: hash, sender_account_id: sender, wait_until: waitUntil });
+    } catch (e) {
+      if (!(e instanceof RpcError && /TIMEOUT_ERROR|UNKNOWN_TRANSACTION/.test(e.message))) throw e;
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+  throw timedOut;
 }
 
 /**

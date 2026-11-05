@@ -74,6 +74,8 @@ jobs:
     env:
       DO_DEPLOY: ${{ needs.status.outputs.first_deploy == 'true' || contains(github.event.head_commit.message, '[deploy]') }}
       DO_LOCK: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[lock]') }}
+      # With [smoke], the deploy also checks the code on mainnet without USDT (see smoke() in deploy.js).
+      SMOKE: ${{ contains(github.event.head_commit.message, '[smoke]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -97,13 +99,17 @@ jobs:
         env:
           CONTRI_DEPLOYER_KEY: ${{ secrets.CONTRI_DEPLOYER_KEY }}
           RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
-        run: node app/scripts/deploy.js contract/target/near/contri.wasm 2>&1 | tee deploy.log
+        run: |
+          set -o pipefail
+          node app/scripts/deploy.js contract/target/near/contri.wasm 2>&1 | tee deploy.log
       - name: Lock
         if: env.DO_LOCK == 'true'
         env:
           CONTRI_DEPLOYER_KEY: ${{ secrets.CONTRI_DEPLOYER_KEY }}
           RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
-        run: node app/scripts/deploy.js --lock 2>&1 | tee deploy.log
+        run: |
+          set -o pipefail
+          node app/scripts/deploy.js --lock 2>&1 | tee deploy.log
       - name: Publish the log
         if: always()
         run: |
