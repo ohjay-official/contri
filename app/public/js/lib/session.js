@@ -46,22 +46,32 @@ async function keyStore(op, value) {
   }).finally(() => d.close());
 }
 
+/** The keep or forget in progress: they run one after another, never interleaved. */
+let queue = Promise.resolve();
+/** @param {() => Promise<void>} job */
+const inTurn = (job) => (queue = queue.then(job, job));
+
 /**
- * Seals and keeps an unlocked secret until the member locks Contri.
+ * Seals and keeps an unlocked secret until the member locks Contri. Resolves
+ * once both halves are stored, so the page can be closed right after.
  * @param {Uint8Array} secret @param {string} mode
  */
-export async function keep(secret, mode) {
-  try {
-    const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, /** @type {BufferSource} */ (secret)));
-    await keyStore("put", key);
-    localStorage.setItem(STORE, JSON.stringify({ v: 2, mode, iv: toBase58(iv), sealed: toBase58(sealed) }));
-    // Ask the browser not to clear this site's storage to free up space.
-    await navigator.storage?.persist?.().catch(() => false);
-  } catch {
-    await forget();
-  }
+export function keep(secret, mode) {
+  return inTurn(async () => {
+    try {
+      const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, /** @type {BufferSource} */ (secret)));
+      await keyStore("put", key);
+      localStorage.setItem(STORE, JSON.stringify({ v: 2, mode, iv: toBase58(iv), sealed: toBase58(sealed) }));
+    } catch {
+      await clear();
+      return;
+    }
+    // Ask the browser not to clear this site's storage to free up space. Not
+    // waited for: some browsers take their time to answer.
+    navigator.storage?.persist?.().catch(() => false);
+  });
 }
 
 /** The kept secret, if Contri hasn't been locked. @returns {Promise<{ secret: Uint8Array, mode: string } | null>} */
@@ -79,7 +89,11 @@ export async function recall() {
 }
 
 /** Deletes the kept session and its key: Contri is locked. */
-export async function forget() {
+export function forget() {
+  return inTurn(clear);
+}
+
+async function clear() {
   try {
     localStorage.removeItem(STORE);
   } catch {}

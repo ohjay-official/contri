@@ -20,8 +20,8 @@ export function unlockScreen(done, reason) {
   signIn.addEventListener("click", () => busy(signIn, "Waiting for your passkey", () => signInWithPasskey().then(done, failed)));
 
   const device = h("button", { class: "text" }, "Keep my key on this device instead");
-  device.addEventListener("click", () => {
-    const created = useThisDevice();
+  device.addEventListener("click", async () => {
+    const created = await useThisDevice();
     if (created) recoveryScreen(done);
     else done();
   });
@@ -84,7 +84,7 @@ function restoreScreen(done) {
   const go = h("button", { class: "primary" }, "Restore");
   go.addEventListener("click", () =>
     busy(go, "Restoring", async () => {
-      useRestoredSecret(restoreDeviceSecret(input.value));
+      await useRestoredSecret(restoreDeviceSecret(input.value));
       await markRecoverySeen();
       done();
     }),

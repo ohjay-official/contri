@@ -51,7 +51,7 @@ export async function restore() {
     try {
       const old = JSON.parse(sessionStorage.getItem(SESSION) ?? "null");
       sessionStorage.removeItem(SESSION);
-      if (old) start(fromBase58(old.secret), old.mode);
+      if (old) await start(fromBase58(old.secret), old.mode);
     } catch {
       session = null;
     }
@@ -59,12 +59,16 @@ export async function restore() {
   return Boolean(session);
 }
 
-/** @param {Uint8Array} secret @param {"passkey" | "device"} mode */
-function start(secret, mode) {
+/**
+ * Unlocks with `secret` and keeps it (sealed) for later visits. Resolves once
+ * it is stored, so a tab closed right after unlocking stays unlocked.
+ * @param {Uint8Array} secret @param {"passkey" | "device"} mode
+ */
+async function start(secret, mode) {
   session = { secret, mode };
   signers.clear();
   vaultKey = null;
-  keepSession(secret, mode);
+  await keepSession(secret, mode);
 }
 
 export const unlocked = () => Boolean(session);
@@ -75,14 +79,14 @@ export const secret = () => {
 };
 
 export async function signUpWithPasskey() {
-  start(await createPasskey(), "passkey");
+  await start(await createPasskey(), "passkey");
 }
 export async function signInWithPasskey() {
-  start(await unlockWithPasskey(), "passkey");
+  await start(await unlockWithPasskey(), "passkey");
 }
-export function useThisDevice() {
+export async function useThisDevice() {
   const { secret, created } = deviceSecret();
-  start(secret, "device");
+  await start(secret, "device");
   return created;
 }
 /** @param {Uint8Array} s */
