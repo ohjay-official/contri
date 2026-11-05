@@ -14,7 +14,7 @@ import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { follow, moveOut, privateBalance, STATUS } from "../private.js";
 import { nameOf, usd } from "../state.js";
 import { busy, copy, field, h, notice, show, sleep } from "../ui.js";
-import { balanceOf, decodeSecret, local, remember, signer } from "../wallet.js";
+import { balanceOf, decodeSecret, local, logMove, remember, signer } from "../wallet.js";
 
 /** Networks shown first are the cheapest for small amounts. */
 export const NETWORKS = [
@@ -162,6 +162,7 @@ export async function fundScreen(index) {
       const want = parseAmount(amountInput.value);
       if (want < 1_000_000n) throw new Error("Add at least $1: smaller amounts cost more in fees than they're worth.");
       const q = await swap("topup", { network, account: s.accountId, amount: want.toString() });
+      await logMove({ kind: "topup", depositAddress: q.depositAddress, amount: `${q.send} ${q.symbol}`, network: q.label, account: s.accountId });
       depositAddress = q.depositAddress;
       // Kept for this circle account, so it's still here if the phone reloads the page.
       await remember(index, { deposit: q });

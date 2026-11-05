@@ -243,6 +243,15 @@ details.share { padding: 16px; background: var(--surface); border: 1px solid var
 .row-status.due, .status.due { color: var(--amber); }
 .row-status.good, .status.good { color: var(--leaf); }
 .row-status.quiet, .status.quiet { color: var(--ink-2); }
+/* Help: one card per top-up or cash-out */
+.circle-list .move {
+  gap: 4px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+}
+.circle-list .move .actions { margin-top: 8px; }
 .status { font-size: 17px; line-height: 24px; font-weight: 500; }
 
 /* ---------- The ring: the screen's one moment ---------- */

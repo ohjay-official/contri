@@ -6,7 +6,7 @@ import { keep } from "../api.js";
 import { privateBalance } from "../private.js";
 import { every, fromNow, nameOf, refresh, state, usd, when } from "../state.js";
 import { h, show } from "../ui.js";
-import { local } from "../wallet.js";
+import { local, recoverySeen } from "../wallet.js";
 
 /** One line saying where the member stands. @param {import("../../lib/contri.js").Circle} c @param {string} me */
 export function standing(c, me) {
@@ -81,6 +81,15 @@ export async function homeScreen() {
     }
   }
 
+  // Until the member has seen their recovery code: a reminder to write it down.
+  const backupReminder = (await recoverySeen())
+    ? null
+    : h("div", { class: "callout stack" },
+        h("p", null, h("strong", null, "Write down your recovery code")),
+        h("p", null, "If your passkey is ever deleted, it's how you get your circles and money back."),
+        h("div", { class: "actions" }, h("a", { class: "button secondary", href: "#/settings" }, "Show my recovery code")),
+      );
+
   show(
     h("section", { class: "stack" },
       h("h1", null, "Your circles"),
@@ -91,6 +100,7 @@ export async function homeScreen() {
             h("p", null, "Start one and send the invite link to the people you save with. If someone sent you a link, open it on this phone to join."),
           ),
       h("div", { class: "actions" }, h("a", { class: "button primary", href: "#/new" }, "Start a circle")),
+      backupReminder,
       privateCard(),
     ),
   );

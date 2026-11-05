@@ -198,6 +198,62 @@ export async function balanceOf(index) {
   return BigInt(b);
 }
 
+// ---- Money moved in and out, for Help ----
+// Every top-up, cash-out and private-balance move goes through a one-time
+// 1Click deposit address. This device keeps a short list of them, so the
+// Help screen can show where each one is and the member can send the details
+// to support. Nothing here can move money.
+
+/**
+ * @typedef {object} Move
+ * @property {"topup" | "cashout" | "private-topup" | "private-to-circle" | "to-private" | "private-cashout"} kind
+ * @property {string} depositAddress
+ * @property {number} at when it started (ms)
+ * @property {string} [amount] what was sent or moved, in dollars
+ * @property {string} [network] the network's label, for top-ups and cash-outs
+ * @property {string} [account] the circle account involved
+ * @property {string} [to] where a cash-out went
+ * @property {string} [tx] the NEAR transaction that sent it, if any
+ */
+
+async function movesKey() {
+  return `contri.moves.${(await signer(0)).accountId.slice(0, 16)}`;
+}
+/** @returns {Promise<Move[]>} newest first */
+export async function moves() {
+  try {
+    return JSON.parse(localStorage.getItem(await movesKey()) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+/** @param {Omit<Move, "at">} move */
+export async function logMove(move) {
+  const all = [{ ...move, at: Date.now() }, ...(await moves())].slice(0, 50);
+  try {
+    localStorage.setItem(await movesKey(), JSON.stringify(all));
+  } catch {}
+}
+
+// ---- Whether the member has seen their recovery code ----
+
+async function recoveryKey() {
+  return `contri.recovery-seen.${(await signer(0)).accountId.slice(0, 16)}`;
+}
+/** Whether this device has shown the member their recovery code. */
+export async function recoverySeen() {
+  try {
+    return localStorage.getItem(await recoveryKey()) === "1";
+  } catch {
+    return true;
+  }
+}
+export async function markRecoverySeen() {
+  try {
+    localStorage.setItem(await recoveryKey(), "1");
+  } catch {}
+}
+
 // ---- Names for other members, kept only on this device ----
 // Members appear on chain as account numbers. A member can name the ones they
 // know ("Kemi"); the names never leave this phone.

@@ -1,5 +1,5 @@
 // @ts-check
-// Routes:  /app#/  /app#/explore  /app#/new  /app#/c/<circle>  /app#/add/<slot>  /app#/cash/<slot>  /app#/settings
+// Routes:  /app#/  /app#/explore  /app#/new  /app#/c/<circle>  /app#/add/<slot>  /app#/cash/<slot>  /app#/settings  /app#/help
 // the private balance: /app#/private/add(/<slot>)  /app#/private/cash
 // /app#/invite: the invite opened in this tab (the link's secret is kept for the tab, not in the address bar)
 // and /join#<circle>.<secret> for invite links.
@@ -12,6 +12,7 @@ import { circleScreen } from "./screens/circle.js";
 import { createScreen } from "./screens/create.js";
 import { exploreScreen } from "./screens/explore.js";
 import { fundScreen } from "./screens/fund.js";
+import { helpScreen } from "./screens/help.js";
 import { homeScreen } from "./screens/home.js";
 import { joinScreen } from "./screens/join.js";
 import { privateAddScreen } from "./screens/private.js";
@@ -43,6 +44,7 @@ async function route() {
   if (hash === "#/" || hash === "#") return homeScreen();
   if (hash === "#/new") return createScreen();
   if (hash === "#/settings") return settingsScreen();
+  if (hash === "#/help") return helpScreen();
   if ((m = /^#\/c\/(\d+)(\?share)?$/.exec(hash))) return circleScreen(Number(m[1]), Boolean(m[2]));
   if ((m = /^#\/add\/(\d+)$/.exec(hash))) return fundScreen(Number(m[1]));
   if ((m = /^#\/cash\/(\d+)$/.exec(hash))) return cashOutScreen(Number(m[1]));

@@ -11,7 +11,7 @@ import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { follow, moveHome, moveOut, privateBalance, STATUS } from "../private.js";
 import { usd } from "../state.js";
 import { busy, field, h, notice, show } from "../ui.js";
-import { balanceOf, local, signer, vault } from "../wallet.js";
+import { balanceOf, local, logMove, signer, vault } from "../wallet.js";
 import { NETWORKS } from "./fund.js";
 
 /**
@@ -114,6 +114,7 @@ export async function cashOutScreen(from) {
         if (!c1.depositAddress) throw new Error("1Click didn't give a deposit address. Try again.");
         const tx = await relay([await sign(/** @type {import("../../lib/keys.js").Signer} */ (s), [transfer(c1.depositAddress, cfg.tokenId, r.value)])]);
         await swap("submit", { txHash: tx.hash, depositAddress: c1.depositAddress }).catch(() => null);
+        await logMove({ kind: "cashout", depositAddress: c1.depositAddress, amount: `${c1.receive} ${n?.symbol} (after fees)`, network: n?.label, account: s?.accountId, to: r.address, tx: tx.hash });
         q = c1;
         arrived = `Arrived: ${q.receive} ${n?.symbol} on ${n?.label}.`;
       }

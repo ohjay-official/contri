@@ -12,7 +12,7 @@ import { nep413Hash, transfer } from "../lib/intents.js";
 import { checkPrivateMove } from "../lib/private.js";
 import { getConfig, relay, sign, swap } from "./api.js";
 import { sleep } from "./ui.js";
-import { signer, vault } from "./wallet.js";
+import { logMove, signer, vault } from "./wallet.js";
 
 /** A 1Click session to read the private balance: about 15 minutes, kept in memory only. */
 /** @type {{ token: string, until: number, account: string } | null} */
@@ -48,6 +48,7 @@ export async function privateBalance() {
 export async function addPrivately(network, amount) {
   const v = await vault();
   const q = await swap("ptopup", { network, vault: v.accountId, amount: amount.toString() });
+  await logMove({ kind: "private-topup", depositAddress: q.depositAddress, amount: `${q.send} ${q.symbol}`, network: q.label });
   try {
     localStorage.setItem(`contri.ptopup.${v.accountId.slice(0, 16)}`, JSON.stringify(q));
   } catch {}
@@ -92,6 +93,11 @@ export async function moveOut(destination, amount) {
   }
   const signature = await v.sign(await nep413Hash(payload.message, fromBase64(payload.nonce), payload.recipient));
   await swap("psubmit", { signed: { standard: "nep413", payload, public_key: v.publicKeyStr, signature: `ed25519:${toBase58(signature)}` } });
+  await logMove(
+    "to" in destination
+      ? { kind: "private-to-circle", depositAddress: q.depositAddress, amount: `${q.receive} USDT`, account: destination.to }
+      : { kind: "private-cashout", depositAddress: q.depositAddress, amount: q.receive, network: destination.network, to: destination.address },
+  );
   return q;
 }
 
@@ -105,6 +111,7 @@ export async function moveHome(index, amount) {
   const q = await swap("phome", { from: s.accountId, vault: v.accountId, amount: amount.toString() });
   const r = await relay([await sign(s, [transfer(q.depositAddress, cfg.tokenId, amount)])]);
   await swap("submit", { txHash: r.hash, depositAddress: q.depositAddress }).catch(() => null);
+  await logMove({ kind: "to-private", depositAddress: q.depositAddress, amount: `${q.receive} USDT`, account: s.accountId, tx: r.hash });
   return /** @type {{ depositAddress: string, receive: string, seconds: number }} */ (q);
 }
 

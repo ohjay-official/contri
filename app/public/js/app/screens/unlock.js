@@ -4,7 +4,7 @@
 import { recoveryCode, restoreDeviceSecret, passkeysAvailable, PrfUnavailable } from "../../lib/passkey.js";
 import { canUseKeys, inAppBrowser } from "../../lib/support.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
-import { secret, signInWithPasskey, signUpWithPasskey, useRestoredSecret, useThisDevice } from "../wallet.js";
+import { markRecoverySeen, secret, signInWithPasskey, signUpWithPasskey, useRestoredSecret, useThisDevice } from "../wallet.js";
 
 /** @param {() => void} done what to open once unlocked @param {string} [reason] a line about why, e.g. joining a circle */
 export function unlockScreen(done, reason) {
@@ -67,7 +67,7 @@ export function unlockScreen(done, reason) {
 function recoveryScreen(done) {
   const code = recoveryCode(secret());
   const ok = h("button", { class: "primary" }, "I've written it down");
-  ok.addEventListener("click", done);
+  ok.addEventListener("click", () => markRecoverySeen().finally(done));
   show(
     h("section", { class: "stack narrow" },
       h("h1", null, "Write down your recovery code"),
@@ -85,13 +85,14 @@ function restoreScreen(done) {
   go.addEventListener("click", () =>
     busy(go, "Restoring", async () => {
       useRestoredSecret(restoreDeviceSecret(input.value));
+      await markRecoverySeen();
       done();
     }),
   );
   show(
     h("section", { class: "stack narrow" },
       h("h1", null, "Restore from a recovery code"),
-      field("Recovery code", input, "The code you wrote down when you set up this device."),
+      field("Recovery code", input, "The code you wrote down from Your key. It brings back the same circles and money as your passkey."),
       h("div", { class: "actions" }, go),
     ),
   );
