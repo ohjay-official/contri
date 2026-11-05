@@ -424,12 +424,13 @@ fn failed_send_becomes_a_credit() {
 fn create_validates_inputs() {
     let mut c = setup();
     set("someone.near", 0);
-    assert!(c.internal_create(&acc(ADA), "".into(), U128(1), 3, DAY, false, None).is_err());
+    assert!(c.internal_create(&acc(ADA), "".into(), U128(MIN_CONTRIBUTION), 3, DAY, false, None).is_err());
     assert!(c.internal_create(&acc(ADA), "x".into(), U128(0), 3, DAY, false, None).is_err());
-    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 1, DAY, false, None).is_err());
-    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 21, DAY, false, None).is_err());
-    assert!(c.internal_create(&acc(ADA), "x".into(), U128(1), 3, 10, false, None).is_err());
-    assert_eq!(c.internal_create(&acc(ADA), "x".into(), U128(1), 3, DAY, false, None), Ok(0));
+    assert!(c.internal_create(&acc(ADA), "x".into(), U128(MIN_CONTRIBUTION - 1), 3, DAY, false, None).is_err());
+    assert!(c.internal_create(&acc(ADA), "x".into(), U128(MIN_CONTRIBUTION), 1, DAY, false, None).is_err());
+    assert!(c.internal_create(&acc(ADA), "x".into(), U128(MIN_CONTRIBUTION), 21, DAY, false, None).is_err());
+    assert!(c.internal_create(&acc(ADA), "x".into(), U128(MIN_CONTRIBUTION), 3, 10, false, None).is_err());
+    assert_eq!(c.internal_create(&acc(ADA), "x".into(), U128(MIN_CONTRIBUTION), 3, DAY, false, None), Ok(0));
 }
 
 #[test]
@@ -883,7 +884,7 @@ fn near_accounts_can_call_directly() {
     set_with_deposit(
         "alice.near",
         7,
-        r#"{"name":"Second","contribution":"1","size":3,"period_secs":60}"#,
+        r#"{"name":"Second","contribution":"1000000","size":3,"period_secs":60}"#,
         CREATE_FEE,
     );
     c.create_circle();
@@ -918,7 +919,7 @@ fn sizes_past_u32_are_rejected_not_truncated() {
     set_with_deposit(
         "alice.near",
         1,
-        r#"{"name":"x","contribution":"1","size":4294967299,"period_secs":3600}"#,
+        r#"{"name":"x","contribution":"1000000","size":4294967299,"period_secs":3600}"#,
         CREATE_FEE,
     );
     c.create_circle();
@@ -951,10 +952,10 @@ fn views_match_the_typed_interface() {
     transfer(&mut c, ADA, CONTRIBUTION, "join:1", 201);
     transfer(&mut c, BAYO, CONTRIBUTION, "join:1", 201);
     for round in 0..2u32 {
-        contribute(&mut c, ADA, 1, round, 300 + round as u64 * 3600);
-        set("anyone.near", 201 + (round as u64 + 1) * 3600);
+        contribute(&mut c, ADA, 1, round, 400 + round as u64 * 3700);
+        set("anyone.near", 201 + (round as u64 + 1) * 3700);
         c.internal_settle(1);
-        set("contri.near", 202 + (round as u64 + 1) * 3600);
+        set("contri.near", 202 + (round as u64 + 1) * 3700);
         c.finalize_payout(1, round, U128(2 * CONTRIBUTION), true);
     }
     organize(&mut c, ADA, &format!("create:{CONTRIBUTION}:3:3600:join:-:Cancelled"), 9_000);
@@ -995,7 +996,7 @@ fn views_match_the_typed_interface() {
     let _: Vec<typed::Token> = parse("nft_tokens_for_owner", view(&c, &ada, Contri::nft_tokens_for_owner));
 
     // Calls that return a value.
-    set_with_deposit("alice.near", 9_100, r#"{"name":"N","contribution":"1","size":2,"period_secs":60}"#, CREATE_FEE);
+    set_with_deposit("alice.near", 9_100, r#"{"name":"N","contribution":"1000000","size":2,"period_secs":60}"#, CREATE_FEE);
     c.create_circle();
     let _: u64 = parse("create_circle", returned());
     set_with_input(
@@ -1083,10 +1084,10 @@ fn invite_messages_parse_strictly() {
 fn direct_create_takes_an_optional_invite_key() {
     let mut c = setup();
     let key = hexs(invite_key(7).verifying_key().as_bytes());
-    set_with_deposit("alice.near", 1, &format!(r#"{{"name":"x","contribution":"1","size":2,"period_secs":60,"invite_key":"{key}"}}"#), CREATE_FEE);
+    set_with_deposit("alice.near", 1, &format!(r#"{{"name":"x","contribution":"1000000","size":2,"period_secs":60,"invite_key":"{key}"}}"#), CREATE_FEE);
     c.create_circle();
     assert!(c.circle_of(0).unwrap().invite_key.is_some());
-    set_with_deposit("alice.near", 1, r#"{"name":"y","contribution":"1","size":2,"period_secs":60,"invite_key":null}"#, CREATE_FEE);
+    set_with_deposit("alice.near", 1, r#"{"name":"y","contribution":"1000000","size":2,"period_secs":60,"invite_key":null}"#, CREATE_FEE);
     c.create_circle();
     assert!(c.circle_of(1).unwrap().invite_key.is_none());
 }
@@ -1095,7 +1096,7 @@ fn direct_create_takes_an_optional_invite_key() {
 #[should_panic(expected = "missing or invalid argument: invite_key")]
 fn bad_invite_key_is_rejected() {
     let mut c = setup();
-    set_with_deposit("alice.near", 1, r#"{"name":"x","contribution":"1","size":2,"period_secs":60,"invite_key":"xyz"}"#, CREATE_FEE);
+    set_with_deposit("alice.near", 1, r#"{"name":"x","contribution":"1000000","size":2,"period_secs":60,"invite_key":"xyz"}"#, CREATE_FEE);
     c.create_circle();
 }
 
@@ -1104,42 +1105,40 @@ fn encrypted_names_fit_and_oversized_ones_do_not() {
     let mut c = setup();
     set("someone.near", 0);
     let sealed = "A".repeat(MAX_NAME_LEN);
-    assert_eq!(c.internal_create(&acc(ADA), sealed.clone(), U128(1), 3, DAY, false, None), Ok(0));
-    assert!(c.internal_create(&acc(ADA), sealed + "A", U128(1), 3, DAY, false, None).is_err());
+    assert_eq!(c.internal_create(&acc(ADA), sealed.clone(), U128(MIN_CONTRIBUTION), 3, DAY, false, None), Ok(0));
+    assert!(c.internal_create(&acc(ADA), sealed + "A", U128(MIN_CONTRIBUTION), 3, DAY, false, None).is_err());
 }
 
 #[test]
-fn invite_can_lower_the_deposit_for_someone_trusted() {
+fn an_invite_cannot_change_the_deposit() {
+    // The invite key travels in the link, so anyone with the link can sign a
+    // join for any deposit. Only one contribution is accepted.
     let mut c = setup();
     let key = invite_key(7);
     let public = hexs(key.verifying_key().as_bytes());
     organize(&mut c, ADA, &format!("create:{CONTRIBUTION}:2:{DAY}:join:{public}:sealed"), 1);
-
-    // Bayo's invite sets a 1 USDT deposit. Paying more or less than the invite says is refunded.
-    let trusted = signed_invite(&key, 0, BAYO, 1_000_000);
-    assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, &format!("join:0:{trusted}"), 2), CONTRIBUTION);
-    assert_eq!(transfer(&mut c, BAYO, 999_999, &format!("join:0:{trusted}"), 2), 999_999);
-    assert_eq!(transfer(&mut c, BAYO, 1_000_000, &format!("join:0:{trusted}"), 2), 0);
-    assert_eq!(c.circle_of(0).unwrap().members[0].deposit, U128(1_000_000));
-
-    // In a circle of 2, an invite can ask for at most one contribution (every
-    // round but the member's own).
-    let too_much = signed_invite(&key, 0, ADA, CONTRIBUTION + 1);
-    assert_eq!(transfer(&mut c, ADA, CONTRIBUTION + 1, &format!("join:0:{too_much}"), 3), CONTRIBUTION + 1);
-    let event = events();
-    assert!(event.is_empty(), "a refused join logs no events");
+    for deposit in [1, 1_000_000, CONTRIBUTION + 1] {
+        let signed = signed_invite(&key, 0, BAYO, deposit);
+        assert_eq!(transfer(&mut c, BAYO, deposit, &format!("join:0:{signed}"), 2), deposit);
+    }
+    // A signature for one amount doesn't cover another.
+    let signed = signed_invite(&key, 0, BAYO, 1_000_000);
+    assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, &format!("join:0:{signed}"), 2), CONTRIBUTION);
+    assert!(events().is_empty(), "a refused join logs no events");
+    let signed = signed_invite(&key, 0, BAYO, CONTRIBUTION);
+    assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, &format!("join:0:{signed}"), 2), 0);
+    assert_eq!(c.circle_of(0).unwrap().members[0].deposit, U128(CONTRIBUTION));
 }
 
-/// A circle of three where Chioma's deposit is only 1 USDT, and a community
-/// treasury backs the circle with 6 USDT.
+/// A circle of three that a community treasury backs with 6 USDT.
 fn backed_circle() -> Contri {
     let mut c = setup();
     let key = invite_key(7);
     let public = hexs(key.verifying_key().as_bytes());
     organize(&mut c, ADA, &format!("create:{CONTRIBUTION}:3:{DAY}:join:{public}:sealed"), 1);
-    for (who, deposit) in [(ADA, CONTRIBUTION), (BAYO, CONTRIBUTION), (CHIOMA, 1_000_000)] {
-        let invite = signed_invite(&key, 0, who, deposit);
-        assert_eq!(transfer(&mut c, who, deposit, &format!("join:0:{invite}"), 10), 0);
+    for who in [ADA, BAYO, CHIOMA] {
+        let invite = signed_invite(&key, 0, who, CONTRIBUTION);
+        assert_eq!(transfer(&mut c, who, CONTRIBUTION, &format!("join:0:{invite}"), 10), 0);
     }
     assert_eq!(transfer(&mut c, "coop.sputnik-dao.near", 6_000_000, "back:0", 11), 0);
     c
@@ -1152,35 +1151,48 @@ fn community_backing_covers_what_a_deposit_cannot() {
     assert_eq!(circle.backing, U128(6_000_000));
     assert_eq!(circle.backers[0].account_id, acc("coop.sputnik-dao.near"));
 
-    // Round 0: Chioma misses. 1 USDT comes from her deposit, 4 from the backing.
+    // Round 0: Chioma misses. Her deposit covers it.
     contribute(&mut c, ADA, 0, 0, 100);
     contribute(&mut c, BAYO, 0, 0, 100);
     set("anyone.near", 10 + DAY);
     c.internal_settle(0);
     let settled = event(&events(), "contri", "round_settled").clone();
     assert_eq!(settled["data"][0]["missed"], json!([CHIOMA]));
-    assert_eq!(settled["data"][0]["from_backing"], "4000000");
+    assert_eq!(settled["data"][0]["from_backing"], "0");
     let circle = c.circle_of(0).unwrap();
     assert_eq!(circle.pot, U128(3 * CONTRIBUTION));
-    assert_eq!(circle.backing, U128(2_000_000));
     assert_eq!(circle.members[2].deposit, U128(0));
     set("contri.near", 10 + DAY + 1);
     c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true);
-    assert_eq!(c.circle_of(0).unwrap().payouts[0].shortfall, U128(0));
 
-    // Round 1: Chioma misses again. Only 2 USDT of backing is left, so the pot is 3 USDT short.
+    // Round 1: Chioma misses again. Her deposit is gone; 5 USDT comes from the backing.
+    // The round closed a second late, so its deadline is a full day after that.
     contribute(&mut c, ADA, 0, 1, 10 + DAY + 2);
     contribute(&mut c, BAYO, 0, 1, 10 + DAY + 2);
-    set("anyone.near", 10 + 2 * DAY);
+    set("anyone.near", 11 + 2 * DAY);
+    c.internal_settle(0);
+    let settled = event(&events(), "contri", "round_settled").clone();
+    assert_eq!(settled["data"][0]["from_backing"], "5000000");
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.pot, U128(3 * CONTRIBUTION));
+    assert_eq!(circle.backing, U128(1_000_000));
+    set("contri.near", 12 + 2 * DAY);
+    c.finalize_payout(0, 1, circle.pot, true);
+    assert_eq!(c.circle_of(0).unwrap().payouts[1].shortfall, U128(0));
+
+    // Round 2: only 1 USDT of backing is left, so the pot is 4 USDT short.
+    contribute(&mut c, ADA, 0, 2, 13 + 2 * DAY);
+    contribute(&mut c, BAYO, 0, 2, 13 + 2 * DAY);
+    set("anyone.near", 12 + 3 * DAY);
     c.internal_settle(0);
     let circle = c.circle_of(0).unwrap();
-    assert_eq!(circle.pot, U128(2 * CONTRIBUTION + 2_000_000));
+    assert_eq!(circle.pot, U128(2 * CONTRIBUTION + 1_000_000));
     assert_eq!(circle.backing, U128(0));
-    set("contri.near", 10 + 2 * DAY + 1);
-    c.finalize_payout(0, 1, circle.pot, true);
-    assert_eq!(c.circle_of(0).unwrap().payouts[1].shortfall, U128(3_000_000));
+    set("contri.near", 13 + 3 * DAY);
+    c.finalize_payout(0, 2, circle.pot, true);
+    assert_eq!(c.circle_of(0).unwrap().payouts[2].shortfall, U128(4_000_000));
     let paid = event(&events(), "contri", "paid_out").clone();
-    assert_eq!(paid["data"][0]["shortfall"], "3000000");
+    assert_eq!(paid["data"][0]["shortfall"], "4000000");
 }
 
 #[test]
@@ -1424,10 +1436,10 @@ fn seats_are_not_listed_before_the_draw() {
 #[test]
 fn direct_create_takes_an_order() {
     let mut c = setup();
-    set_with_deposit("alice.near", 1, r#"{"name":"x","contribution":"1","size":2,"period_secs":60,"order":"random"}"#, CREATE_FEE);
+    set_with_deposit("alice.near", 1, r#"{"name":"x","contribution":"1000000","size":2,"period_secs":60,"order":"random"}"#, CREATE_FEE);
     c.create_circle();
     assert!(c.circle_of(0).unwrap().random_order);
-    set_with_deposit("alice.near", 1, r#"{"name":"x","contribution":"1","size":2,"period_secs":60}"#, CREATE_FEE);
+    set_with_deposit("alice.near", 1, r#"{"name":"x","contribution":"1000000","size":2,"period_secs":60}"#, CREATE_FEE);
     c.create_circle();
     assert!(!c.circle_of(1).unwrap().random_order);
 }
@@ -1436,7 +1448,7 @@ fn direct_create_takes_an_order() {
 #[should_panic(expected = "missing or invalid argument: order")]
 fn bad_order_is_rejected() {
     let mut c = setup();
-    set_with_deposit("alice.near", 1, r#"{"name":"x","contribution":"1","size":2,"period_secs":60,"order":"vip"}"#, CREATE_FEE);
+    set_with_deposit("alice.near", 1, r#"{"name":"x","contribution":"1000000","size":2,"period_secs":60,"order":"vip"}"#, CREATE_FEE);
     c.create_circle();
 }
 
@@ -1498,41 +1510,8 @@ fn creating_is_not_a_free_authcall_anymore() {
 #[should_panic(expected = "attach 0.01 NEAR to pay for the circle's storage")]
 fn direct_create_needs_the_storage_fee() {
     let mut c = setup();
-    set_with_input("alice.near", 1, r#"{"name":"x","contribution":"1","size":2,"period_secs":60}"#);
+    set_with_input("alice.near", 1, r#"{"name":"x","contribution":"1000000","size":2,"period_secs":60}"#);
     c.create_circle();
-}
-
-#[test]
-fn invite_can_ask_a_stranger_to_cover_their_future_rounds() {
-    let mut c = setup();
-    let key = invite_key(7);
-    let public = hexs(key.verifying_key().as_bytes());
-    organize(&mut c, ADA, &format!("create:{CONTRIBUTION}:3:{DAY}:join:{public}:sealed"), 1);
-    // Up to every round but the member's own: 2 contributions in a circle of 3.
-    let stranger = signed_invite(&key, 0, CHIOMA, 2 * CONTRIBUTION);
-    let greedy = signed_invite(&key, 0, CHIOMA, 3 * CONTRIBUTION);
-    assert_eq!(transfer(&mut c, CHIOMA, 3 * CONTRIBUTION, &format!("join:0:{greedy}"), 2), 3 * CONTRIBUTION);
-    for (who, deposit, invite) in [
-        (ADA, CONTRIBUTION, signed_invite(&key, 0, ADA, CONTRIBUTION)),
-        (BAYO, CONTRIBUTION, signed_invite(&key, 0, BAYO, CONTRIBUTION)),
-        (CHIOMA, 2 * CONTRIBUTION, stranger),
-    ] {
-        assert_eq!(transfer(&mut c, who, deposit, &format!("join:0:{invite}"), 3), 0);
-    }
-    // Chioma stops paying after round 0; her deposit covers both later rounds.
-    let start = 3;
-    for round in 0..2u32 {
-        contribute(&mut c, ADA, 0, round, start + 10 + round as u64 * DAY);
-        contribute(&mut c, BAYO, 0, round, start + 10 + round as u64 * DAY);
-        set("anyone.near", start + (round as u64 + 1) * DAY);
-        c.internal_settle(0);
-        set("contri.near", start + (round as u64 + 1) * DAY + 1);
-        assert!(c.finalize_payout(0, round, U128(3 * CONTRIBUTION), true));
-    }
-    let circle = c.circle_of(0).unwrap();
-    assert_eq!(circle.members[2].deposit, U128(0));
-    assert_eq!(circle.members[2].missed, 2);
-    assert!(circle.payouts.iter().all(|p| p.shortfall == U128(0)), "later members got full pots");
 }
 
 #[test]
@@ -1545,4 +1524,183 @@ fn the_organizer_needs_no_invite_but_pays_one_contribution() {
     // Through Intents, creating an invite-only circle seats the organizer the same way.
     assert_eq!(transfer(&mut c, BAYO, CONTRIBUTION, &format!("create:{CONTRIBUTION}:3:{DAY}:join:{public}:mine"), 3), 0);
     assert_eq!(c.circle_of(1).unwrap().members[0].account_id, acc(BAYO));
+}
+
+// ----------------------------------------------------------------------
+// Fixes from the security review (docs/SECURITY.md)
+// ----------------------------------------------------------------------
+
+/// An implicit account: 64 characters, the longest an account can be.
+fn implicit(i: u32) -> String {
+    format!("{:064x}", 0xabcd_0000_u64 + i as u64)
+}
+
+/// Storage bytes a call adds, measured inside one mocked receipt.
+fn grown<T>(f: impl FnOnce() -> T) -> (T, u64) {
+    let before = env::storage_usage();
+    let out = f();
+    (out, env::storage_usage().saturating_sub(before))
+}
+
+/// A transfer from NEAR Intents while the contract holds `balance` and already
+/// stores `usage` bytes.
+fn transfer_holding(c: &mut Contri, from: &str, amount: u128, msg: &str, usage: u64, balance: u128) -> u128 {
+    let mut b = VMContextBuilder::new();
+    b.current_account_id(acc("contri.near"))
+        .predecessor_account_id(acc(INTENTS))
+        .prepaid_gas(Gas::from_tgas(300))
+        .storage_usage(usage)
+        .account_balance(NearToken::from_yoctonear(balance));
+    testing_env!(b.build());
+    c.internal_on_transfer(acc(from), vec![TOKEN.to_string()], vec![U128(amount)], msg.to_string())[0]
+}
+
+const BYTE: u128 = 10_000_000_000_000_000_000; // yoctoNEAR per byte
+
+#[test]
+fn contributions_below_one_usdt_are_refused() {
+    let mut c = setup();
+    let small = MIN_CONTRIBUTION - 1;
+    assert_eq!(transfer(&mut c, ADA, small, &format!("create:{small}:2:60:join:-:x"), 1), small);
+    assert!(c.circle_of(0).is_none());
+}
+
+#[test]
+fn nothing_grows_storage_the_contract_cannot_pay_for() {
+    let mut c = setup();
+    let usage = 100_000;
+    // Room for the spare bytes and a little more, but not a circle.
+    let tight = (usage + SPARE_BYTES + 300) as u128 * BYTE;
+    let msg = format!("create:{CONTRIBUTION}:3:{DAY}:join:-:Lagos Ajo");
+    assert_eq!(transfer_holding(&mut c, ADA, CONTRIBUTION, &msg, usage, tight), CONTRIBUTION, "refunded");
+    assert!(c.circle_of(0).is_none(), "no circle was left behind");
+    assert_eq!(c.next_circle_id, 0);
+    // With enough NEAR the same create goes through and reserves the
+    // organizer's payout record and track record.
+    let roomy = (usage + SPARE_BYTES + 2_000) as u128 * BYTE;
+    assert_eq!(transfer_holding(&mut c, ADA, CONTRIBUTION, &msg, usage, roomy), 0);
+    assert_eq!(reserved(), MEMBER_RESERVE);
+    // A join is refused once the reservations fill what the NEAR covers.
+    let full = (usage + SPARE_BYTES + MEMBER_RESERVE + MEMBER_BYTES + MEMBER_RESERVE - 1) as u128 * BYTE;
+    assert_eq!(transfer_holding(&mut c, BAYO, CONTRIBUTION, "join:0", usage, full), CONTRIBUTION);
+    assert_eq!(c.circle_of(0).unwrap().members.len(), 1);
+    assert_eq!(transfer_holding(&mut c, BAYO, CONTRIBUTION, "join:0", usage, full + BYTE), 0);
+    assert_eq!(reserved(), 2 * MEMBER_RESERVE);
+}
+
+#[test]
+fn payout_callbacks_only_use_storage_that_was_reserved() {
+    // The largest circle: 20 members with 64-character accounts and an
+    // encrypted name. What on_payout writes, round after round, must fit in
+    // what the members reserved when they joined, so it can never run out of
+    // room after the pot has been sent.
+    let mut c = setup();
+    let name = format!("v1.{}", "x".repeat(171));
+    let msg = format!("create:{CONTRIBUTION}:20:{DAY}:join:-:{name}");
+    assert_eq!(transfer(&mut c, &implicit(0), CONTRIBUTION, &msg, 0), 0);
+    for i in 1..20 {
+        assert_eq!(transfer(&mut c, &implicit(i), CONTRIBUTION, "join:0", 1), 0);
+    }
+    let held = reserved();
+    assert_eq!(held, 20 * MEMBER_RESERVE);
+    let mut written = 0;
+    for round in 0..20u32 {
+        let at = 2 + round as u64 * DAY;
+        for i in 0..20 {
+            contribute(&mut c, &implicit(i), 0, round, at);
+        }
+        set("contri.near", at + 1);
+        let (ok, g) = grown(|| c.finalize_payout(0, round, U128(20 * CONTRIBUTION), true));
+        assert!(ok);
+        written += g;
+        assert!(written <= held - reserved(), "round {round}: callbacks wrote {written} B, more than they released");
+    }
+    assert_eq!(c.circle_of(0).unwrap().status, CircleStatus::Finished);
+    assert_eq!(reserved(), 0, "a finished circle holds no reservation");
+}
+
+#[test]
+fn leaving_and_cancelling_release_reservations() {
+    let mut c = setup();
+    create(&mut c, 3);
+    join(&mut c, ADA, 0);
+    join(&mut c, BAYO, 0);
+    assert_eq!(reserved(), 2 * MEMBER_RESERVE);
+    auth(&mut c, BAYO, "leave:0", 20);
+    assert_eq!(reserved(), MEMBER_RESERVE);
+    auth(&mut c, ADA, "cancel:0", 21);
+    assert_eq!(reserved(), 0);
+}
+
+#[test]
+fn an_empty_pot_closes_the_round_without_a_transfer() {
+    let mut c = setup();
+    assert_eq!(transfer(&mut c, ADA, MIN_CONTRIBUTION, &format!("create:{MIN_CONTRIBUTION}:2:60:join:-:x"), 0), 0);
+    assert_eq!(transfer(&mut c, BAYO, MIN_CONTRIBUTION, "join:0", 0), 0);
+    // Round 0: nobody pays; the deposits cover it.
+    set("anyone.near", 60);
+    c.internal_settle(0);
+    set("contri.near", 61);
+    assert!(c.finalize_payout(0, 0, U128(2 * MIN_CONTRIBUTION), true));
+    // Round 1: nobody pays and nothing is left to cover it. The round closes
+    // with its whole pot short, and no zero transfer is attempted.
+    set("anyone.near", 121);
+    c.internal_settle(0);
+    assert!(get_created_receipts().is_empty(), "no transfer of nothing");
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.status, CircleStatus::Finished);
+    assert!(!circle.paying);
+    assert_eq!(circle.payouts[1].amount, U128(0));
+    assert_eq!(circle.payouts[1].shortfall, U128(2 * MIN_CONTRIBUTION));
+    assert_eq!(c.record_of(&acc(BAYO)).defaults, 1);
+}
+
+#[test]
+fn backing_is_refused_once_some_has_covered_a_missed_payment() {
+    let mut c = full_circle_of_three();
+    assert_eq!(transfer(&mut c, "coop.near", 10_000_000, "back:0", 11), 0);
+    // While none is used, more backing is welcome, while the circle runs too.
+    assert_eq!(transfer(&mut c, "church.near", CONTRIBUTION, "back:0", 12), 0);
+    // Rounds 0 and 1: Bayo misses; his deposit, then the backing, covers it.
+    for round in 0..2u32 {
+        let at = 10 + round as u64 * DAY;
+        contribute(&mut c, ADA, 0, round, at + 100);
+        contribute(&mut c, CHIOMA, 0, round, at + 100);
+        set("anyone.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000);
+        c.internal_settle(0);
+        set("contri.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000 + 1);
+        assert!(c.finalize_payout(0, round, U128(3 * CONTRIBUTION), true));
+    }
+    assert_eq!(c.circle_of(0).unwrap().backing, U128(10_000_000), "5 of 15 used");
+    // A late backer would pay for that loss, so new backing is refused.
+    let now = c.circle_of(0).unwrap().payouts[1].at / 1_000_000_000 + 1;
+    assert_eq!(transfer(&mut c, "dao.near", 100_000_000, "back:0", now), 100_000_000);
+    assert_eq!(transfer(&mut c, "coop.near", CONTRIBUTION, "back:0", now), CONTRIBUTION);
+}
+
+#[test]
+fn a_round_closed_late_still_gets_a_full_period() {
+    let mut c = full_circle_of_three();
+    contribute(&mut c, ADA, 0, 0, 100);
+    contribute(&mut c, BAYO, 0, 0, 100);
+    // Round 0's deadline is 10 + DAY. Nobody settles it until a day later.
+    let late = 10 + 2 * DAY + 5;
+    set("anyone.near", late);
+    c.internal_settle(0);
+    set("contri.near", late + 1);
+    assert!(c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true));
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.round_deadline(), (late + 1 + DAY) * 1_000_000_000);
+    // Round 1 can't be settled before members have had their day to pay.
+    set("griefer.near", late + 2);
+    let early = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| c.internal_settle(0)));
+    assert!(early.is_err());
+    // On schedule, rounds keep their original deadlines.
+    let mut c = full_circle_of_three();
+    for who in [ADA, BAYO, CHIOMA] {
+        contribute(&mut c, who, 0, 0, 100);
+    }
+    set("contri.near", 101);
+    assert!(c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true));
+    assert_eq!(c.circle_of(0).unwrap().round_deadline(), (10 + 2 * DAY) * 1_000_000_000);
 }

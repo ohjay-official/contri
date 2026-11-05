@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fromBase58, fromBase64, fromHex, toBase58, toHex, uintLE, utf8 } from "../public/js/lib/bytes.js";
-import { actions, dueFor, formatAmount, parseAmount } from "../public/js/lib/contri.js";
+import { actions, dueFor, formatAmount, parseAmount, roundEndMs } from "../public/js/lib/contri.js";
 import { nep413Hash, signIntents, transfer, versionedNonce } from "../public/js/lib/intents.js";
 import { decryptName, encryptName, inviteLink, inviteSigner, joinMessage, newSecret, parseInvite, signJoin } from "../public/js/lib/invite.js";
 import { circleSigner, signerFromSecretKey, signerFromSeed, verify } from "../public/js/lib/keys.js";
@@ -202,4 +202,14 @@ test("account creation actions encode as borsh", () => {
   });
   const tail = toHex(bytes).slice(-2 * (4 + 1 + 17 + 1 + 33 + 8 + 1));
   assert.equal(tail, "03000000" + "00" + "03" + toHex(uintLE(5n, 16)) + "05" + "00" + "09".repeat(32) + "00".repeat(8) + "01");
+});
+
+test("a late round pushes the rounds after it back, as the contract does", () => {
+  const ns = (/** @type {number} */ ms) => String(BigInt(ms) * 1_000_000n);
+  const day = 86_400_000;
+  /** @type {any} */
+  const c = { status: "Active", started_at: ns(0), period_secs: 86_400, size: 4, round: 1, payouts: [{ round: 0, to: "a", amount: "0", shortfall: "0", at: ns(day + 5000) }], round_deadline: ns(2 * day + 5000) };
+  assert.equal(roundEndMs(c, 0), day + 5000, "a paid round ends when it was paid");
+  assert.equal(roundEndMs(c, 1), 2 * day + 5000, "the running round ends at the contract's deadline");
+  assert.equal(roundEndMs(c, 3), 4 * day + 5000, "later rounds follow a period apart");
 });

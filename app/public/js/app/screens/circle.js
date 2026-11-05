@@ -2,7 +2,7 @@
 // One circle: the ring, what you owe or receive, members, the turn market,
 // payouts, and this circle's money.
 
-import { actions, dueFor, needs, parseAmount, payoutDateMs, potSize, roundDeadlineMs, seatOf, shortAccount } from "../../lib/contri.js";
+import { actions, dueFor, needs, parseAmount, payoutDateMs, potSize, roundDeadlineMs, roundEndMs, seatOf, shortAccount } from "../../lib/contri.js";
 import { decryptName, inviteLink, parseInvite } from "../../lib/invite.js";
 import { getCircle, getConfig, keep, relay, sign, views } from "../api.js";
 import { ring } from "../ring.js";
@@ -302,11 +302,10 @@ export const inviteMessage = (c, name) =>
  */
 function calendar(c, name, seat) {
   const stamp = (/** @type {number} */ ms) => new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const start = Number(BigInt(c.started_at) / 1_000_000n);
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Contri//Savings circle//EN", "CALSCALE:GREGORIAN"];
   for (let r = c.round; r < c.size; r++) {
-    const deadline = start + (r + 1) * c.period_secs * 1000;
-    const due = Math.max(deadline - 2 * 3_600_000, start + r * c.period_secs * 1000);
+    const deadline = roundEndMs(c, r);
+    const due = Math.max(deadline - 2 * 3_600_000, deadline - c.period_secs * 1000);
     const yours = r === seat ? ` You receive ${usd(potSize(c))}.` : "";
     lines.push(
       "BEGIN:VEVENT",

@@ -111,13 +111,27 @@ export function dueFor(c, account, nowMs = Date.now()) {
 export const roundDeadlineMs = (c) => (c.round_deadline ? Number(BigInt(c.round_deadline) / 1_000_000n) : null);
 
 /**
+ * When round `r` closes: when it was paid out if it has been, or else its
+ * deadline. Later rounds follow the running one a period apart; the contract
+ * gives a round a full period after the one before it closes, so a late round
+ * pushes the ones after it back.
+ * @param {Circle} c @param {number} r
+ */
+export function roundEndMs(c, r) {
+  const paid = c.payouts.find((p) => p.round === r);
+  if (paid) return Number(BigInt(paid.at) / 1_000_000n);
+  const start = Number(BigInt(c.started_at) / 1_000_000n);
+  const current = roundDeadlineMs(c) ?? start + (c.round + 1) * c.period_secs * 1000;
+  return current + (r - c.round) * c.period_secs * 1000;
+}
+
+/**
  * When a seat's member receives the pot.
  * @param {Circle} c @param {number} seat
  */
 export function payoutDateMs(c, seat) {
   if (c.status !== "Active" && c.status !== "Finished") return null;
-  const start = Number(BigInt(c.started_at) / 1_000_000n);
-  return start + (seat + 1) * c.period_secs * 1000;
+  return roundEndMs(c, seat);
 }
 
 /** Short form of an implicit account for display: `a3f9…0c1d`. @param {string} account */

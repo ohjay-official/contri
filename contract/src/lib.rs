@@ -59,6 +59,22 @@ pub const FILL_SECS: u64 = 60 * 60 * 24 * 14;
 /// What a NEAR account attaches to `create_circle` to pay for the circle's
 /// storage. Members creating through NEAR Intents pay their deposit instead.
 pub const CREATE_FEE: NearToken = NearToken::from_millinear(10);
+/// The smallest contribution: 1 USDT (six decimals). Below that a circle
+/// costs more in storage than it holds.
+pub const MIN_CONTRIBUTION: u128 = 1_000_000;
+// Storage sizes in bytes, for 64-character accounts (the longest). A stored
+// key-value pair costs 40 bytes on top of its key and value.
+const MEMBER_BYTES: u64 = 90;
+const BACKER_BYTES: u64 = 100;
+const LISTING_BYTES: u64 = 16;
+const PAYOUT_BYTES: u64 = 112;
+const RECORD_BYTES: u64 = 117;
+/// What each member reserves when they join: their payout record and their
+/// track record, which payout callbacks write (see `reserve`).
+const MEMBER_RESERVE: u64 = PAYOUT_BYTES + RECORD_BYTES;
+/// Kept free on top of reservations: credits from failed transfers and the
+/// reservation keys themselves.
+const SPARE_BYTES: u64 = 2_000;
 /// Default and maximum page size for list views.
 const PAGE: u64 = 50;
 const MAX_PAGE: u64 = 100;
@@ -226,9 +242,14 @@ impl Circle {
         )
     }
 
-    /// Deadline for the current round, in nanoseconds.
+    /// Deadline for the current round, in nanoseconds: the end of the round's
+    /// slot in the schedule, but never less than a full period after the round
+    /// opened. A round closed late doesn't leave the next one already overdue.
     pub fn round_deadline(&self) -> u64 {
-        self.started_at + (self.round as u64 + 1) * self.period_secs * NS_PER_SEC
+        let period = self.period_secs * NS_PER_SEC;
+        let scheduled = self.started_at + (self.round as u64 + 1) * period;
+        let opened = self.payouts.last().map_or(self.started_at, |p| p.at);
+        scheduled.max(opened + period)
     }
 
     /// The round deadline as a JSON string, or `null` when no round is running.
@@ -383,10 +404,9 @@ fn hex_into(s: &str, out: &mut [u8]) -> Option<()> {
 
 /// What the invite key signs to let `account` join `circle` of this contract
 /// with `deposit`. Binding the joiner's account means a signature seen on chain
-/// can't be reused by anyone else. The organizer chooses each person's deposit
-/// privately, in the app: less for someone they trust, more (up to every round
-/// but the member's own) for a stranger, which protects the members who are
-/// paid last.
+/// can't be reused by anyone else. The deposit must be one contribution: the
+/// invite key travels in the link, so whoever holds the link can sign, and a
+/// deposit they chose themselves would protect nobody.
 pub fn join_message(contract: &AccountId, circle: u64, account: &AccountId, deposit: u128) -> String {
     format!("contri-join:{contract}:{circle}:{account}:{deposit}")
 }
@@ -881,6 +901,9 @@ impl Contri {
             *amount = U128(0);
             sent += 1;
         }
+        if sent > 0 {
+            emit("deposits_released", format!(r#"{{"circle":{},"sent":{sent}}}"#, c.id));
+        }
         save_circle(&c);
         sent
     }
@@ -931,8 +954,8 @@ impl Contri {
         if name.is_empty() || name.len() > MAX_NAME_LEN {
             return Err(format!("name must be 1 to {MAX_NAME_LEN} bytes"));
         }
-        if contribution.0 == 0 {
-            return Err("contribution must be more than zero".into());
+        if contribution.0 < MIN_CONTRIBUTION {
+            return Err("contribution must be at least 1 USDT".into());
         }
         if !(MIN_MEMBERS..=MAX_MEMBERS).contains(&size) {
             return Err(format!("a circle needs {MIN_MEMBERS} to {MAX_MEMBERS} members"));
@@ -941,7 +964,6 @@ impl Contri {
             return Err("period must be between one minute and 31 days".into());
         }
         let id = self.next_circle_id;
-        self.next_circle_id += 1;
         let now = env::block_timestamp();
         let c = Circle {
             id,
@@ -965,6 +987,14 @@ impl Contri {
             paying: false,
             payouts: vec![],
         };
+        // The circle's key and value, its organizer's seat, and the two
+        // reservation keys the first circle adds.
+        let bytes = 40 + 9 + borsh::to_vec(&c).map_or(0, |v| v.len() as u64);
+        ensure_room(bytes + MEMBER_BYTES + MEMBER_RESERVE + 100)?;
+        self.next_circle_id += 1;
+        if load::<u64>(FIRST_RESERVED_KEY).is_none() {
+            store(FIRST_RESERVED_KEY, &id);
+        }
         emit(
             "circle_created",
             format!(
@@ -988,16 +1018,16 @@ impl Contri {
         if c.status != CircleStatus::Open {
             return Err("circle is not open for joining".into());
         }
-        // The invite sets the deposit (see `join_message`). The organizer needs
-        // no invite to their own circle and pays one contribution like anyone
-        // joining an open circle.
+        // Everyone deposits one contribution. An invite-only circle also needs
+        // the invite key's signature (see `join_message`); the organizer needs
+        // no invite to their own circle.
         if let Some(key) = c.invite_key.filter(|_| who != &c.organizer) {
             let message = join_message(&env::current_account_id(), circle_id, who, amount);
-            let valid = invite_sig.is_some_and(|sig| env::ed25519_verify(&sig, message, &key));
-            if !valid || amount > c.max_deposit() {
-                return Err("this circle needs a valid invite for this deposit".into());
+            if !invite_sig.is_some_and(|sig| env::ed25519_verify(&sig, message, &key)) {
+                return Err("this circle needs a valid invite".into());
             }
-        } else if amount != c.contribution.0 {
+        }
+        if amount != c.contribution.0 {
             return Err("deposit must equal one contribution".into());
         }
         if c.seat_of(who).is_some() {
@@ -1006,6 +1036,8 @@ impl Contri {
         if c.members.len() as u32 >= c.size {
             return Err("circle is full".into());
         }
+        ensure_room(MEMBER_BYTES + MEMBER_RESERVE)?;
+        reserve(circle_id, MEMBER_RESERVE as i64);
         c.members.push(Member {
             account_id: who.clone(),
             deposit: U128(amount),
@@ -1124,13 +1156,19 @@ impl Contri {
         if amount < c.contribution.0 {
             return Err("backing must be at least one contribution".into());
         }
+        // What is left is shared by what each backer put in, which is only
+        // fair while none of it has been used: after that, new backing would
+        // pay for losses from before it came in.
+        let put_in: u128 = c.backers.iter().map(|b| b.amount.0).sum();
+        if c.backing.0 < put_in {
+            return Err("this circle's backing has already covered missed payments".into());
+        }
         match c.backers.iter().position(|b| &b.account_id == who) {
             Some(i) => c.backers[i].amount = U128(c.backers[i].amount.0 + amount),
-            None if c.backers.len() < MAX_BACKERS => c.backers.push(Backer {
-                account_id: who.clone(),
-                amount: U128(amount),
-                due: U128(0),
-            }),
+            None if c.backers.len() < MAX_BACKERS => {
+                ensure_room(BACKER_BYTES)?;
+                c.backers.push(Backer { account_id: who.clone(), amount: U128(amount), due: U128(0) })
+            }
             None => return Err("circle already has the most backers".into()),
         }
         c.backing = U128(c.backing.0 + amount);
@@ -1186,6 +1224,9 @@ impl Contri {
         if price.is_some_and(|p| p.0 == 0) {
             return Err("price must be more than zero".into());
         }
+        if price.is_some() && c.listings[s].is_none() {
+            ensure_room(LISTING_BYTES)?;
+        }
         c.listings[s] = price;
         emit(
             if price.is_some() { "seat_listed" } else { "seat_unlisted" },
@@ -1204,6 +1245,7 @@ impl Contri {
             return Err("this circle has already started".into());
         }
         c.status = CircleStatus::Cancelled;
+        reserve(circle_id, -((c.members.len() as u64 * MEMBER_RESERVE) as i64));
         close_backing(&mut c);
         emit("circle_cancelled", format!(r#"{{"circle":{circle_id},"by":"{who}"}}"#));
         save_circle(&c);
@@ -1217,6 +1259,7 @@ impl Contri {
         }
         let seat = c.seat_of(who).ok_or("not a member of this circle")?;
         let m = c.members.remove(seat);
+        reserve(circle_id, -(MEMBER_RESERVE as i64));
         emit("left", format!(r#"{{"circle":{circle_id},"member":"{who}"}}"#));
         save_circle(&c);
         if m.deposit.0 > 0 {
@@ -1259,8 +1302,15 @@ impl Contri {
 
     /// Pays the pot to this round's seat. `on_payout` then closes the round,
     /// or, if the transfer failed, keeps the pot so `pay_out` can retry.
-    fn start_payout(&self, mut c: Circle) {
+    fn start_payout(&mut self, mut c: Circle) {
         let (id, round, amount) = (c.id, c.round, c.pot.0);
+        if amount == 0 {
+            // Nobody paid and nothing covered it. NEAR Intents refuses to send
+            // nothing, so the round closes here, its whole pot a shortfall.
+            save_circle(&c);
+            self.finalize_payout(id, round, U128(0), true);
+            return;
+        }
         let to = c.members[round as usize].account_id.clone();
         c.paying = true;
         save_circle(&c);
@@ -1308,6 +1358,7 @@ impl Contri {
             ),
         );
         c.payouts.push(PayoutRecord { round, to, amount, shortfall, at: env::block_timestamp() });
+        reserve(circle_id, -(PAYOUT_BYTES as i64));
         c.pot = U128(0);
         for m in c.members.iter_mut() {
             m.paid_this_round = false;
@@ -1326,6 +1377,7 @@ impl Contri {
                 r.missed_payments += m.missed;
                 save_record(&m.account_id, &r);
             }
+            reserve(circle_id, -((c.size as u64 * RECORD_BYTES) as i64));
             close_backing(&mut c);
             emit("circle_finished", format!(r#"{{"circle":{circle_id}}}"#));
         }
@@ -1367,6 +1419,39 @@ fn load<T: BorshDeserialize>(key: &[u8]) -> Option<T> {
 
 fn store<T: BorshSerialize>(key: &[u8], value: &T) {
     env::storage_write(key, &borsh::to_vec(value).unwrap_or_else(|_| env::abort()));
+}
+
+// Storage reservations. Payout callbacks write a payout record every round
+// and each member's track record at the end, and a callback can't refuse: if
+// the contract's NEAR didn't cover those bytes, it would fail after the pot was
+// sent and leave the circle stuck. So each member reserves them on joining,
+// the callbacks release them as they write, and anything that adds storage is
+// refused (and its money sent back) unless the contract's NEAR covers what is
+// stored, what is reserved, the addition and SPARE_BYTES.
+//   "R" -> bytes reserved (u64)
+//   "F" -> the first circle created with reservations (u64); circles before it hold none
+
+const RESERVED_KEY: &[u8] = b"R";
+const FIRST_RESERVED_KEY: &[u8] = b"F";
+
+fn reserved() -> u64 {
+    load(RESERVED_KEY).unwrap_or(0)
+}
+
+/// Reserves `bytes` for a circle, or releases them when negative.
+fn reserve(circle_id: u64, bytes: i64) {
+    if circle_id < load(FIRST_RESERVED_KEY).unwrap_or(u64::MAX) {
+        return;
+    }
+    store(RESERVED_KEY, &reserved().saturating_add_signed(bytes));
+}
+
+fn ensure_room(bytes: u64) -> Result<(), String> {
+    let need = env::storage_usage() + reserved() + bytes + SPARE_BYTES;
+    if env::account_balance().as_yoctonear() < need as u128 * env::storage_byte_cost().as_yoctonear() {
+        return Err("Contri is out of storage room right now".into());
+    }
+    Ok(())
 }
 
 fn load_circle(id: u64) -> Option<Circle> {
