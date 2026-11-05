@@ -16,6 +16,7 @@ on:
       - app/test/e2e/**
       - app/public/**
       - app/dev/**
+      - app/scripts/**
       - .github/workflows/sandbox.yml
 
 permissions:
