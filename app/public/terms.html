@@ -6,34 +6,32 @@
   <title>Terms of use | Contri</title>
   <meta name="description" content="The terms for using Contri, experimental software for running savings circles on NEAR.">
   <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#000000">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preload" href="/fonts/instrument-sans.woff" as="font" type="font/woff" crossorigin>
   <link rel="stylesheet" href="/css/contri.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <script type="module" src="/js/site.js"></script>
 </head>
-<body>
-  <div class="site">
-    <header class="site-header">
-      <a class="wordmark" href="/" aria-label="Contri home">
-        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle class="hole" cx="25.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/><circle class="hole" cx="6.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
-        Contri
-      </a>
-      <nav aria-label="Site">
-        <a class="hide-sm" href="/how-it-works">How it works</a>
-        <a class="hide-sm" href="/app#/explore">Live circles</a>
-        <a class="hide-sm" href="/privacy">Privacy</a>
-        <a class="button primary" href="/app">Open Contri</a>
-      </nav>
-    </header>
-
-    <main class="prose">
-      <h1>Terms of use</h1>
-      <p class="updated">Last updated 5 November 2026.</p>
+<body class="site-page">
+  <header class="page-top">
+    <a class="brand" href="/" aria-label="Contri home"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle class="hole" cx="25.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/><circle class="hole" cx="6.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/></svg><span>Contri</span></a>
+    <div class="nav-right">
+      <nav class="frost" aria-label="Site"><a href="/how-it-works">How it works</a><a href="/app#/explore">Live circles</a><a href="/privacy">Privacy</a></nav>
+      <a class="button light small" href="/app">Open Contri</a>
+    </div>
+  </header>
+  <section class="page-hero">
+    <h1 class="display" data-fade>Terms of <span class="serif">use.</span></h1>
+    <p class="lead" data-fade="80">Last updated 5 November 2026.</p>
+  </section>
+  <main class="prose">
       <p>These terms apply when you use the Contri website and app. By using them you agree to these terms. If you don't agree, don't use Contri.</p>
 
       <h2>What Contri is</h2>
-      <p>Contri is software that helps people who know each other run a rotating savings circle (ajo, esusu, susu). Money is held and paid out by a smart contract on the NEAR blockchain, not by Contri or any person. Contri is not a bank, lender, investment product or money transmitter, and doesn't hold your money.</p>
+      <p>Contri is software that helps people who know each other run a rotating savings circle (àjọ, esusu, susu). Money is held and paid out by a smart contract on the NEAR blockchain, through NEAR Intents, not by Contri or any person. Contri is not a bank, lender or investment product, isn't licensed or regulated, and its team doesn't hold your money.</p>
 
       <h2>New, experimental software</h2>
       <p>Contri was built in November 2026 and is new. It may have bugs. Smart contracts, NEAR, NEAR Intents and the networks you send from can fail or change. Only put in money you can afford to lose, and start with small amounts.</p>
@@ -41,35 +39,59 @@
       <h2>Your responsibilities</h2>
       <ul>
         <li>You must be 18 or older and allowed to use stablecoins where you live.</li>
-        <li>Keep your passkey, or your recovery code if you use one, safe. Nobody, including us, can recover your key or move your money for you.</li>
+        <li>Keep your passkey and your recovery code safe. Passkeys work only on contri.ng, so keep the recovery code in case the site goes away. If you lose both, or clear a browser that kept your key without a passkey, nobody can get your money back. Nobody, including us, can recover your key or move the money in your own accounts for you.</li>
         <li>Check networks and addresses before you send. Money sent on the wrong network or to the wrong address may be lost.</li>
-        <li>Only join circles with people you trust. A deposit covers a missed payment, but it can't make a member pay every round.</li>
+        <li>Only join circles with people you trust. A deposit covers one missed payment. If a member misses more, later pots are short, and Contri can't make anyone pay.</li>
+        <li>You are responsible for any taxes on your savings.</li>
         <li>Don't use Contri for anything illegal, including fraud, money laundering or evading sanctions.</li>
       </ul>
 
       <h2>Fees</h2>
-      <p>Contri charges no fee. Network and conversion fees for topping up and cashing out are set by NEAR Intents and the networks you use, and are shown before you send.</p>
+      <p>Contri charges no fee. Network and conversion fees for topping up and cashing out are set by NEAR Intents and the networks you use. The app asks you to send a little more than you need so fees don't leave you short; the extra stays in your account.</p>
+
+      <h2>Other services your money depends on</h2>
+      <p>Your money is held through NEAR Intents (<code>intents.near</code>), whose operators can pause or upgrade it and lock accounts, and in USDT, which its issuer, Tether, can freeze. The private balance runs on a permissioned network operated by NEAR Intents. 1Click may refund or hold a swap it can't complete. Contri controls none of these.</p>
+      <p>Blockchain payments can't be undone. Contri can't refund or reverse a payment. Your money isn't insured or covered by any deposit protection scheme.</p>
+      <p>Contri's website, relayer and keeper may stop working. The contract and NEAR Intents keep your money, and the open-source app and your recovery code can still reach it.</p>
 
       <h2>No warranty</h2>
       <p>Contri is provided as is, without any warranty. To the extent the law allows, Contri's developer is not liable for any loss of money, data or profit from using it, including losses caused by bugs, other members, third-party services or network failures.</p>
 
       <h2>Changes</h2>
-      <p>We may update these terms. The date above shows the latest version. The contract's rules for a circle can't be changed once the circle has started.</p>
+      <p>We may update these terms. The date above shows the latest version. A circle's rules can't be changed once it has started.</p>
+
+      <h2>Governing law</h2>
+      <p>These terms are governed by the laws of Nigeria.</p>
 
       <h2>Contact</h2>
       <p>Open an issue on <a href="https://github.com/ohjay-official/contri/issues">GitHub</a> or message <a href="https://x.com/Oh_Jay0">@Oh_Jay0 on X</a>.</p>
     </main>
-
-    <footer class="site-footer">
-      <a class="built-on" href="https://near.org" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.443 0c-.89 0-1.714.46-2.18 1.218l-5.017 7.448a.533.533 0 0 0 .792.7l4.938-4.282a.2.2 0 0 1 .334.151v13.41a.2.2 0 0 1-.354.128L5.03.905A2.555 2.555 0 0 0 3.078 0h-.521A2.557 2.557 0 0 0 0 2.557v18.886a2.557 2.557 0 0 0 4.736 1.338l5.017-7.448a.533.533 0 0 0-.792-.7l-4.938 4.283a.2.2 0 0 1-.333-.152V5.352a.2.2 0 0 1 .354-.128l14.924 17.87c.486.574 1.2.905 1.952.906h.521A2.558 2.558 0 0 0 24 21.445V2.557A2.558 2.558 0 0 0 21.443 0Z"/></svg>Built on NEAR</a>
-      <nav aria-label="Footer">
-        <a href="/how-it-works">How it works</a>
-        <a href="/#faq">FAQ</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
-        <a href="https://github.com/ohjay-official/contri">Source code</a>
-      </nav>
-    </footer>
-  </div>
+  <footer class="site-foot">
+    <div class="foot-wrap">
+      <div class="foot-grid">
+        <div>
+          <a class="brand" href="/" aria-label="Contri home">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle class="hole" cx="25.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/><circle class="hole" cx="6.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
+            <span>Contri</span>
+          </a>
+          <p class="foot-note">Àjọ without the collector. A contract on NEAR holds every pot and pays each turn by itself.</p>
+        </div>
+        <div>
+          <h4>Navigation</h4>
+          <ul><li><a href="/how-it-works">How it works</a></li><li><a href="/app#/explore">Live circles</a></li><li><a href="/#faq">FAQ</a></li><li><a href="/app">Open Contri</a></li></ul>
+        </div>
+        <div>
+          <h4>Pages</h4>
+          <ul><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="https://github.com/ohjay-official/contri">Source code</a></li></ul>
+        </div>
+        <div>
+          <h4>The contract</h4>
+          <p class="foot-note">Every circle runs on <a href="https://nearblocks.io/address/circles.contring.near" rel="noopener noreferrer">circles.contring.near</a>. Read its code, or watch it work.</p>
+          <a class="built-on" href="https://near.org" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.443 0c-.89 0-1.714.46-2.18 1.218l-5.017 7.448a.533.533 0 0 0 .792.7l4.938-4.282a.2.2 0 0 1 .334.151v13.41a.2.2 0 0 1-.354.128L5.03.905A2.555 2.555 0 0 0 3.078 0h-.521A2.557 2.557 0 0 0 0 2.557v18.886a2.557 2.557 0 0 0 4.736 1.338l5.017-7.448a.533.533 0 0 0-.792-.7l-4.938 4.283a.2.2 0 0 1-.333-.152V5.352a.2.2 0 0 1 .354-.128l14.924 17.87c.486.574 1.2.905 1.952.906h.521A2.558 2.558 0 0 0 24 21.445V2.557A2.558 2.558 0 0 0 21.443 0Z"/></svg>Built on NEAR</a>
+        </div>
+      </div>
+      <div class="foot-bar"><span>© 2026 Contri. All rights reserved.</span><span>Made in Nigeria</span></div>
+    </div>
+  </footer>
 </body>
 </html>

@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../public/", import.meta.url));
 const PORT = Number(process.env.PORT ?? 8787);
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff": "font/woff", ".json": "application/json", ".png": "image/png", ".txt": "text/plain", ".webmanifest": "application/manifest+json" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff": "font/woff", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".mp4": "video/mp4", ".txt": "text/plain", ".webmanifest": "application/manifest+json" };
 const VERCEL = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
 /** @type {Record<string, string>} */
 const REWRITES = Object.fromEntries((VERCEL.rewrites ?? []).map((/** @type {{ source: string, destination: string }} */ r) => [r.source, r.destination]));

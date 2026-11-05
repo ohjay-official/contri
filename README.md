@@ -1,8 +1,8 @@
 # Contri
 
-Ajo without the collector. Savings circles on NEAR.
+Àjọ without the collector. Savings circles on NEAR.
 
-Contri runs a rotating savings circle (ajo, esusu, susu, tanda, chit fund) where a NEAR smart contract holds the pot instead of a person. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. A member who needs cash early can buy an earlier turn from someone willing to wait.
+Contri runs a rotating savings circle (àjọ, esusu, susu, tanda, chit fund) where a NEAR smart contract holds the pot instead of a person. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. A member who needs cash early can buy an earlier turn from someone willing to wait.
 
 Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: NFTs That Do Something, Real-World Money, Privacy & Private AI, Open Innovation.
 

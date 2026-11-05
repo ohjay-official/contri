@@ -41,13 +41,35 @@ export async function exploreScreen() {
     });
 
   show(
-    h("section", { class: "stack" },
-      h("h1", null, "Live circles"),
-      h("p", { class: "lead" }, `Every circle on Contri's contract (${cfg.contractId || "not deployed yet"}), read straight from the blockchain. Names are encrypted, so you see what any stranger can: amounts, turns and payouts, by accounts that lead nowhere.`),
-      circles.length
-        ? h("p", null, h("strong", null, `${usd(paidOut)}`), ` paid out so far across ${circles.length} circle${circles.length === 1 ? "" : "s"}, ${running} running now.`)
-        : h("p", { class: "empty" }, "No circles yet"),
-      h("ul", { class: "explore" }, cards),
+    h("div", { class: "explore-page" },
+      intro(),
+      h("section", { class: "stack explore-list" },
+        h("h2", { class: "section-title" }, "Every circle, as anyone can see it"),
+        h("p", { class: "lead" }, `Read straight from Contri's contract (${cfg.contractId || "not deployed yet"}). Names are encrypted, so you see what any stranger can: amounts, turns and payouts, by accounts that lead nowhere.`),
+        circles.length
+          ? h("p", null, h("strong", null, `${usd(paidOut)}`), ` paid out so far across ${circles.length} circle${circles.length === 1 ? "" : "s"}, ${running} running now.`)
+          : h("p", { class: "empty" }, "No circles yet"),
+        h("ul", { class: "explore" }, cards),
+      ),
     ),
+  );
+}
+
+/**
+ * The opening: a full-screen statement over a looping video, its words rising
+ * in one after another.
+ */
+function intro() {
+  const words = "Every turn paid by code, not by a collector.".split(" ");
+  const heading = h("h1", { class: "rise-words" }, ...words.map((w, i) => {
+    const span = h("span", null, w);
+    span.style.setProperty("--delay", `${150 + i * 80}ms`);
+    return span;
+  }));
+  const sub = h("p", { class: "rise" }, "Every circle on Contri, live from the blockchain. Scroll to see them.");
+  sub.style.setProperty("--delay", "900ms");
+  return h("section", { class: "video-intro" },
+    h("video", { class: "video-bg", src: "/media/circles.mp4", poster: "/media/circles.jpg", autoplay: true, muted: true, loop: true, playsinline: true, "aria-hidden": "true" }),
+    h("div", { class: "video-intro-copy" }, heading, sub),
   );
 }

@@ -75,10 +75,35 @@ export async function helpScreen() {
   });
 
   show(
-    h("section", { class: "stack narrow" },
-      h("a", { class: "back", href: "#/" }, "Your circles"),
-      h("h1", null, "Help"),
-      h("p", null, "Nobody at Contri can move, freeze or take your money: your keys come from your passkey, and each pot is held by the contract. What we can do is find where a payment is."),
+    h("div", { class: "help-page" },
+      h("section", { class: "help-top" },
+        h("a", { class: "back", href: "#/" }, "Your circles"),
+        h("h1", null, "How we can help"),
+        h("div", { class: "help-cards" },
+          h("article", { class: "hcard hcard-text" },
+            h("div", { class: "hblob hblob-left", "aria-hidden": "true" }),
+            h("div", { class: "hcard-inner" },
+              h("h2", null, "Nobody can move", h("br"), "your money but you"),
+              h("p", { class: "hcard-mid" }, "Your keys come from your passkey and each pot is held by the contract, so nobody at Contri can move, freeze or take your money. What we can do is find where a payment is."),
+            ),
+          ),
+          h("article", { class: "hcard hcard-video" },
+            h("div", { class: "hvideo" },
+              h("video", { src: "/media/help.mp4", poster: "/media/help.jpg", autoplay: true, muted: true, loop: true, playsinline: true, "aria-hidden": "true" }),
+              h("div", { class: "hfade", "aria-hidden": "true" }),
+            ),
+            h("div", { class: "hcard-foot" }, h("h2", null, "Every payment,", h("br"), "followed to the end")),
+          ),
+          h("article", { class: "hcard hcard-text" },
+            h("div", { class: "hblob hblob-corner", "aria-hidden": "true" }),
+            h("div", { class: "hcard-inner" },
+              h("h2", null, "Stuck? Send us", h("br"), "the details"),
+              h("p", { class: "hcard-bottom" }, "Tap Copy details for support on any payment below and send it to us. Never send your recovery code: nobody from Contri will ever ask for it."),
+            ),
+          ),
+        ),
+      ),
+      h("section", { class: "stack narrow" },
       h("h2", null, "Your top-ups and cash-outs"),
       items.length
         ? h("ul", { class: "circle-list" }, items)
@@ -90,6 +115,7 @@ export async function helpScreen() {
         h("li", null, "A top-up or cash-out that can't go through is refunded to your own account or private balance, never to anyone else."),
       ),
       h("p", null, "Still stuck? Tap Copy details for support on the payment, and send it to Contri on ", h("a", { href: "https://x.com/Oh_Jay0", target: "_blank", rel: "noopener noreferrer" }, "X (@Oh_Jay0)"), ". Never send your recovery code: nobody from Contri will ever ask for it."),
+      ),
     ),
   );
 }
