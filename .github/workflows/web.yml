@@ -86,7 +86,9 @@ jobs:
       - name: Attach the custom domain
         if: steps.decide.outputs.go == 'true'
         working-directory: app
-        run: node scripts/vercel.js attach 2>&1 | tee ../web-out/domain-setup.log || true
+        run: |
+          node scripts/vercel.js attach 2>&1 | tee ../web-out/domain-setup.log || true
+          { echo "NS:"; dig +short NS "$DOMAIN"; echo "A:"; dig +short A "$DOMAIN"; echo "www:"; dig +short CNAME "www.$DOMAIN"; echo "via 8.8.8.8:"; dig +short A "$DOMAIN" @8.8.8.8; } 2>&1 | tee ../web-out/dns.txt || true
 
       - name: Deploy to production
         if: steps.decide.outputs.go == 'true'
