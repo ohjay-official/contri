@@ -78,6 +78,7 @@ A member's record (circles completed, payments missed) lives on chain per accoun
 ### 6. Nothing personal on our side
 - No phone numbers, emails or names are collected.
 - The relayer stores nothing, and Contri's code writes no logs. Vercel, which hosts it, keeps standard request logs (time, path, browser and IP address) for a short time.
+- To limit how fast anyone can call it, each server instance counts requests per caller for one minute, keyed by a hash of the IP address with a random salt made when the instance starts. The hashes stay in memory, are never written anywhere, and are gone a minute later (`app/server/limit.js`).
 - The phone reads the chain through Contri's server instead of a public RPC node, so no RPC provider sees one IP address looking up several circle accounts.
 - No analytics, tracking scripts, third-party fonts or CDNs. The site sends a strict Content Security Policy (`app/vercel.json`): scripts, styles, fonts and requests only from its own origin.
 

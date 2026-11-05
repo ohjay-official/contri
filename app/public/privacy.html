@@ -49,7 +49,7 @@
       </ul>
 
       <h2>What passes through our server</h2>
-      <p>The app asks Contri's server to read the blockchain, to submit your signed payments, to get deposit addresses from NEAR Intents' 1Click service, and to read and move your private balance. Our code doesn't log or store these requests, your IP address or your accounts. Our hosting provider, Vercel, keeps standard request logs (time, page, browser and IP address) for a short time.</p>
+      <p>The app asks Contri's server to read the blockchain, to submit your signed payments, to get deposit addresses from NEAR Intents' 1Click service, and to read and move your private balance. Our code doesn't log or store these requests, your IP address or your accounts. To stop anyone flooding it, the server counts requests per visitor for one minute, using a scrambled form of the IP address that is kept only in memory and never written down. Our hosting provider, Vercel, keeps standard request logs (time, page, browser and IP address) for a short time.</p>
       <p>Because the app looks up all your circle accounts through our server, the server could tell they belong to one phone while it handles the request. It keeps no record of that.</p>
       <p>When you top up or cash out, 1Click receives the amount, the network, any address you enter and the Contri account involved. Contri asks 1Click for its confidential route, so these details can't be looked up publicly on 1Click. It never receives your name or contact details from us.</p>
 
