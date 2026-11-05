@@ -76,7 +76,8 @@ if (process.argv[2] === "--lock") {
   } else {
     console.log(`${c.contractId}: ${near(existing.amount)} NEAR, ${existing.storage_usage} bytes stored`);
     const fresh = existing.code_hash === "11111111111111111111111111111111";
-    const needed = storage(wasm.length + existing.storage_usage + 5_000);
+    // A fresh account stores the whole code; an upgrade replaces code of about the same size.
+    const needed = storage(fresh ? wasm.length + existing.storage_usage + 5_000 : Math.max(existing.storage_usage, wasm.length) + 2_000);
     if (BigInt(existing.amount) < needed) throw new Error(`needs about ${near(needed)} NEAR, has ${near(existing.amount)}`);
     /** @type {import("../public/js/lib/near.js").Action[]} */
     const actions = [{ deployContract: { code: wasm } }];
