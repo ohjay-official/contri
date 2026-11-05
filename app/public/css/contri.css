@@ -371,3 +371,9 @@ details.share { border: 1.5px solid var(--adire); border-radius: var(--radius-l)
 .explore-card h2 { margin: 0; font-size: 1.1rem; }
 .stack.tight { gap: 0.3rem; }
 h1[tabindex="-1"]:focus { outline: none; }
+.member > .text.small { grid-area: deposit; justify-self: end; min-height: 28px; font-size: 0.88rem; padding: 0; }
+.member .deposit-note { grid-area: dep2; }
+.member { grid-template-areas: "n who deposit" "n tags dep2"; }
+.name-form { grid-column: 2 / -1; display: flex; gap: 0.5rem; }
+.name-form input { min-height: 40px; padding: 0.4rem 0.6rem; }
+.name-form button { min-height: 40px; padding: 0.4rem 0.9rem; }

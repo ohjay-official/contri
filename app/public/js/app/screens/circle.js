@@ -8,7 +8,7 @@ import { getCircle, getConfig, keep, relay, sign, views } from "../api.js";
 import { ring } from "../ring.js";
 import { every, fromNow, nameOf, refresh, slotFor, usd, when } from "../state.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
-import { decodeSecret, local } from "../wallet.js";
+import { decodeSecret, labels, local, setLabel } from "../wallet.js";
 import { standing } from "./home.js";
 
 /** @param {number} id @param {boolean} openShare */
@@ -72,9 +72,42 @@ export async function circleScreen(id, openShare = false) {
       primary.push(h("a", { class: "button primary", href: `#/add/${slot?.index}` }, `Add money to pay ${usd(c.contribution)}`));
     }
   }
+  // Reminders: the remaining round deadlines as a calendar file. Made on this phone; nothing is sent anywhere.
+  if (me && mySeat >= 0 && c.status === "Active") {
+    const cal = h("button", { class: "secondary", type: "button" }, "Add payment reminders to my calendar");
+    cal.addEventListener("click", () => {
+      const url = URL.createObjectURL(new Blob([calendar(c, nameOf(id), mySeat)], { type: "text/calendar" }));
+      const a = h("a", { href: url, download: `contri-${id}.ics` });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    });
+    primary.push(cal);
+  }
   const share = secret && c.status === "Open" ? shareBox(nameOf(id), inviteLink(location.origin, id, secret), openShare) : null;
 
   // ---- Members in turn order ----
+  const names = await labels();
+  /** @param {string} account */
+  const who = (account) => (account === me ? "You" : names[account] ?? shortAccount(account));
+  /** Lets the member name someone, on this phone only. @param {string} account */
+  const nameButton = (account) => {
+    const btn = h("button", { class: "text small", type: "button" }, names[account] ? "Rename" : "Name");
+    btn.addEventListener("click", () => {
+      const input = h("input", { type: "text", maxlength: 40, value: names[account] ?? "", "aria-label": `Name for ${shortAccount(account)}` });
+      const save = h("button", { class: "secondary", type: "submit" }, "Save");
+      const form = h("form", { class: "name-form" }, input, save);
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await setLabel(account, input.value);
+        await circleScreen(id);
+      });
+      btn.replaceWith(form);
+      input.focus();
+    });
+    return btn;
+  };
   const members = h("ol", { class: "members" },
     Array.from({ length: c.size }, (_, i) => {
       const m = c.members[i];
@@ -87,7 +120,8 @@ export async function circleScreen(id, openShare = false) {
       if (m.missed) tags.push(h("span", { class: "tag bad" }, `Missed ${m.missed}`));
       if (c.listings[i]) tags.push(h("span", { class: "tag" }, `For sale at ${usd(/** @type {string} */ (c.listings[i]))}`));
       return h("li", { class: `member${m.account_id === me ? " me" : ""}` },
-        h("span", { class: "who", translate: "no" }, m.account_id === me ? "You" : shortAccount(m.account_id), m.account_id === c.organizer ? h("span", { class: "role" }, "organizer") : null),
+        h("span", { class: "who", translate: "no" }, who(m.account_id), m.account_id === c.organizer ? h("span", { class: "role" }, "organizer") : null),
+        m.account_id === me ? null : nameButton(m.account_id),
         h("span", { class: "tags" }, tags),
         h("span", { class: "deposit-note" }, `Deposit ${usd(m.deposit)}`),
       );
@@ -167,6 +201,7 @@ export async function circleScreen(id, openShare = false) {
       share,
       seatNft,
       h("h2", null, c.status === "Open" && c.random_order ? "Members" : "Members, in turn order"),
+      h("p", { class: "hint" }, "Members show as account numbers. Name the ones you know: names stay on this phone."),
       c.status === "Open" && c.random_order ? h("p", { class: "hint" }, "Turns are drawn at random on chain when the circle is full, so these seat numbers will change.") : null,
       members,
       market.length ? h("div", { class: "stack" }, h("h2", null, "Swap turns"), market) : null,
@@ -176,7 +211,7 @@ export async function circleScreen(id, openShare = false) {
             h("ul", { class: "payouts" },
               c.payouts.map((p) =>
                 h("li", null,
-                  h("span", null, `Round ${p.round + 1}: ${usd(p.amount)} to ${p.to === me ? "you" : shortAccount(p.to)}`),
+                  h("span", null, `Round ${p.round + 1}: ${usd(p.amount)} to ${p.to === me ? "you" : who(p.to)}`),
                   h("span", { class: "hint" }, when(Number(BigInt(p.at) / 1_000_000n)), BigInt(p.shortfall) > 0n ? `, ${usd(p.shortfall)} short` : ""),
                 ),
               ),
@@ -211,4 +246,33 @@ function shareBox(name, link, open) {
       h("button", { class: "secondary", onclick: () => copy(link, "Link copied") }, "Copy link"),
     ),
   );
+}
+
+/**
+ * An iCalendar file with one event per remaining round: due 2 hours before the
+ * deadline, with an alarm, and the member's own payout round marked.
+ * @param {import("../../lib/contri.js").Circle} c @param {string} name @param {number} seat
+ */
+function calendar(c, name, seat) {
+  const stamp = (/** @type {number} */ ms) => new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const start = Number(BigInt(c.started_at) / 1_000_000n);
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Contri//Savings circle//EN", "CALSCALE:GREGORIAN"];
+  for (let r = c.round; r < c.size; r++) {
+    const deadline = start + (r + 1) * c.period_secs * 1000;
+    const due = Math.max(deadline - 2 * 3_600_000, start + r * c.period_secs * 1000);
+    const yours = r === seat ? ` You receive ${usd(potSize(c))}.` : "";
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:contri-${c.id}-${r}@contri`,
+      `DTSTAMP:${stamp(Date.now())}`,
+      `DTSTART:${stamp(due)}`,
+      `DTEND:${stamp(deadline)}`,
+      `SUMMARY:${name}: pay ${usd(c.contribution)} for round ${r + 1}`.replace(/[,;]/g, "\\$&"),
+      `DESCRIPTION:Open Contri and pay before the round closes.${yours}`.replace(/[,;]/g, "\\$&"),
+      "BEGIN:VALARM", "ACTION:DISPLAY", "TRIGGER:-PT1H", "DESCRIPTION:Contri payment due", "END:VALARM",
+      "END:VEVENT",
+    );
+  }
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n") + "\r\n";
 }

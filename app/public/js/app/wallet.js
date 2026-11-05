@@ -180,3 +180,33 @@ export async function balanceOf(index) {
   const [b] = await views([{ contract: "intents", method: "mt_balance_of", args: { account_id: s.accountId, token_id: tokenId } }]);
   return BigInt(b);
 }
+
+// ---- Names for other members, kept only on this device ----
+// Members appear on chain as account numbers. A member can name the ones they
+// know ("Kemi"); the names never leave this phone.
+
+async function labelsKey() {
+  return `contri.labels.${(await signer(0)).accountId.slice(0, 16)}`;
+}
+
+/** @returns {Promise<Record<string, string>>} */
+export async function labels() {
+  try {
+    return JSON.parse(localStorage.getItem(await labelsKey()) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+/** @param {string} account @param {string} name empty removes it */
+export async function setLabel(account, name) {
+  const all = await labels();
+  const clean = name.trim().slice(0, 40);
+  if (clean) all[account] = clean;
+  else delete all[account];
+  try {
+    localStorage.setItem(await labelsKey(), JSON.stringify(all));
+  } catch {
+    // Storage blocked: the name lasts until the page closes.
+  }
+}
