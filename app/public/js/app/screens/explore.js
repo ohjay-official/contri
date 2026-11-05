@@ -30,7 +30,7 @@ export async function exploreScreen() {
         h("span", { class: "big" }, c.status === "Open" ? `${c.members.length}/${c.size}` : c.status === "Active" ? `${c.round + 1}/${c.size}` : c.status === "Finished" ? "Done" : "Off"),
         h("span", null, c.status === "Open" ? "joined" : c.status === "Active" ? "round" : c.status.toLowerCase()),
       );
-      return h("li", { class: "explore-card" },
+      return h("li", { class: `explore-card ${c.status.toLowerCase()}` },
         ring(c, null, center),
         h("div", { class: "stack tight" },
           h("h2", null, `Circle ${c.id}`),
@@ -44,7 +44,7 @@ export async function exploreScreen() {
     h("div", { class: "explore-page" },
       intro(),
       h("section", { class: "stack explore-list" },
-        h("h2", { class: "section-title" }, "Every circle, as anyone can see it"),
+        h("h2", { class: "rise-words section-words" }, ..."Every circle, as anyone can see it.".split(" ").map((w) => h("span", null, w))),
         h("p", { class: "lead" }, `Read straight from Contri's contract (${cfg.contractId || "not deployed yet"}). Names are encrypted, so you see what any stranger can: amounts, turns and payouts, by accounts that lead nowhere.`),
         circles.length
           ? h("p", null, h("strong", null, `${usd(paidOut)}`), ` paid out so far across ${circles.length} circle${circles.length === 1 ? "" : "s"}, ${running} running now.`)

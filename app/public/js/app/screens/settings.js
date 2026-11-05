@@ -51,10 +51,26 @@ export async function settingsScreen() {
   const countTag = h("span", { class: "glass-tag tag-count" }, state.slots ? count(state.slots) : "Counting your circles");
   if (!state.slots) refresh().then((st) => (countTag.textContent = count(st.slots ?? [])), () => (countTag.textContent = "One account per circle"));
 
+  const n = state.slots ? new Set(state.slots.flatMap((x) => x.circles)).size : 0;
+  /** A number that scrambles while the card is hovered, then settles on its real value. */
+  const num = (/** @type {number} */ v, /** @type {string} */ unit) => h("span", { class: "glass-tag-num" }, h("span", { class: "telemetry-number", "data-baseline": String(v) }, String(v)), `\u00a0 ${unit}`);
+  const middle = h("article", { class: "kcard kcard-middle", tabindex: "0", "aria-label": "Separate accounts" },
+    eyeIcon(),
+    h("span", { class: "kcard-site" }, "contri.ng"),
+    h("div", { class: "orbit" }, h("i", { class: "orbit-dot" })),
+    h("div", { class: "sphere" }),
+    h("span", { class: "glass-tag t1" }, h("i", { class: "dot" }), num(n, n === 1 ? "account" : "accounts")),
+    h("span", { class: "glass-tag t2" }, h("i", { class: "dot" }), num(0, "names stored")),
+    h("span", { class: "glass-tag t3" }, h("i", { class: "dot amber" }), num(0, "links between them")),
+    h("p", { class: "kcard-copy" }, "Each circle gets its own account. Nobody looking at the blockchain can tell they're yours."),
+  );
+  scramble(middle);
+
   show(
     h("div", { class: "key-page" },
+      h("a", { class: "back key-back", href: "#/" }, "Your circles"),
+      h("div", { class: "vela-stage" }, h("div", { class: "vela-canvas" },
       h("section", { class: "key-intro" },
-        h("a", { class: "back", href: "#/" }, "Your circles"),
         h("div", { class: "key-heading" },
           h("h1", { class: "headline-sans" }, "Your key"),
           h("p", { class: "headline-serif" }, passkey ? "lives in your passkey." : "lives on this device."),
@@ -73,16 +89,7 @@ export async function settingsScreen() {
           countTag,
           h("h2", { class: "kcard-title" }, "One key for ", h("strong", null, "every circle you're in.")),
         ),
-        h("article", { class: "kcard kcard-middle", tabindex: "0", "aria-label": "Separate accounts" },
-          eyeIcon(),
-          h("span", { class: "kcard-site" }, "contri.ng"),
-          h("div", { class: "orbit" }, h("i", { class: "orbit-dot" })),
-          h("div", { class: "sphere" }),
-          h("span", { class: "glass-tag t1" }, h("i", { class: "dot" }), "own account per circle"),
-          h("span", { class: "glass-tag t2" }, h("i", { class: "dot" }), "no name on chain"),
-          h("span", { class: "glass-tag t3" }, h("i", { class: "dot amber" }), "nothing links them"),
-          h("p", { class: "kcard-copy" }, "Each circle gets its own account. Nobody looking at the blockchain can tell they're yours."),
-        ),
+        middle,
         h("article", { class: "kcard kcard-right", tabindex: "0", "aria-label": "Recovery" },
           pulseIcon(),
           h("div", { class: "status-band", "aria-hidden": "true" }),
@@ -93,6 +100,7 @@ export async function settingsScreen() {
           h("h2", { class: "kcard-title big" }, "Yours."),
         ),
       ),
+      )),
       h("section", { class: "stack narrow key-controls" },
         h("h2", null, "Your recovery code"),
         h("p", null,
@@ -111,6 +119,7 @@ export async function settingsScreen() {
       ),
     ),
   );
+  fitVela();
 }
 
 const svg = (/** @type {string} */ viewBox, /** @type {string} */ cls, /** @type {string} */ d) => {
@@ -124,3 +133,42 @@ const svg = (/** @type {string} */ viewBox, /** @type {string} */ cls, /** @type
 const keyIcon = () => svg("0 0 32 32", "", '<circle cx="11" cy="16" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M17 16h11M24 16v5M28 16v4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>');
 const eyeIcon = () => svg("0 0 34 26", "", '<path d="M2 13S7.8 4 17 4s15 9 15 9-5.8 9-15 9S2 13 2 13Z" fill="none" stroke="currentColor" stroke-width="2.1"/><circle cx="17" cy="13" r="4.2" fill="none" stroke="currentColor" stroke-width="2.1"/>');
 const pulseIcon = () => svg("0 0 39 29", "pulse", '<path d="M1.5 16h8l4.2-11 7.1 23 5.4-17 3.1 5h8.2" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>');
+
+/** Cycles the middle card's numbers while it's hovered or focused, and puts the real ones back after. @param {HTMLElement} card */
+function scramble(card) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  /** @type {ReturnType<typeof setInterval> | 0} */
+  let timer = 0;
+  const nums = () => /** @type {HTMLElement[]} */ ([...card.querySelectorAll(".telemetry-number")]);
+  const start = () => {
+    if (timer) return;
+    timer = setInterval(() => {
+      for (const el of nums()) el.textContent = String(Math.floor(Math.random() * 10 ** Math.max(1, (el.dataset.baseline ?? "0").length)));
+    }, 105);
+  };
+  const stop = () => {
+    if (timer) clearInterval(timer);
+    timer = 0;
+    for (const el of nums()) el.textContent = el.dataset.baseline ?? "";
+  };
+  card.addEventListener("pointerenter", start);
+  card.addEventListener("focus", start);
+  card.addEventListener("pointerleave", stop);
+  card.addEventListener("blur", stop);
+  document.addEventListener("visibilitychange", () => document.hidden && stop());
+  addEventListener("hashchange", stop, { once: true });
+}
+
+/** Scales the fixed 1690x950 composition to fit, from 700px up. */
+export function fitVela() {
+  const stage = /** @type {HTMLElement | null} */ (document.querySelector(".vela-stage"));
+  if (!stage) return;
+  const fit = () => {
+    if (!stage.isConnected) return removeEventListener("resize", fit);
+    if (innerWidth < 700) return stage.style.removeProperty("--canvas-scale");
+    const s = Math.min(stage.clientWidth / 1690, (innerHeight - 90) / 950);
+    stage.style.setProperty("--canvas-scale", String(s));
+  };
+  fit();
+  addEventListener("resize", fit, { passive: true });
+}

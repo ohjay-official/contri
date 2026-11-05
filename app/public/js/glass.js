@@ -1,51 +1,54 @@
 // @ts-check
-// The privacy page's glass card and its menu.
-//
-// The card is a window onto a refracted copy of the background video: every
-// frame, a canvas the size of the viewport is placed so its pixels line up
-// with the real video behind the card, the current frame is drawn into it, and
-// an SVG filter bends it at the card's edges. The card's rounded, clipped box
-// does the rest.
+// The privacy page: its lens, and its menu.
 
-const video = /** @type {HTMLVideoElement | null} */ (document.getElementById("bg-video"));
-const card = /** @type {HTMLElement | null} */ (document.querySelector("[data-glass-card]"));
-const holder = /** @type {HTMLElement | null} */ (card?.querySelector(".dup") ?? null);
-const canvas = /** @type {HTMLCanvasElement | null} */ (card?.querySelector(".dup__image") ?? null);
+// ---------- The privacy lens ----------
+// The same circle twice: as its members see it, and as anyone on the
+// blockchain sees it. The second sits inside a glass lens that follows the
+// pointer (or a finger, or drifts by itself until touched) and magnifies a
+// little, like a loupe.
+
+const field = /** @type {HTMLElement | null} */ (document.querySelector(".lens-field"));
+const lens = /** @type {HTMLElement | null} */ (field?.querySelector(".lens") ?? null);
+const content = /** @type {HTMLElement | null} */ (lens?.querySelector(".lens-content") ?? null);
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-if (video && card && holder && canvas) {
-  const ctx = canvas.getContext("2d");
-  // The copy is sized to the viewport, not the card: the filter shifts each
-  // colour channel by a different amount, so the copy's own edges show hard
-  // bands; at viewport size they fall outside the card. It stays at 1x on
-  // high-density screens: the filter's cost grows with pixels, and a soft
-  // refraction gains nothing from more of them.
-  const frame = () => {
-    const rect = card.getBoundingClientRect();
-    const vw = document.documentElement.clientWidth;
-    const vh = document.documentElement.clientHeight;
-    if (ctx && rect.width && rect.height && video.videoWidth && video.videoHeight && rect.bottom > 0 && rect.top < vh) {
-      holder.style.left = `${-rect.left}px`;
-      holder.style.top = `${-rect.top}px`;
-      holder.style.width = `${vw}px`;
-      holder.style.height = `${vh}px`;
-      if (canvas.width !== vw || canvas.height !== vh) {
-        canvas.width = vw;
-        canvas.height = vh;
-      }
-      const cover = Math.max(vw / video.videoWidth, vh / video.videoHeight);
-      const sw = vw / cover, sh = vh / cover;
-      const sx = (video.videoWidth - sw) / 2, sy = (video.videoHeight - sh) / 2;
-      try {
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, vw, vh);
-      } catch {
-        // A frame that can't be decoded yet; the next one will do.
-      }
-    }
-    if (!still) requestAnimationFrame(frame);
+if (field && lens && content) {
+  let x = 0.62, y = 0.45, tx = x, ty = y;
+  let touched = false;
+  const place = () => {
+    const w = field.clientWidth, h = field.clientHeight;
+    const r = lens.offsetWidth / 2;
+    const px = x * w, py = y * h;
+    lens.style.transform = `translate(${px - r}px, ${py - r}px)`;
+    // A slight magnification around the lens's centre, like a loupe.
+    content.style.transformOrigin = `${px}px ${py}px`;
+    content.style.transform = `translate(${r - px}px, ${r - py}px) scale(1.12)`;
+    content.style.width = `${w}px`;
+    content.style.height = `${h}px`;
   };
-  if (still) video.addEventListener("loadeddata", frame, { once: true });
-  requestAnimationFrame(frame);
+  const point = (/** @type {PointerEvent} */ e) => {
+    const b = field.getBoundingClientRect();
+    tx = Math.min(1, Math.max(0, (e.clientX - b.left) / b.width));
+    ty = Math.min(1, Math.max(0, (e.clientY - b.top) / b.height));
+    touched = true;
+  };
+  field.addEventListener("pointermove", point);
+  field.addEventListener("pointerdown", (e) => {
+    point(e);
+    field.setPointerCapture(e.pointerId);
+  });
+  const loop = (/** @type {number} */ now) => {
+    if (!touched && !still) {
+      tx = 0.5 + 0.32 * Math.sin(now / 2600);
+      ty = 0.5 + 0.26 * Math.sin(now / 1900 + 1);
+    }
+    x += (tx - x) * (still ? 1 : 0.12);
+    y += (ty - y) * (still ? 1 : 0.12);
+    place();
+    if (!still) requestAnimationFrame(loop);
+  };
+  addEventListener("resize", place, { passive: true });
+  requestAnimationFrame(loop);
 }
 
 // ---------- The menu ----------

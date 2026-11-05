@@ -13,7 +13,10 @@
   <link rel="preload" href="/fonts/instrument-sans.woff" as="font" type="font/woff" crossorigin>
   <link rel="stylesheet" href="/css/contri.css">
   <link rel="stylesheet" href="/css/site.css">
+  <link rel="preload" href="/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
   <script type="module" src="/js/site.js"></script>
+  <script type="module" src="/js/footer.js"></script>
+  <script type="module" src="/js/cards.js"></script>
 </head>
 <body class="site-page">
   <header class="page-top">
@@ -23,9 +26,12 @@
       <a class="button light small" href="/app">Open Contri</a>
     </div>
   </header>
-  <section class="page-hero">
-    <h1 class="display" data-fade>How it <span class="serif">works.</span></h1>
-    <p class="lead" data-fade="80">The short version: the collector is replaced by a program that can only do what the circle agreed to.</p>
+  <section class="card-scene" aria-labelledby="hiw-title">
+    <div class="card-stage" aria-hidden="true"><div class="card-space"></div></div>
+    <div class="card-scene-copy">
+      <h1 id="hiw-title" class="display" data-fade>How it <span class="serif">works.</span></h1>
+      <p class="lead" data-fade="80">The collector is replaced by a program that can only do what the circle agreed to. Each card is one step of a circle.</p>
+    </div>
   </section>
   <main class="prose">
 
@@ -54,31 +60,38 @@
         <li>The contract's code is public, and the code running on NEAR is byte for byte what the project's CI builds from it, so anyone can check what it does.</li>
       </ul>
     </main>
-  <footer class="site-foot">
-    <div class="foot-wrap">
-      <div class="foot-grid">
-        <div>
-          <a class="brand" href="/" aria-label="Contri home">
-            <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle class="hole" cx="25.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/><circle class="hole" cx="6.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
-            <span>Contri</span>
-          </a>
-          <p class="foot-note">Àjọ without the collector. A contract on NEAR holds every pot and pays each turn by itself.</p>
-        </div>
-        <div>
-          <h4>Navigation</h4>
-          <ul><li><a href="/how-it-works">How it works</a></li><li><a href="/app#/explore">Live circles</a></li><li><a href="/#faq">FAQ</a></li><li><a href="/app">Open Contri</a></li></ul>
-        </div>
-        <div>
-          <h4>Pages</h4>
-          <ul><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="https://github.com/ohjay-official/contri">Source code</a></li></ul>
-        </div>
-        <div>
-          <h4>The contract</h4>
-          <p class="foot-note">Every circle runs on <a href="https://nearblocks.io/address/circles.contring.near" rel="noopener noreferrer">circles.contring.near</a>. Read its code, or watch it work.</p>
-          <a class="built-on" href="https://near.org" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.443 0c-.89 0-1.714.46-2.18 1.218l-5.017 7.448a.533.533 0 0 0 .792.7l4.938-4.282a.2.2 0 0 1 .334.151v13.41a.2.2 0 0 1-.354.128L5.03.905A2.555 2.555 0 0 0 3.078 0h-.521A2.557 2.557 0 0 0 0 2.557v18.886a2.557 2.557 0 0 0 4.736 1.338l5.017-7.448a.533.533 0 0 0-.792-.7l-4.938 4.283a.2.2 0 0 1-.333-.152V5.352a.2.2 0 0 1 .354-.128l14.924 17.87c.486.574 1.2.905 1.952.906h.521A2.558 2.558 0 0 0 24 21.445V2.557A2.558 2.558 0 0 0 21.443 0Z"/></svg>Built on NEAR</a>
-        </div>
+  <footer class="scene-foot" aria-label="Site footer">
+    <video class="scene-video" muted playsinline preload="auto" poster="/media/scene.jpg" data-src="/media/scene.mp4" data-src-small="/media/scene-720.mp4" aria-hidden="true"></video>
+    <canvas class="scene-sky" aria-hidden="true"></canvas>
+    <canvas class="scene-fx" aria-hidden="true"></canvas>
+    <div class="scene-tint" aria-hidden="true"></div>
+    <div class="scene-grid">
+      <div class="scene-brand rise-in">
+        <button class="wordmark-power" type="button" aria-pressed="false" aria-label="Contri. Press the o to switch the scene off and on.">
+          <span aria-hidden="true">C</span><span class="power-o" aria-hidden="true"><svg viewBox="0 0 50 62"><path d="M14.2 22.6 A19 19 0 1 0 35.8 22.6"/><path d="M25 6.5 V33"/></svg><i class="power-halo"></i></span><span aria-hidden="true">ntri</span>
+        </button>
+        <p class="scene-tagline">Àjọ without the collector. A contract on NEAR holds every pot and pays each turn by itself.</p>
+        <p class="scene-copy">© 2026 Contri. All rights reserved.</p>
       </div>
-      <div class="foot-bar"><span>© 2026 Contri. All rights reserved.</span><span>Made in Nigeria</span></div>
+      <nav class="scene-col rise-in" aria-label="Product">
+        <h4>Product</h4>
+        <a href="/how-it-works">How it works</a>
+        <a href="/app#/explore">Live circles</a>
+        <a href="/#faq">FAQ</a>
+        <a href="/app">Open Contri</a>
+      </nav>
+      <nav class="scene-col rise-in" aria-label="About">
+        <h4>About</h4>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms</a>
+        <a href="https://nearblocks.io/address/circles.contring.near" rel="noopener noreferrer">The contract</a>
+        <a href="https://github.com/ohjay-official/contri">Source code</a>
+      </nav>
+      <nav class="scene-col rise-in" aria-label="Social Media">
+        <h4>Social Media</h4>
+        <a href="https://x.com/Oh_Jay0" rel="noopener noreferrer">X</a>
+        <a href="https://github.com/ohjay-official" rel="noopener noreferrer">GitHub</a>
+      </nav>
     </div>
   </footer>
 </body>
