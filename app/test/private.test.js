@@ -182,3 +182,14 @@ test("moving money out never takes what the member still owes this circle", () =
   assert.equal(spare(5_000_000n, /** @type {any} */ ({ ...paid, status: "Finished" }), me), 5_000_000n);
   assert.equal(spare(5_000_000n, null, me), 5_000_000n);
 });
+
+test("top-ups and cash-outs take the confidential route when Contri has a partner key", async () => {
+  const { topUp, cashOut } = await import("../server/oneclick.js");
+  const calls = fake1Click(() => ({ quote: { depositAddress: "0x" + "ab".repeat(20), amountIn: "3020000000000000000", minAmountIn: "2989800000000000000", amountOut: "3019389", timeEstimate: 35, deadline: "2026-11-06T00:00:00Z" } }));
+  await topUp({ network: "bsc", account: vault.accountId, amount: "3000000" }, c);
+  await cashOut({ network: "bsc", account: vault.accountId, amount: "3000000", address: "0x" + "22".repeat(20), dry: true }, c);
+  assert.equal(calls[0].body.confidentiality, "basic");
+  assert.equal(calls[1].body.confidentiality, "basic");
+  await topUp({ network: "bsc", account: vault.accountId, amount: "3000000" }, { ...c, oneClickKey: "" });
+  assert.equal(calls[2].body.confidentiality, undefined, "1Click refuses confidential quotes without a key");
+});

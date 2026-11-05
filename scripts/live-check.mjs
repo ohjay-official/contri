@@ -23,6 +23,14 @@ const member = await signerFromSeed(new Uint8Array(randomBytes(32)));
 
 const topup = await post("/api/swap", { action: "topup", network: "bsc", account: member.accountId, amount: "3000000" });
 console.log("topup", topup.status, JSON.stringify(topup.body));
+// Anyone can ask 1Click about a deposit address with no key. For Contri's
+// (confidential) top-ups it must not say which circle account it pays.
+if (topup.body.depositAddress) {
+  const pub = await fetch(`https://1click.chaindefuser.com/v0/status?depositAddress=${encodeURIComponent(topup.body.depositAddress)}`);
+  const body = await pub.json().catch(() => ({}));
+  const leaks = JSON.stringify(body).includes(member.accountId);
+  console.log("public 1Click lookup of the top-up address", pub.status, leaks ? "LEAKS the circle account" : "hides the circle account");
+}
 const cash = await post("/api/swap", { action: "cashout", network: "bsc", account: member.accountId, amount: "3000000", address: "0x2222222222222222222222222222222222222222", dry: true });
 console.log("cashout (dry)", cash.status, JSON.stringify(cash.body));
 

@@ -1,7 +1,9 @@
 // @ts-check
 // Top-ups and cash-outs through NEAR Intents' 1Click API. The API key stays on
 // the server. 1Click sees a deposit address and a destination, never who the
-// member is: Contri sends no names, emails or IP addresses.
+// member is: Contri sends no names, emails or IP addresses. Every swap asks for
+// the confidential route (see `confidential`), so a deposit address can't be
+// looked up publicly to find the circle account it paid.
 //
 // Top up:   stablecoin on another chain -> 1Click deposit address -> the
 //           member's circle account on NEAR Intents (as USDT).
@@ -58,6 +60,16 @@ export function net(network) {
 export const deadline = (minutes) => new Date(Date.now() + minutes * 60_000).toISOString();
 
 /**
+ * With Contri's partner key, swaps go through NEAR Intents' confidential
+ * route: 1Click's public status lookup then shows nothing for the deposit
+ * address (it answers 404), instead of the circle account it pays and the
+ * wallet it came from. Without a key 1Click refuses confidential quotes, so
+ * they're asked for only when there is one.
+ * @param {Config} c
+ */
+export const confidential = (c) => (c.oneClickKey ? { confidentiality: "basic" } : {});
+
+/**
  * A deposit address that turns about `amount` (token units) sent on `network`
  * into USDT in `account`'s NEAR Intents balance. FLEX_INPUT: sending a bit more
  * or less still works, and anything extra stays in the member's balance.
@@ -82,6 +94,7 @@ export async function topUp(body, c) {
     refundType: "INTENTS",
     deadline: deadline(24 * 60),
     referral: "contri",
+    ...confidential(c),
   });
   return {
     network: body.network,
@@ -121,6 +134,7 @@ export async function cashOut(body, c) {
     refundType: "INTENTS",
     deadline: deadline(30),
     referral: "contri",
+    ...confidential(c),
   });
   return {
     network: body.network,
