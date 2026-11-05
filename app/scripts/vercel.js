@@ -17,8 +17,12 @@ const SETTINGS = ["CONTRI_ACCOUNT_ID", "RELAYER_ACCOUNT_ID", "RELAYER_KEY", "ONE
 const SECRET = new Set(["RELAYER_KEY", "ONECLICK_API_KEY"]);
 if (!TOKEN) throw new Error("VERCEL_TOKEN is not set");
 
+/** The team the token is scoped to ("<name>'s projects"); every API call names it. */
+let team = "";
+
 /** @param {string} path @param {RequestInit} [init] */
 async function api(path, init = {}) {
+  if (team) path += `${path.includes("?") ? "&" : "?"}teamId=${team}`;
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json", ...(init.headers ?? {}) },
@@ -40,6 +44,12 @@ async function project() {
 }
 
 const command = process.argv[2];
+const teams = await api("/v2/teams");
+const list = /** @type {any[]} */ (teams.body?.teams ?? []);
+if (list.length >= 1) {
+  team = (list.find((t) => t.slug === process.env.VERCEL_TEAM) ?? list[0]).id;
+  console.log(`team: ${list.find((t) => t.id === team)?.name ?? team}`);
+}
 const p = await project();
 
 if (command === "setup") {
