@@ -58,6 +58,8 @@ export function depositDetails(q, extra) {
 export async function fundScreen(index) {
   const [cfg, known, s] = await Promise.all([getConfig(), local(), signer(index)]);
   const l = known[index] ?? {};
+  // The circle's name, read with its invite key: this screen can open straight after a reload.
+  const circleName = async (/** @type {number} */ id, /** @type {{ name: string }} */ c) => (l.secret && (await decryptName(decodeSecret(l.secret), c.name))) || nameOf(id);
   const a = actions(cfg.contractId, cfg.tokenId);
 
   // What the money is for.
@@ -92,7 +94,7 @@ export async function fundScreen(index) {
     if (!c) throw new Error("That circle no longer exists.");
     const deposit = BigInt(c.contribution);
     purpose = {
-      title: `Join ${(l.secret && (await decryptName(decodeSecret(l.secret), c.name))) || nameOf(id)}`,
+      title: `Join ${await circleName(id, c)}`,
       need: deposit,
       whole: deposit + BigInt(c.contribution) * BigInt(c.size),
       button: `Join and pay ${usd(deposit)} deposit`,
@@ -110,7 +112,7 @@ export async function fundScreen(index) {
     if (c && dueFor(c, s.accountId) === "pay" && seatOf(c, s.accountId) >= 0) {
       const round = c.round;
       purpose = {
-        title: `Pay round ${round + 1} of ${nameOf(id)}`,
+        title: `Pay round ${round + 1} of ${await circleName(id, c)}`,
         need: BigInt(c.contribution),
         whole: BigInt(c.contribution) * BigInt(c.size - round),
         button: `Pay ${usd(c.contribution)}`,
@@ -161,6 +163,8 @@ export async function fundScreen(index) {
       if (want < 1_000_000n) throw new Error("Add at least $1: smaller amounts cost more in fees than they're worth.");
       const q = await swap("topup", { network, account: s.accountId, amount: want.toString() });
       depositAddress = q.depositAddress;
+      // Kept for this circle account, so it's still here if the phone reloads the page.
+      await remember(index, { deposit: q });
       depositBox.replaceChildren(...depositDetails(q, "Sending more is fine: the extra stays in this circle's account.").filter((x) => x !== null));
       progress.textContent = "Waiting for your deposit";
       depositBox.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
@@ -223,6 +227,12 @@ export async function fundScreen(index) {
   if (!purpose || purpose.need > balance) privateBalance().then(showPrivate, () => null);
   const short = purpose ? purpose.need - balance : 5_000_000n;
   setAmount(short);
+  // A deposit address from before a reload, while it's still valid.
+  if (l.deposit && Date.parse(l.deposit.deadline) > Date.now()) {
+    depositAddress = l.deposit.depositAddress;
+    depositBox.replaceChildren(...depositDetails(l.deposit, "Sending more is fine: the extra stays in this circle's account.").filter((x) => x !== null));
+    progress.textContent = STATUS.PENDING_DEPOSIT;
+  }
   if (purpose && purpose.whole - balance > short) {
     amountChoices.append(
       h("button", { class: "secondary", type: "button", onclick: () => setAmount(short) }, `Just this: ${usd(short > 0n ? short : 0n)}`),
@@ -240,6 +250,10 @@ export async function fundScreen(index) {
       if (depositAddress && purpose && balance < purpose.need) {
         const st = await swap("status", { depositAddress }).catch(() => null);
         if (st?.status) progress.textContent = STATUS[st.status] ?? progress.textContent;
+        if (["SUCCESS", "REFUNDED", "FAILED"].includes(st?.status)) {
+          await remember(index, { deposit: undefined });
+          depositAddress = null;
+        }
       }
     } catch {
       // Keep trying quietly; the next poll may work.

@@ -7,8 +7,8 @@ import { lock, mode, secret } from "../wallet.js";
 
 export function settingsScreen() {
   const signOut = h("button", { class: "secondary" }, "Lock Contri on this phone");
-  signOut.addEventListener("click", () => {
-    lock();
+  signOut.addEventListener("click", async () => {
+    await lock();
     location.hash = "#/";
     location.reload();
   });
@@ -32,6 +32,7 @@ export function settingsScreen() {
             code,
           ),
       h("p", null, "Every circle you're in uses its own account, made from your key. Nobody looking at the blockchain can tell they belong to the same person."),
+      h("p", null, "Contri stays unlocked on this phone for 30 minutes after you last use it, so switching to your wallet or exchange doesn't lock it. Locking it now ends that."),
       h("div", { class: "actions" }, signOut),
     ),
   );

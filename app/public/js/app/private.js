@@ -40,12 +40,37 @@ export async function privateBalance() {
 }
 
 /**
- * A one-time deposit address that adds `amount` (token units) to the private balance.
+ * A one-time deposit address that adds `amount` (token units) to the private
+ * balance. Kept on this device until it's used or expires, so a reload
+ * doesn't lose it.
  * @param {string} network @param {bigint} amount
  */
 export async function addPrivately(network, amount) {
   const v = await vault();
-  return swap("ptopup", { network, vault: v.accountId, amount: amount.toString() });
+  const q = await swap("ptopup", { network, vault: v.accountId, amount: amount.toString() });
+  try {
+    localStorage.setItem(`contri.ptopup.${v.accountId.slice(0, 16)}`, JSON.stringify(q));
+  } catch {}
+  return q;
+}
+
+/** The last private top-up address, while it's still valid. */
+export async function pendingPrivateTopUp() {
+  const v = await vault();
+  try {
+    const q = JSON.parse(localStorage.getItem(`contri.ptopup.${v.accountId.slice(0, 16)}`) ?? "null");
+    return q && Date.parse(q.deadline) > Date.now() ? q : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Forgets the last private top-up address once it's been used. */
+export async function clearPrivateTopUp() {
+  const v = await vault();
+  try {
+    localStorage.removeItem(`contri.ptopup.${v.accountId.slice(0, 16)}`);
+  } catch {}
 }
 
 /**

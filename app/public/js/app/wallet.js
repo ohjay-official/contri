@@ -11,9 +11,10 @@
 // or joined while a top-up arrives). Losing it loses no money: the keys come
 // from the passkey, and the money is on NEAR Intents.
 
-import { fromBase58, toBase58, toBase64Url, fromBase64 } from "../lib/bytes.js";
+import { fromBase58, toBase64Url, fromBase64 } from "../lib/bytes.js";
 import { circleSigner, vaultSigner } from "../lib/keys.js";
 import { createPasskey, deviceSecret, unlockWithPasskey } from "../lib/passkey.js";
+import { forget, keep as keepSession, recall } from "../lib/session.js";
 import { getConfig, views } from "./api.js";
 
 /** @typedef {import("../lib/keys.js").Signer} Signer */
@@ -29,6 +30,7 @@ import { getConfig, views } from "./api.js";
  * @property {string} [secret] invite secret, base64url
  * @property {number} [circle]
  * @property {{ kind: "create", name: string, contribution: string, size: number, periodSecs: number, random: boolean } | { kind: "join", circle: number }} [pending]
+ * @property {{ depositAddress: string, depositMemo: string | null, send: string, symbol: string, label: string, seconds: number, deadline: string }} [deposit] the last top-up address, until it's used or expires
  */
 
 const SESSION = "contri.session";
@@ -40,13 +42,19 @@ const signers = new Map();
 /** @type {Signer | null} */
 let vaultKey = null;
 
-/** Picks up an unlocked session after a reload in the same tab. */
-export function restore() {
-  try {
-    const saved = JSON.parse(sessionStorage.getItem(SESSION) ?? "null");
-    if (saved) session = { secret: fromBase58(saved.secret), mode: saved.mode };
-  } catch {
-    session = null;
+/** Picks up an unlocked session after the page reloads (see lib/session.js). */
+export async function restore() {
+  const kept = await recall();
+  if (kept && (kept.mode === "passkey" || kept.mode === "device")) session = { secret: kept.secret, mode: kept.mode };
+  else {
+    // Sessions from before sealing were kept in sessionStorage; move one over.
+    try {
+      const old = JSON.parse(sessionStorage.getItem(SESSION) ?? "null");
+      sessionStorage.removeItem(SESSION);
+      if (old) start(fromBase58(old.secret), old.mode);
+    } catch {
+      session = null;
+    }
   }
   return Boolean(session);
 }
@@ -56,11 +64,7 @@ function start(secret, mode) {
   session = { secret, mode };
   signers.clear();
   vaultKey = null;
-  try {
-    sessionStorage.setItem(SESSION, JSON.stringify({ secret: toBase58(secret), mode }));
-  } catch {
-    // Private mode: the session lasts until the page closes.
-  }
+  keepSession(secret, mode);
 }
 
 export const unlocked = () => Boolean(session);
@@ -84,11 +88,11 @@ export function useThisDevice() {
 /** @param {Uint8Array} s */
 export const useRestoredSecret = (s) => start(s, "device");
 
-export function lock() {
+export async function lock() {
   session = null;
   signers.clear();
   vaultKey = null;
-  sessionStorage.removeItem(SESSION);
+  await forget();
 }
 
 /** @param {number} index */

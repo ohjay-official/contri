@@ -7,7 +7,7 @@
 // from 1Click, never the exchange or wallet behind it.
 
 import { parseAmount } from "../../lib/contri.js";
-import { addPrivately, follow, privateBalance, STATUS } from "../private.js";
+import { addPrivately, clearPrivateTopUp, follow, pendingPrivateTopUp, privateBalance, STATUS } from "../private.js";
 import { nameOf, usd } from "../state.js";
 import { busy, field, h, show } from "../ui.js";
 import { local } from "../wallet.js";
@@ -27,23 +27,28 @@ export async function privateAddScreen(then) {
   const depositBox = h("div", { class: "deposit" });
   const next = h("div", { class: "actions", hidden: true }, h("a", { class: "button primary", href: backHref }, then !== null ? `Back to ${backText}` : "Your circles"));
 
+  /** Shows a deposit address and follows it until the money arrives. @param {any} q */
+  const showDeposit = (q) => {
+    depositBox.replaceChildren(...depositDetails(q, "Send exactly this amount. If it can't go through, the money comes back to your private balance.").filter((x) => x !== null));
+    progress.textContent = STATUS.PENDING_DEPOSIT;
+    const screen = depositBox.closest("section");
+    if (!screen) return;
+    // Followed in the background, so the button is free for another address.
+    follow(q.depositAddress, (st) => (progress.textContent = st === "SUCCESS" ? `Arrived: ${usd(parseAmount(q.receive))} is in your private balance.` : STATUS[st] ?? progress.textContent), screen, 24 * 60).then(async (last) => {
+      if (["SUCCESS", "REFUNDED", "FAILED"].includes(last)) await clearPrivateTopUp();
+      if (last !== "SUCCESS") return;
+      balanceEl.textContent = usd(await privateBalance().catch(() => parseAmount(q.receive)));
+      next.hidden = false;
+    });
+  };
+
   const getAddress = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary" }, "Get a deposit address"));
   getAddress.addEventListener("click", () =>
     busy(getAddress, "Getting an address", async () => {
       const want = parseAmount(amountInput.value);
       if (want < 1_000_000n) throw new Error("Add at least $1: smaller amounts cost more in fees than they're worth.");
-      const q = await addPrivately(networks.value(), want);
-      depositBox.replaceChildren(...depositDetails(q, "Send exactly this amount. If it can't go through, the money comes back to your private balance.").filter((x) => x !== null));
-      progress.textContent = STATUS.PENDING_DEPOSIT;
+      showDeposit(await addPrivately(networks.value(), want));
       depositBox.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-      const screen = depositBox.closest("section");
-      if (!screen) return;
-      // Followed in the background, so the button is free for another address.
-      follow(q.depositAddress, (st) => (progress.textContent = st === "SUCCESS" ? `Arrived: ${usd(parseAmount(q.receive))} is in your private balance.` : STATUS[st] ?? progress.textContent), screen, 24 * 60).then(async (last) => {
-        if (last !== "SUCCESS") return;
-        balanceEl.textContent = usd(await privateBalance().catch(() => parseAmount(q.receive)));
-        next.hidden = false;
-      });
     }),
   );
 
@@ -62,6 +67,10 @@ export async function privateAddScreen(then) {
       depositBox,
     ),
   );
+
+  // A deposit address from before a reload, while it's still valid.
+  const pending = await pendingPrivateTopUp();
+  if (pending) showDeposit(pending);
 
   const held = await privateBalance().catch(() => null);
   balanceEl.textContent = held === null ? "can't be read right now" : usd(held);

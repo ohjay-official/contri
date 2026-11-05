@@ -65,7 +65,7 @@ async function member(name) {
     await page.waitForTimeout(300);
     await page.screenshot({ path: `${SHOTS}/${String(++step).padStart(2, "0")}-${name}-${what}.png`, fullPage: true });
   };
-  return { name, page, shot, errors };
+  return { name, page, shot, errors, ctx };
 }
 
 /** @param {string} s */
@@ -128,6 +128,12 @@ try {
   await bayo.page.click("text=Join this circle");
   await bayo.page.click("text=Create a passkey");
   await bayo.page.waitForSelector("h1:has-text('Join Ikeja friends')");
+  // Phones reload pages left in the background (iOS Safari within seconds):
+  // a fresh tab, with no session storage, opens unlocked on the same screen.
+  const reopened = await bayo.ctx.newPage();
+  await reopened.goto(bayo.page.url());
+  await reopened.waitForSelector("h1:has-text('Join Ikeja friends')", { timeout: 30_000 });
+  await reopened.close();
   await fundAndAct(bayo, "Join and pay");
   await bayo.page.waitForSelector(".ring", { timeout: 30_000 });
   await bayo.page.waitForSelector("text=Add money to pay $5.00", { timeout: 30_000 });

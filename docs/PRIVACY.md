@@ -56,6 +56,8 @@ A member has one passkey. When they open the app, it asks the passkey for a secr
 
 Circle accounts share nothing on chain: not a key, not a funding source, not a name. Nobody can add up a member's savings or follow them from circle to circle. On a new phone, the same synced passkey gives the same secret, and the app finds the accounts again by checking n = 0, 1, 2... until three in a row are unused, so no server holds a list.
 
+Once unlocked, Contri stays unlocked for 30 minutes after the member last uses it, so a phone reloading the page in the background (iOS Safari does this within seconds) doesn't ask for the passkey again. The secret is kept sealed with AES-GCM under a key the browser marks non-extractable and keeps in IndexedDB: the page can use it, but its bytes can't be read or copied off the device. Locking, or 30 idle minutes, deletes both (`app/public/js/lib/session.js`).
+
 Where a passkey can't give a PRF secret, the member can keep a random key in the browser instead, with a recovery code to write down (`app/public/js/lib/passkey.js`).
 
 ### 3. Invite-only circles (in the contract)
