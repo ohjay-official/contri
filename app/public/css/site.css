@@ -54,9 +54,9 @@
 @media (max-width: 760px) { .band.dark { padding: 64px 0; } }
 .wrap { max-width: 1160px; margin: 0 auto; padding: 0 20px; }
 @media (min-width: 760px) { .wrap { padding: 0 32px; } }
-.two-col { display: grid; align-items: center; gap: 48px; }
+.two-col { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 48px; }
 .two-col.top { align-items: start; }
-@media (min-width: 900px) { .two-col { grid-template-columns: 1.1fr 0.9fr; gap: 72px; } }
+@media (min-width: 900px) { .two-col { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 72px; } }
 .band-head { max-width: 640px; }
 .band-head.sticky { position: sticky; top: 32px; }
 @media (max-width: 899px) { .band-head.sticky { position: static; } }
@@ -362,6 +362,11 @@
   .way { min-height: 0; padding: 24px; }
   .way h3 { margin-top: 20px; }
 }
+/* The smallest phones: keep the orbit inside the screen. */
+@media (max-width: 380px) {
+  .orbits-wrap { --s: 0.38; }
+  .chip { width: 92px; height: 92px; font-size: 21px; }
+}
 @media (max-width: 767px) { .vortex { height: 92svh; min-height: 620px; } }
 .cta-card h2, .cta-card p { text-shadow: 0 1px 14px rgba(140, 40, 0, 0.35); }
 .cta-card p { opacity: 1; font-weight: 500; }
@@ -373,3 +378,5 @@
 .scene-video { z-index: 1; }
 .scene-fx, .scene-tint { z-index: 2; }
 .scene-grid { z-index: 3; }
+/* Nothing decorative may widen the page on a phone. */
+html, .site-page { overflow-x: clip; }

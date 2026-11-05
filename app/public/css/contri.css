@@ -656,6 +656,23 @@ body:has(> .topbar) { background: #000; }
   .vela-canvas .t3 { top: 447px; left: 60px; }
 }
 
+/* ---------- Your key on a phone ---------- */
+@media (max-width: 699px) {
+  .kcard { min-height: 520px; }
+  /* Middle card: the orbit, then its last tag, then the copy, never on top of each other. */
+  .kcard-middle { min-height: 600px; }
+  .kcard-middle .t3 { top: auto; bottom: 132px; left: 24px; }
+  .kcard-middle .kcard-copy { font-size: 18px; line-height: 26px; }
+  .kcard-title.big { line-height: 1.1; }
+}
+/* Touch screens have no hover, so the cards show their lit state on their own. */
+@media (hover: none) {
+  .kcard-left .left-surface { transform: scaleY(1.075); filter: saturate(1.34) brightness(1.08) contrast(1.04); }
+  .kcard-right .status-band { clip-path: inset(0); }
+  .kcard-right .status-band::before { opacity: 0.82; animation-play-state: running; }
+  .kcard-right .status-band::after { opacity: 0; }
+}
+
 /* ---------- Help: a wide video banner, then two cards ---------- */
 
 .help-banner { position: relative; display: flex; align-items: flex-end; min-height: 420px; margin-top: 20px; overflow: hidden; border-radius: 20px; background: #000; }
@@ -680,3 +697,4 @@ body:has(> .topbar) { background: #000; }
 #view > * { animation: view-in 280ms cubic-bezier(0.22, 1, 0.36, 1); }
 @keyframes view-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #view > * { animation: none; } @view-transition { navigation: none; } }
+body { overflow-x: clip; }
