@@ -72,3 +72,9 @@ test("an app's built-in browser is told apart from Chrome and Safari", async () 
   for (const ua of real) assert.equal(inAppBrowser(ua), false, ua);
   for (const ua of inApp) assert.equal(inAppBrowser(ua), true, ua);
 });
+
+test("an invite says what the circle is before the link", async () => {
+  const { inviteMessage } = await import("../public/js/app/screens/circle.js");
+  const c = circle({ contribution: "1000000", size: 2, period_secs: 600 });
+  assert.equal(inviteMessage(c, "Test"), 'Join my savings circle "Test" on Contri: $1.00 every 10 minutes, 2 members, pot $2.00. Tap to join:');
+});

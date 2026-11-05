@@ -84,7 +84,7 @@ export async function circleScreen(id, openShare = false) {
     });
     primary.push(cal);
   }
-  const share = secret && c.status === "Open" ? shareBox(nameOf(id), inviteLink(location.origin, id, secret), openShare) : null;
+  const share = secret && c.status === "Open" ? shareBox(c, nameOf(id), inviteLink(location.origin, id, secret), openShare) : null;
 
   // ---- Members in turn order ----
   const names = await labels();
@@ -233,19 +233,42 @@ export async function circleScreen(id, openShare = false) {
   );
 }
 
-/** The invite link, with ways to send it. @param {string} name @param {string} link @param {boolean} open */
-function shareBox(name, link, open) {
-  const text = `Join my savings circle "${name}" on Contri: ${link}`;
+/**
+ * The invite link, with ways to send it: the phone's own share sheet (any
+ * app), or WhatsApp and copy where a browser has no share sheet.
+ * @param {import("../../lib/contri.js").Circle} c @param {string} name @param {string} link @param {boolean} open
+ */
+export function shareBox(c, name, link, open) {
+  const text = inviteMessage(c, name);
+  const canShare = typeof navigator.share === "function";
+  const share = h("button", { class: "primary" }, "Share invite");
+  share.addEventListener("click", async () => {
+    try {
+      await navigator.share({ title: `Join ${name} on Contri`, text, url: link });
+    } catch (e) {
+      // Closing the share sheet isn't an error; anything else falls back to copying.
+      if (!(e instanceof DOMException && e.name === "AbortError")) copy(`${text} ${link}`, "Invite copied");
+    }
+  });
   return h("details", { class: "share", open },
     h("summary", null, "Invite people"),
     h("p", null, "Anyone with this link can see the circle and join, so send it only to the people you're saving with. The part after # never reaches any server."),
     h("p", { class: "code-block", translate: "no" }, link),
     h("div", { class: "actions row" },
-      h("a", { class: "button primary", href: `https://wa.me/?text=${encodeURIComponent(text)}`, target: "_blank", rel: "noopener noreferrer" }, "Send on WhatsApp"),
-      h("button", { class: "secondary", onclick: () => copy(link, "Link copied") }, "Copy link"),
+      canShare
+        ? share
+        : h("a", { class: "button primary", href: `https://wa.me/?text=${encodeURIComponent(`${text} ${link}`)}`, target: "_blank", rel: "noopener noreferrer" }, "Send on WhatsApp"),
+      h("button", { class: "secondary", onclick: () => copy(`${text} ${link}`, "Invite copied") }, "Copy invite"),
     ),
   );
 }
+
+/**
+ * What the invite says before the link: enough to decide from the chat.
+ * @param {import("../../lib/contri.js").Circle} c @param {string} name
+ */
+export const inviteMessage = (c, name) =>
+  `Join my savings circle "${name}" on Contri: ${usd(c.contribution)} ${every(c.period_secs)}, ${c.size} members, pot ${usd(potSize(c))}. Tap to join:`;
 
 /**
  * An iCalendar file with one event per remaining round: due 2 hours before the
