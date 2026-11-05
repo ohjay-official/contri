@@ -111,7 +111,7 @@ try {
   // The circle exists, with Ada in seat 1 and the invite link open.
   await ada.page.waitForSelector("details.share .code-block", { timeout: 30_000 });
   const link = (await ada.page.locator("details.share .code-block").textContent())?.trim() ?? "";
-  assert.match(link, /\/join#\d+\.[A-Za-z0-9_-]{43}$/);
+  assert.match(link, /\/join#\d+\.[A-Za-z0-9_-]{22}$/, "a short invite link");
   assert.equal(await ada.page.locator("h1").textContent(), "Ikeja friends", "the name decrypts from chain");
   await ada.shot("circle-created");
 

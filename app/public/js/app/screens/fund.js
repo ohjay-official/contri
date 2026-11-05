@@ -141,7 +141,7 @@ export async function fundScreen(index) {
   const getAddress = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary" }, "Get a deposit address"));
   const amountInput = h("input", { type: "text", inputmode: "decimal", autocomplete: "off" });
   /** @param {bigint} v */
-  const setAmount = (v) => (amountInput.value = formatAmount(v > 0n ? v : 1_000_000n).replace(/,/g, ""));
+  const setAmount = (v) => (amountInput.value = formatAmount(v > 0n ? v : 1_000_000n, { up: true }).replace(/,/g, ""));
   const amountChoices = h("div", { class: "actions row" });
 
   let balance = 0n;
@@ -195,6 +195,32 @@ export async function fundScreen(index) {
     privateBox.hidden = held <= 0n;
   };
 
+  // Two ways in, side by side: straight to this circle, or privately through the private balance.
+  const direct = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "route", value: "direct", checked: true }));
+  const viaPrivate = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "route", value: "private" }));
+  const routes = h("div", { class: "networks", role: "radiogroup", "aria-label": "How to add money" },
+    h("label", { class: "choice" }, direct, h("span", null, h("strong", null, "Straight from an exchange or wallet"), h("span", { class: "hint" }, "Quickest. The public chain can link this circle to the address you send from."))),
+    h("label", { class: "choice" }, viaPrivate, h("span", null, h("strong", null, "Privately, through your private balance"), h("span", { class: "hint" }, "Your exchange stays off the public chain. Add to your private balance, then move it here in one tap."))),
+  );
+  const directForm = h("div", { class: "stack" },
+    field("How much, in dollars", amountInput, "Adding enough for every round at once saves a network fee each round. Anything not used stays in this account, and you can cash it out."),
+    amountChoices,
+    h("p", null, "Choose the network you're sending from. Withdrawing from an exchange works: pick the same network there."),
+    networks.el,
+    h("div", { class: "actions" }, getAddress),
+    depositBox,
+  );
+  const privateRoute = h("div", { class: "stack", hidden: true },
+    h("p", null, "Send from your exchange to your private balance first. When it arrives, come back here and move it into this circle in one tap."),
+    h("div", { class: "actions" }, h("a", { class: "button primary", href: `#/private/add/${index}` }, "Add to your private balance")),
+  );
+  const pickRoute = () => {
+    directForm.hidden = !direct.checked;
+    privateRoute.hidden = direct.checked;
+  };
+  direct.addEventListener("change", pickRoute);
+  viaPrivate.addEventListener("change", pickRoute);
+
   const nearAccount = h("details", { class: "more" },
     h("summary", null, "Already have USDT on NEAR Intents?"),
     h("p", null, "Transfer it inside NEAR Intents (for example from near.com) to this circle's account:"),
@@ -210,14 +236,10 @@ export async function fundScreen(index) {
       progress,
       h("div", { class: "actions" }, actionBtn),
       privateBox,
-      h("h2", null, "From an exchange or wallet"),
-      field("How much, in dollars", amountInput, "Adding enough for every round at once saves a network fee each round. Anything not used stays in this account, and you can cash it out."),
-      amountChoices,
-      h("p", null, "Choose the network you're sending from. Withdrawing from an exchange works: pick the same network there."),
-      networks.el,
-      h("div", { class: "actions" }, getAddress),
-      depositBox,
-      h("p", { class: "hint" }, "Want the exchange you pay from kept off the public chain? ", h("a", { href: `#/private/add/${index}` }, "Add to your private balance"), " first, then move it here."),
+      h("h2", null, "Add money"),
+      routes,
+      directForm,
+      privateRoute,
       nearAccount,
     ),
   );
@@ -235,8 +257,8 @@ export async function fundScreen(index) {
   }
   if (purpose && purpose.whole - balance > short) {
     amountChoices.append(
-      h("button", { class: "secondary", type: "button", onclick: () => setAmount(short) }, `Just this: ${usd(short > 0n ? short : 0n)}`),
-      h("button", { class: "secondary", type: "button", onclick: () => setAmount(purpose.whole - balance) }, `Every round: ${usd(purpose.whole - balance)}`),
+      h("button", { class: "secondary", type: "button", onclick: () => setAmount(short) }, `Just this: $${formatAmount(short > 0n ? short : 0n, { up: true })}`),
+      h("button", { class: "secondary", type: "button", onclick: () => setAmount(purpose.whole - balance) }, `Every round: $${formatAmount(purpose.whole - balance, { up: true })}`),
     );
   }
 

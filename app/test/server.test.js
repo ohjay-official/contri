@@ -5,7 +5,7 @@ import { actions } from "../public/js/lib/contri.js";
 import { authCall, signIntents, transfer } from "../public/js/lib/intents.js";
 import { signerFromSeed } from "../public/js/lib/keys.js";
 import { needs } from "../server/keeper.js";
-import { formatUnits } from "../server/oneclick.js";
+import { formatUnits, toSend } from "../server/oneclick.js";
 import { checkPayload, relay } from "../server/relay.js";
 import { views } from "../server/views.js";
 
@@ -87,4 +87,10 @@ test("token amounts for people round up to the cent", () => {
   assert.equal(formatUnits(2_010_000_000_000_000_000n, 18), "2.01");
   assert.equal(formatUnits(2_000_001n, 6), "2.01");
   assert.equal(formatUnits(2_000_000n, 6), "2.00");
+});
+
+test("members are asked to send whole cents, a little over what has to arrive", () => {
+  assert.equal(toSend(3_000_000n, 18), 3_020_000_000_000_000_000n, "$3 arrives from 3.02 USDT on BNB Chain");
+  assert.equal(toSend(1_000_000n, 6), 1_010_000n);
+  assert.equal(toSend(5_000_000n, 6), 5_030_000n);
 });

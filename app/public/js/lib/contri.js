@@ -75,14 +75,16 @@ export function parseAmount(s) {
 }
 
 /**
- * 12500000n -> "12.50". Whole cents, trailing zeros trimmed past them.
- * @param {bigint | string} v
+ * 12500000n -> "12.50": dollars and cents. Rounded down, so a balance is
+ * never overstated; with `up`, rounded up, for an amount someone has to add
+ * or send, so they're never left short.
+ * @param {bigint | string} v @param {{ up?: boolean }} [opts]
  */
-export function formatAmount(v) {
+export function formatAmount(v, { up = false } = {}) {
+  const CENT = UNIT / 100n;
   const n = BigInt(v);
-  const whole = n / UNIT;
-  const frac = (n % UNIT).toString().padStart(DECIMALS, "0").replace(/0+$/, "").padEnd(2, "0");
-  return `${whole.toLocaleString("en-US")}.${frac}`;
+  const cents = up ? (n + CENT - 1n) / CENT : n / CENT;
+  return `${(cents / 100n).toLocaleString("en-US")}.${(cents % 100n).toString().padStart(2, "0")}`;
 }
 
 /** @param {Circle} c @param {string} account */

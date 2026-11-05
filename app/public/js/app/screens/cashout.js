@@ -58,18 +58,26 @@ export async function cashOutScreen(from) {
 
   const check = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary" }, "See what arrives"));
   const go = /** @type {HTMLButtonElement} */ (h("button", { class: "primary" }, "Cash out"));
+  // What happens to the money on the way out, for the destination chosen.
+  const note = h("p", { class: "hint" });
   const sync = () => {
     const chain = going() === "chain";
     chainFields.hidden = !chain;
     check.hidden = !chain;
     go.textContent = chain ? "Cash out" : "Move to private balance";
     estimate.textContent = "";
+    note.textContent = fromPrivate
+      ? "The money leaves NEAR Intents' private ledger through 1Click. The public chain shows the payment to your address, not where it came from."
+      : chain
+        ? "Your address is sent only to 1Click, which delivers the money there."
+        : "The money goes to NEAR Intents' private ledger. The public chain shows it leaving this circle's account, not where it went.";
   };
   toPrivate.addEventListener("change", sync);
   toChain.addEventListener("change", sync);
 
   const read = () => {
-    const value = parseAmount(amount.value);
+    // Left as shown, the amount means all of it: the shown figure is rounded down to the cent.
+    const value = amount.value.trim() === formatAmount(free).replace(/,/g, "") ? free : parseAmount(amount.value);
     if (value <= 0n) throw new Error("Enter an amount.");
     if (value > balance) throw new Error(`You have ${usd(balance)} here.`);
     if (going() === "private") return { value, network: "", address: "" };
@@ -135,10 +143,7 @@ export async function cashOutScreen(from) {
       buttons,
       estimate,
       progress,
-      h("p", { class: "hint" },
-        fromPrivate
-          ? "The money leaves NEAR Intents' private ledger through 1Click. The public chain shows the payment to your address, not where it came from."
-          : "The receiving address is only sent to 1Click, which delivers it."),
+      note,
     ),
   );
   sync();

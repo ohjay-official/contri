@@ -19,6 +19,21 @@ Screenshots from the automated browser test: two members with passkeys click thr
 
 **Live app:** https://contri.ng. **Contract:** [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near) on NEAR mainnet.
 
+**Run with real money on 5 November 2026**, on an Android phone (Chrome) and an iPhone (Safari), with real passkeys. Circle 0: $1 a round, 2 members, every 10 minutes. The Android member paid through the private balance; the iPhone member topped up straight from a wallet on BNB Smart Chain.
+
+| Step | Transaction |
+| --- | --- |
+| Contract deployed | [GzzRpgJ…](https://nearblocks.io/txns/GzzRpgJXzz3hoz3jMUioYpdpu8Q8Ag9fPfCzgP9usWHp) |
+| Circle created, $1 deposit paid from money moved out of the private balance | [BwMEkbX…](https://nearblocks.io/txns/BwMEkbXbqnfnmu4N8NssHbiv2FXbRFQGtKWhQS2Y44jt) |
+| Second member joins, $1 deposit | [Emi3RfF…](https://nearblocks.io/txns/Emi3RfFtsJo8sZaJDLwdKAHg57xNASBA6X99Zt64pfR3) |
+| Round 1: first payment | [CANkBfZ…](https://nearblocks.io/txns/CANkBfZx5LsHoktSJr9MvMN9R3gSjjY5C1VEN9VGbXHe) |
+| Round 1: last payment, and the $2 pot paid to seat 1 in the same transaction | [4r349ov…](https://nearblocks.io/txns/4r349ov6rHvWg43G5dY1ZLiGJ5n6Zn7Xn1MeZ7KDAuTV) |
+| Round 2: first payment | [E38hi5Z…](https://nearblocks.io/txns/E38hi5ZqWPKkWcLY8rEVbjnp3aFGjjoWRjZY3asFbVsT) |
+| Round 2: last payment, and the $2 pot paid to seat 2 | [Gtiv9gp…](https://nearblocks.io/txns/Gtiv9gp1J3hn5NU729dL2d5DK9xURnP98YfrurbbfLCy) |
+| Circle finished, both deposits returned | [5kN1RW3…](https://nearblocks.io/txns/5kN1RW3fT86pbqQJQQLtCBAd1U6u9p67ir9pJN366UdV) |
+
+Then one member's payout moved into their private balance and the private balance was cashed out to a wallet on BNB Smart Chain; the other cashed out straight to a wallet. The contract ended holding $0. Every money path in the app ran: top up to a circle, top up privately, private balance to a circle, circle to private balance, and cash-outs from both.
+
 ### 1. Run a circle with real money (about $6 in, nearly all of it back; 10 minutes)
 
 1. Open the app on your phone and tap **Create a passkey**. No email or phone number is asked for.

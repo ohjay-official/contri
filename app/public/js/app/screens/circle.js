@@ -13,19 +13,19 @@ import { standing } from "./home.js";
 
 /** @param {number} id @param {boolean} openShare */
 export async function circleScreen(id, openShare = false) {
-  await refresh();
-  const slot = slotFor(id);
   let c = await getCircle(id);
   if (!c) {
     show(h("section", { class: "stack narrow" }, h("a", { class: "back", href: "#/" }, "Your circles"), h("h1", null, "Circle not found"), h("p", null, "It may have been closed after everyone was paid back.")));
     return;
   }
   // A round past its deadline with someone unpaid, or deposits still to return:
-  // ask the keeper to do it, then show the result.
+  // ask the keeper to do it first, so the balances read next include what it paid.
   if (needs(c, Date.now())) {
     await keep(id);
     c = (await getCircle(id)) ?? c;
   }
+  await refresh();
+  const slot = slotFor(id);
   const deadline = roundDeadlineMs(c);
 
   const cfg = await getConfig();

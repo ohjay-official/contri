@@ -130,6 +130,7 @@ await screen(m, "app-fund-address", async () => {
   await page.waitForSelector(".deposit .code-block", { timeout: 30_000 });
 });
 await screen(m, "app-private-add", async () => {
+  await page.click("text=Privately, through your private balance");
   await page.click("a:has-text('Add to your private balance')");
   await page.waitForSelector("h1:has-text('Add to your private balance')");
   await page.waitForFunction(() => /In your private balance: \$/.test(document.body.innerText), null, { timeout: 30_000 });

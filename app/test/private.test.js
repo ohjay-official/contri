@@ -112,7 +112,7 @@ test("adding privately asks 1Click for a deposit that lands on the private ledge
   assert.equal(body.recipientType, "CONFIDENTIAL_INTENTS");
   assert.equal(body.refundType, "CONFIDENTIAL_INTENTS");
   assert.equal(body.confidentiality, "basic");
-  assert.equal(body.amount, "5025000000000000000", "asks 0.5% over, in BSC's 18 decimals");
+  assert.equal(body.amount, "5030000000000000000", "asks 0.5% over, rounded up to the cent, in BSC's 18 decimals");
   assert.equal(q.send, "5.03");
   assert.equal(q.receive, "5.02");
   await assert.rejects(privateTopUp({ network: "nope", vault: vault.accountId, amount: "5000000" }, c), /unsupported network/);

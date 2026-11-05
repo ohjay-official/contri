@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { fromBase58, fromBase64, fromHex, toBase58, toHex, uintLE, utf8 } from "../public/js/lib/bytes.js";
 import { actions, dueFor, formatAmount, parseAmount } from "../public/js/lib/contri.js";
 import { nep413Hash, signIntents, transfer, versionedNonce } from "../public/js/lib/intents.js";
-import { decryptName, encryptName, inviteLink, inviteSigner, joinMessage, parseInvite, signJoin } from "../public/js/lib/invite.js";
+import { decryptName, encryptName, inviteLink, inviteSigner, joinMessage, newSecret, parseInvite, signJoin } from "../public/js/lib/invite.js";
 import { circleSigner, signerFromSecretKey, signerFromSeed, verify } from "../public/js/lib/keys.js";
 import { encodeTransaction, events } from "../public/js/lib/near.js";
 
@@ -94,7 +94,11 @@ test("amounts", () => {
   assert.equal(formatAmount(5_000_000n), "5.00");
   assert.equal(formatAmount("2500000"), "2.50");
   assert.equal(formatAmount(1_234_567_890_000n), "1,234,567.89");
-  assert.equal(formatAmount(1n), "0.000001");
+  assert.equal(formatAmount(1n), "0.00", "balances round down");
+  assert.equal(formatAmount(1n, { up: true }), "0.01", "amounts to send round up");
+  assert.equal(formatAmount(3_019_389n), "3.01");
+  assert.equal(formatAmount(3_015_000n, { up: true }), "3.02");
+  assert.equal(formatAmount(3_000_000n, { up: true }), "3.00");
 });
 
 test("invite links carry a secret that opens the name and signs joins", async () => {
@@ -106,6 +110,13 @@ test("invite links carry a secret that opens the name and signs joins", async ()
   assert.equal(parsed.circle, 12);
   assert.deepEqual(parsed.secret, secret);
   assert.equal(parseInvite("#12.short"), null);
+  // New circles use 16-byte secrets: 22 characters in the link.
+  const short = new Uint8Array(16).fill(4);
+  const shortLink = inviteLink("https://contri.ng", 3, short);
+  assert.match(shortLink, /^https:\/\/contri\.ng\/join#3\.[A-Za-z0-9_-]{22}$/);
+  assert.deepEqual(parseInvite(new URL(shortLink).hash)?.secret, short);
+  assert.equal(await decryptName(short, await encryptName(short, "Yaba traders")), "Yaba traders");
+  assert.equal(newSecret().length, 16);
 
   const stored = await encryptName(secret, "Lagos Market Ajo");
   assert.ok(stored.startsWith("v1.") && stored.length < 256);

@@ -67,8 +67,7 @@ export async function topUp(body, c) {
   const n = net(body.network);
   const want = units(body.amount, "amount");
   if (!IMPLICIT_OR_NAMED.test(String(body.account))) throw new RelayError("invalid account");
-  // Ask for 0.5% more than needed so swap and bridge costs don't leave the member short.
-  const send = ((want * 1005n) / 1000n) * 10n ** BigInt(n.decimals - TOKEN_DECIMALS);
+  const send = toSend(want, n.decimals);
   const q = await quote(c, {
     dry: false,
     swapType: "FLEX_INPUT",
@@ -90,7 +89,7 @@ export async function topUp(body, c) {
     symbol: n.symbol,
     depositAddress: q.depositAddress,
     depositMemo: q.depositMemo ?? null,
-    send: q.amountInFormatted,
+    send: formatUnits(BigInt(q.amountIn), n.decimals),
     minSend: formatUnits(BigInt(q.minAmountIn), n.decimals),
     receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS),
     deadline: q.deadline,
@@ -164,6 +163,18 @@ export async function submitDeposit(body, c) {
 export function formatDown(v, decimals) {
   const cents = (v * 100n) / 10n ** BigInt(decimals);
   return `${cents / 100n}.${(cents % 100n).toString().padStart(2, "0")}`;
+}
+
+/**
+ * What to ask a member to send for `want` (token units) to arrive: 0.5% more,
+ * so swap and bridge costs don't leave them short, rounded up to whole cents
+ * so the amount is easy to type, in the sending network's decimals.
+ * @param {bigint} want @param {number} decimals
+ */
+export function toSend(want, decimals) {
+  const CENT = 10n ** BigInt(TOKEN_DECIMALS - 2);
+  const cents = ((want * 1005n) / 1000n + CENT - 1n) / CENT;
+  return cents * CENT * 10n ** BigInt(decimals - TOKEN_DECIMALS);
 }
 
 /** @param {bigint} v @param {number} decimals */

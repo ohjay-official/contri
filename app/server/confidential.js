@@ -25,7 +25,7 @@ import { fromBase58, fromBase64, toHex } from "../public/js/lib/bytes.js";
 import { nep413Hash } from "../public/js/lib/intents.js";
 import { verify } from "../public/js/lib/keys.js";
 import { checkPrivateMove } from "../public/js/lib/private.js";
-import { deadline, formatDown, formatUnits, IMPLICIT_OR_NAMED, net, quote, TOKEN_DECIMALS, units } from "./oneclick.js";
+import { deadline, formatDown, formatUnits, IMPLICIT_OR_NAMED, net, quote, TOKEN_DECIMALS, toSend, units } from "./oneclick.js";
 import { RelayError } from "./relay.js";
 
 /** @typedef {import("./config.js").Config} Config */
@@ -103,7 +103,7 @@ export async function privateTopUp(body, c) {
   const n = net(body.network);
   const vault = account(body.vault);
   const want = units(body.amount, "amount");
-  const send = ((want * 1005n) / 1000n) * 10n ** BigInt(n.decimals - TOKEN_DECIMALS);
+  const send = toSend(want, n.decimals);
   const q = await quote(c, {
     dry: false,
     swapType: "EXACT_INPUT",

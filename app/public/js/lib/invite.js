@@ -3,7 +3,9 @@
 //
 // An invite link looks like  https://<site>/join#<circle id>.<secret>
 // Everything after `#` stays in the browser: it is never sent to any server,
-// ours included. From the 32-byte secret the app derives:
+// ours included. The secret is 16 random bytes (128 bits, 22 characters in
+// the link; circles made before were 32 bytes, and both open). From it the
+// app derives:
 //
 //   invite key   HKDF(secret, "contri/invite/sign")   ed25519. Its public half
 //                is stored with the circle; the contract only lets in members
@@ -17,7 +19,7 @@ import { hkdf, signerFromSeed } from "./keys.js";
 /** Longest circle name in UTF-8 bytes; its ciphertext stays under the contract's 256-byte limit. */
 export const MAX_NAME_BYTES = 100;
 
-export const newSecret = () => randomBytes(32);
+export const newSecret = () => randomBytes(16);
 
 /** @param {Uint8Array} secret */
 export async function inviteSigner(secret) {
@@ -82,8 +84,8 @@ export const inviteLink = (origin, circle, secret) => `${origin}/join#${circle}.
  * @returns {{ circle: number, secret: Uint8Array } | null}
  */
 export function parseInvite(hash) {
-  const m = /^#?(\d{1,15})\.([A-Za-z0-9_-]{43})$/.exec(hash.trim());
+  const m = /^#?(\d{1,15})\.([A-Za-z0-9_-]{22}|[A-Za-z0-9_-]{43})$/.exec(hash.trim());
   if (!m) return null;
   const secret = fromBase64(m[2]);
-  return secret.length === 32 ? { circle: Number(m[1]), secret } : null;
+  return secret.length === 16 || secret.length === 32 ? { circle: Number(m[1]), secret } : null;
 }
