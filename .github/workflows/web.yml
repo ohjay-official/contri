@@ -135,8 +135,18 @@ jobs:
         run: |
           set -o pipefail
           npm install --no-audit --no-fund 2>&1 | tail -1
-          npx playwright install --with-deps chromium 2>&1 | tail -1
+          npx playwright install --with-deps chromium webkit firefox 2>&1 | tail -1
           node scripts/live-browser.mjs "$(cat ../web-out/domain.txt)" ../web-out/screens 2>&1 | tee ../web-out/live-browser.txt
+
+      # Staying unlocked through a dropped tab and a browser restart, on Android
+      # Chrome (and its desktop mode), iPhone Safari, and Chrome, Edge, Firefox
+      # and Safari on computers, each in its real engine.
+      - name: Check staying unlocked on every browser
+        if: steps.decide.outputs.go == 'true'
+        working-directory: app
+        run: |
+          set -o pipefail
+          node scripts/live-sessions.mjs "$(cat ../web-out/domain.txt)" 2>&1 | tee ../web-out/live-sessions.txt
 
       - name: Publish to the web-results branch
         if: always() && (steps.decide.outputs.go == 'true' || env.VERCEL_TOKEN == '')

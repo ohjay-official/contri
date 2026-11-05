@@ -5,7 +5,6 @@
 // and /join#<circle>.<secret> for invite links.
 
 import { parseInvite } from "../lib/invite.js";
-import { touch } from "../lib/session.js";
 import { inAppBrowser } from "../lib/support.js";
 import { getConfig } from "./api.js";
 import { cashOutScreen } from "./screens/cashout.js";
@@ -70,9 +69,6 @@ async function run(fn) {
 
 async function main() {
   await restore();
-  // Using the app keeps it unlocked; see lib/session.js.
-  for (const ev of ["pointerdown", "keydown"]) addEventListener(ev, () => touch(), { passive: true });
-  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && unlocked() && touch());
   const cfg = await getConfig().catch(() => null);
   if (cfg && !cfg.contractId) notice("Contri isn't connected to a contract yet. Nothing here will work until it is.", "error");
   if (location.pathname.startsWith("/join")) {

@@ -1,24 +1,25 @@
 // @ts-check
-// Staying unlocked while the member switches apps.
+// Staying unlocked.
 //
 // Phones reload a page they put in the background (iOS Safari often does it
-// within seconds), and a reload used to lock Contri and ask for the passkey
-// again. Now the unlocked secret is kept for a while, sealed:
+// within seconds), browsers restart, tabs get closed. None of that should ask
+// for the passkey again: once unlocked, Contri stays unlocked on this device
+// until the member locks it (Your key, then Lock Contri on this device). The
+// unlocked secret is kept sealed:
 //
 //   - AES-GCM with a key the browser makes non-extractable and keeps in
 //     IndexedDB: script can use it to unseal, but nothing can read its bytes,
 //     so the stored session is useless copied off the device;
-//   - the sealed secret in localStorage, with an expiry that moves forward
-//     while the member uses the app, and passes after IDLE_MS without use;
-//   - locking (or the expiry) deletes both.
+//   - the sealed secret in localStorage;
+//   - locking deletes both.
 //
-// Where IndexedDB or WebCrypto keys aren't available (some private modes),
-// nothing is kept and a reload asks for the passkey, as before.
+// The same code runs on every browser: Chrome, Edge, Samsung Internet,
+// Firefox and Safari, on phones and computers. Where IndexedDB or WebCrypto
+// keys aren't available (some private modes), nothing is kept and a reload
+// asks for the passkey.
 
 import { fromBase58, toBase58 } from "./bytes.js";
 
-/** How long Contri stays unlocked without being used. */
-export const IDLE_MS = 30 * 60_000;
 const STORE = "contri.session";
 const DB = "contri";
 const KEYS = "keys";
@@ -46,55 +47,38 @@ async function keyStore(op, value) {
 }
 
 /**
- * Seals and keeps an unlocked secret.
- * @param {Uint8Array} secret @param {string} mode @param {number} [now]
+ * Seals and keeps an unlocked secret until the member locks Contri.
+ * @param {Uint8Array} secret @param {string} mode
  */
-export async function keep(secret, mode, now = Date.now()) {
+export async function keep(secret, mode) {
   try {
     const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, /** @type {BufferSource} */ (secret)));
     await keyStore("put", key);
-    localStorage.setItem(STORE, JSON.stringify({ v: 1, mode, iv: toBase58(iv), sealed: toBase58(sealed), until: now + IDLE_MS }));
+    localStorage.setItem(STORE, JSON.stringify({ v: 2, mode, iv: toBase58(iv), sealed: toBase58(sealed) }));
+    // Ask the browser not to clear this site's storage to free up space.
+    await navigator.storage?.persist?.().catch(() => false);
   } catch {
-    forget();
+    await forget();
   }
 }
 
-/**
- * The kept secret, if it hasn't expired. Each successful read moves the
- * expiry forward.
- * @param {number} [now] @returns {Promise<{ secret: Uint8Array, mode: string } | null>}
- */
-export async function recall(now = Date.now()) {
+/** The kept secret, if Contri hasn't been locked. @returns {Promise<{ secret: Uint8Array, mode: string } | null>} */
+export async function recall() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) ?? "null");
-    if (!saved || saved.v !== 1) return null;
-    if (!(saved.until > now)) {
-      await forget();
-      return null;
-    }
+    if (!saved || (saved.v !== 1 && saved.v !== 2)) return null;
     const key = await keyStore("get");
     if (!key) return null;
     const secret = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: /** @type {BufferSource} */ (fromBase58(saved.iv)) }, key, /** @type {BufferSource} */ (fromBase58(saved.sealed))));
-    touch(now);
     return { secret, mode: saved.mode };
   } catch {
     return null;
   }
 }
 
-/** Moves the expiry forward: the member is using the app. @param {number} [now] */
-export function touch(now = Date.now()) {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORE) ?? "null");
-    if (saved && saved.until > now) localStorage.setItem(STORE, JSON.stringify({ ...saved, until: now + IDLE_MS }));
-  } catch {
-    // Storage blocked: nothing is kept anyway.
-  }
-}
-
-/** Deletes the kept session and its key. */
+/** Deletes the kept session and its key: Contri is locked. */
 export async function forget() {
   try {
     localStorage.removeItem(STORE);
