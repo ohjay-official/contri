@@ -20,7 +20,17 @@ const check = (ok, what, detail = "") => {
   if (!ok) failed++;
   console.log(`${ok ? "ok  " : "FAIL"} ${what}${detail ? `  (${detail})` : ""}`);
 };
-const get = (path, init) => fetch(path.startsWith("http") ? path : base + path, { redirect: "manual", ...init });
+/** A request, tried up to 3 times if the network drops (not on an HTTP error, which is the answer). */
+async function get(path, init) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fetch(path.startsWith("http") ? path : base + path, { redirect: "manual", signal: AbortSignal.timeout(20_000), ...init });
+    } catch (e) {
+      if (attempt === 3) throw e;
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
+  }
+}
 const post = (path, body) => get(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
 // ---- 1. Pages and the addresses that lead to them ----
