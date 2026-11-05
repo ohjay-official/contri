@@ -78,7 +78,7 @@ export async function homeScreen() {
       rows.length
         ? h("ul", { class: "circle-list" }, rows)
         : h("div", { class: "empty" },
-            h("p", null, "You're not in a circle yet."),
+            h("p", null, "You're not in a circle yet"),
             h("p", null, "Start one and send the invite link to the people you save with. If someone sent you a link, open it on this phone to join."),
           ),
       h("div", { class: "actions" }, h("a", { class: "button primary", href: "#/new" }, "Start a circle")),

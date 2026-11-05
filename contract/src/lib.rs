@@ -1469,13 +1469,13 @@ fn seat_image(c: &Circle, seat: u32, for_sale: bool) -> String {
     let done = if c.status == CircleStatus::Finished { c.size } else { c.round };
     let ring = 490 * done / c.size;
     let status = if seat < done {
-        "PAID OUT".to_string()
+        "Paid out".to_string()
     } else if seat == c.round {
-        "PAYS THIS ROUND".to_string()
+        "Pays this round".to_string()
     } else if for_sale {
-        "FOR SALE".to_string()
+        "For sale".to_string()
     } else {
-        format!("PAYS IN ROUND {}", seat + 1)
+        format!("Pays in round {}", seat + 1)
     };
     format!(
         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E\
@@ -1483,10 +1483,10 @@ fn seat_image(c: &Circle, seat: u32, for_sale: bool) -> String {
          %3Cg fill='none' stroke-width='12' transform='rotate(-90 150 132)'%3E\
          %3Ccircle cx='150' cy='132' r='78' stroke='%233b5394'/%3E\
          %3Ccircle cx='150' cy='132' r='78' stroke='%23f3f4f0' stroke-dasharray='{ring} 490'/%3E%3C/g%3E\
-         %3Cg font-family='monospace' text-anchor='middle'%3E\
+         %3Cg font-family='system-ui' text-anchor='middle'%3E\
          %3Ctext x='150' y='144' font-size='34' fill='%23f3f4f0'%3E{}/{}%3C/text%3E\
          %3Ctext x='150' y='246' font-size='15' fill='%23f3f4f0'%3E{status}%3C/text%3E\
-         %3Ctext x='150' y='274' font-size='11' fill='%23a3b6f3'%3ECONTRI SEAT %23{}%3C/text%3E%3C/g%3E%3C/svg%3E",
+         %3Ctext x='150' y='274' font-size='11' fill='%23a3b6f3'%3EContri seat %23{}%3C/text%3E%3C/g%3E%3C/svg%3E",
         seat + 1,
         c.size,
         c.id

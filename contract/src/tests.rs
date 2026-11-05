@@ -753,7 +753,7 @@ fn seats_are_nft_tokens() {
     // The seat's picture is drawn from the circle's live state.
     let media = page[0]["metadata"]["media"].as_str().unwrap();
     assert!(media.starts_with("data:image/svg+xml,%3Csvg"));
-    assert!(media.contains("2/3") && media.contains("PAYS IN ROUND 2"));
+    assert!(media.contains("2/3") && media.contains("Pays in round 2"));
     assert!(media.is_ascii() && !media.contains('"') && !media.contains('<'));
     assert_eq!(view(&c, "", Contri::nft_tokens).as_array().unwrap().len(), 3);
 
@@ -1449,18 +1449,18 @@ fn seat_image_follows_the_circle() {
             .unwrap()
             .to_string()
     };
-    assert!(media(&c, "0:0").contains("PAYS THIS ROUND"));
+    assert!(media(&c, "0:0").contains("Pays this round"));
     assert!(media(&c, "0:0").contains("stroke-dasharray='0 490'"));
     auth(&mut c, CHIOMA, "list_seat:0:2:700000", 50);
-    assert!(media(&c, "0:2").contains("FOR SALE"));
+    assert!(media(&c, "0:2").contains("For sale"));
     for who in [ADA, BAYO, CHIOMA] {
         contribute(&mut c, who, 0, 0, 100);
     }
     set("contri.near", 101);
     c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true);
-    assert!(media(&c, "0:0").contains("PAID OUT"));
+    assert!(media(&c, "0:0").contains("Paid out"));
     assert!(media(&c, "0:0").contains("stroke-dasharray='163 490'"));
-    assert!(media(&c, "0:1").contains("PAYS THIS ROUND"));
+    assert!(media(&c, "0:1").contains("Pays this round"));
 }
 
 #[test]

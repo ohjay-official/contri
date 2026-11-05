@@ -140,7 +140,7 @@ A token:
 }
 ```
 
-`media` is a picture the contract draws from the circle's live state: a ring that fills round by round, the turn (`2/3`), and where the seat stands (`PAYS THIS ROUND`, `PAID OUT`, `FOR SALE`, `PAYS IN ROUND 3`). Seats become tokens when the circle fills and the turn order is final.
+`media` is a picture the contract draws from the circle's live state: a ring that fills round by round, the turn (`2/3`), and where the seat stands (`Pays this round`, `Paid out`, `For sale`, `Pays in round 3`). Seats become tokens when the circle fills and the turn order is final.
 
 ## Events
 

@@ -17,12 +17,12 @@ import { balanceOf, decodeSecret, local, remember, signer } from "../wallet.js";
 /** Networks shown first are the cheapest for small amounts. */
 export const NETWORKS = [
   { id: "bsc", label: "BNB Smart Chain (BEP20)", symbol: "USDT", note: "Lowest fees for small amounts. Most exchanges support it." },
-  { id: "sol", label: "Solana", symbol: "USDT", note: "Low fees." },
-  { id: "ton", label: "TON", symbol: "USDT", note: "From Telegram wallets." },
-  { id: "base", label: "Base", symbol: "USDC", note: "Arrives as USDT." },
-  { id: "arb", label: "Arbitrum", symbol: "USDC", note: "Arrives as USDT." },
-  { id: "tron", label: "Tron (TRC20)", symbol: "USDT", note: "Minimum about $2.60, and higher fees." },
-  { id: "eth", label: "Ethereum (ERC20)", symbol: "USDT", note: "High network fees." },
+  { id: "sol", label: "Solana", symbol: "USDT", note: "Low fees" },
+  { id: "ton", label: "TON", symbol: "USDT", note: "From Telegram wallets" },
+  { id: "base", label: "Base", symbol: "USDC", note: "Arrives as USDT" },
+  { id: "arb", label: "Arbitrum", symbol: "USDC", note: "Arrives as USDT" },
+  { id: "tron", label: "Tron (TRC20)", symbol: "USDT", note: "Minimum about $2.60, and higher fees" },
+  { id: "eth", label: "Ethereum (ERC20)", symbol: "USDT", note: "High network fees" },
 ];
 
 /** @param {number} index the circle account (slot) */
@@ -100,7 +100,7 @@ export async function fundScreen(index) {
     busy(actionBtn, "Signing and sending", async () => {
       if (!purpose) return void (location.hash = "#/");
       const next = await purpose.run();
-      notice("Done.");
+      notice("Done");
       location.hash = next;
     }),
   );
@@ -127,7 +127,7 @@ export async function fundScreen(index) {
     balanceEl.textContent = usd(balance);
     const need = purpose ? purpose.need - balance : 0n;
     actionBtn.disabled = Boolean(purpose) && need > 0n;
-    if (purpose && need <= 0n) progress.textContent = "Your money is here.";
+    if (purpose && need <= 0n) progress.textContent = "Your money is here";
   };
 
   getAddress.addEventListener("click", () =>
@@ -144,7 +144,7 @@ export async function fundScreen(index) {
         q.depositMemo ? h("p", null, "Memo, required: ", h("strong", { class: "code" }, q.depositMemo)) : null,
         h("p", { class: "hint" }, `Only send ${q.symbol} on ${q.label} to this address. Sending more is fine: the extra stays in your balance. It usually arrives about ${Math.max(1, Math.round(q.seconds / 60))} minute${q.seconds > 90 ? "s" : ""} after your exchange or wallet sends it. Use this address once, before ${new Date(q.deadline).toLocaleString()}.`)].filter((x) => x !== null),
       );
-      progress.textContent = "Waiting for your deposit.";
+      progress.textContent = "Waiting for your deposit";
       depositBox.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     }),
   );
@@ -206,11 +206,11 @@ export async function fundScreen(index) {
 
 /** 1Click's swap states, in the member's words. @type {Record<string, string>} */
 const STATUS = {
-  PENDING_DEPOSIT: "Waiting for your deposit.",
-  KNOWN_DEPOSIT_TX: "Your deposit is on its way.",
+  PENDING_DEPOSIT: "Waiting for your deposit",
+  KNOWN_DEPOSIT_TX: "Your deposit is on its way",
   INCOMPLETE_DEPOSIT: "Less arrived than this address needs. Check the amount you sent.",
   PROCESSING: "Deposit received. Converting it to USDT.",
-  SUCCESS: "Arrived.",
+  SUCCESS: "Arrived",
   REFUNDED: "The deposit couldn't be converted and was refunded to this circle's account.",
   FAILED: "The deposit failed. Keep this deposit address: it is how the deposit can be traced.",
 };

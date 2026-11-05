@@ -66,7 +66,7 @@ export async function circleScreen(id, openShare = false) {
     if (balance >= BigInt(c.contribution)) {
       const pay = h("button", { class: "primary" }, `Pay ${usd(c.contribution)} for round ${c.round + 1}`);
       const round = c.round;
-      pay.addEventListener("click", () => busy(pay, "Paying", () => act(a.contribute(id, round, c.contribution), "Paid.")));
+      pay.addEventListener("click", () => busy(pay, "Paying", () => act(a.contribute(id, round, c.contribution), "Paid")));
       primary.push(pay);
     } else {
       primary.push(h("a", { class: "button primary", href: `#/add/${slot?.index}` }, `Add money to pay ${usd(c.contribution)}`));
@@ -134,12 +134,12 @@ export async function circleScreen(id, openShare = false) {
     const listed = c.listings[mySeat];
     if (listed) {
       const unlist = h("button", { class: "secondary" }, "Take my turn off sale");
-      unlist.addEventListener("click", () => busy(unlist, "Updating", () => act(a.unlistSeat(id, mySeat), "Your turn is off sale.")));
+      unlist.addEventListener("click", () => busy(unlist, "Updating", () => act(a.unlistSeat(id, mySeat), "Your turn is off sale")));
       market.push(h("p", null, `Your turn (${mySeat + 1}) is for sale at ${usd(listed)}. Whoever buys it swaps turns with you and pays you that amount.`), unlist);
     } else {
       const price = /** @type {HTMLInputElement} */ (h("input", { type: "text", inputmode: "decimal", placeholder: "1" }));
       const list = h("button", { class: "secondary" }, "Put my turn up for sale");
-      list.addEventListener("click", () => busy(list, "Listing", () => act(a.listSeat(id, mySeat, parseAmount(price.value)), "Your turn is for sale.")));
+      list.addEventListener("click", () => busy(list, "Listing", () => act(a.listSeat(id, mySeat, parseAmount(price.value)), "Your turn is for sale")));
       market.push(
         h("p", null, `You receive the pot in round ${mySeat + 1}, ${fromNow(payoutDateMs(c, mySeat) ?? 0)}. If you can wait, another member who needs cash sooner can buy your turn: you swap places and they pay you.`),
         field("Your price, in dollars", price),
@@ -153,7 +153,7 @@ export async function circleScreen(id, openShare = false) {
       buy.addEventListener("click", () =>
         busy(buy, "Buying", async () => {
           if (balance < BigInt(p)) throw new Error(`Add ${usd(BigInt(p) - balance)} to this circle's account first.`);
-          await act(a.buySeat(id, i, p), `Turn ${i + 1} is yours.`);
+          await act(a.buySeat(id, i, p), `Turn ${i + 1} is yours`);
         }),
       );
       market.push(h("p", null, `Turn ${i + 1} is for sale. Buying it moves you to round ${i + 1} and the seller to your round ${mySeat + 1}.`), buy);

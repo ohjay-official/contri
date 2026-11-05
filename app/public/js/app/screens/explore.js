@@ -46,7 +46,7 @@ export async function exploreScreen() {
       h("p", { class: "lead" }, `Every circle on Contri's contract (${cfg.contractId || "not deployed yet"}), read straight from the blockchain. Names are encrypted, so you see what any stranger can: amounts, turns and payouts, by accounts that lead nowhere.`),
       circles.length
         ? h("p", null, h("strong", null, `${usd(paidOut)}`), ` paid out so far across ${circles.length} circle${circles.length === 1 ? "" : "s"}, ${running} running now.`)
-        : h("p", { class: "empty" }, "No circles yet."),
+        : h("p", { class: "empty" }, "No circles yet"),
       h("ul", { class: "explore" }, cards),
     ),
   );
