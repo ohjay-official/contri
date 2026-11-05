@@ -17,7 +17,7 @@ Screenshots from the automated browser test: two members with passkeys click thr
 
 ## How to test
 
-**Live app:** https://contri-topaz.vercel.app Contract: _account added at deploy_.
+**Live app:** https://contri-topaz.vercel.app (contract: _added at deploy_)
 
 ### 1. Run a circle with real money (about $6 in, nearly all of it back; 10 minutes)
 
