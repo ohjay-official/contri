@@ -48,7 +48,7 @@ const teams = await api("/v2/teams");
 const list = /** @type {any[]} */ (teams.body?.teams ?? []);
 if (list.length >= 1) {
   team = (list.find((t) => t.slug === process.env.VERCEL_TEAM) ?? list[0]).id;
-  console.log(`team: ${list.find((t) => t.id === team)?.name ?? team}`);
+  console.error(`team: ${list.find((t) => t.id === team)?.name ?? team}`);
 }
 const p = await project();
 
