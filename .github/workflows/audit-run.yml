@@ -39,6 +39,9 @@ jobs:
             const onchain = o["circles.contring.near"].account.code_hash;
             fs.writeFileSync("out/code-hash.txt", `ci-results contri.wasm: ${fs.statSync("/tmp/ci.wasm").size} bytes, sha256 (base58) ${s}\non chain code_hash: ${onchain}\nmatch: ${s === onchain}\n`);'
           cat out/code-hash.txt
+      - name: Follow-up on chain (NEAR Intents roles, storage counters, code at each README transaction)
+        continue-on-error: true
+        run: node audit/followup.mjs > out/followup.json 2> out/followup.err || true
       - name: Live site headers and bodies
         continue-on-error: true
         run: bash audit/live-site.sh https://contri.ng out/live
