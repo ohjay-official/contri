@@ -44,9 +44,9 @@ jobs:
             vercel integration add upstash/upstash-kv --help --token "$VERCEL_TOKEN" 2>&1 | clean | tee ../storage-out/help.log || true
             PLAN=$(grep -Eio 'free[a-z0-9_-]*' ../storage-out/help.log | head -1)
             echo "plan: ${PLAN:-free}" | tee ../storage-out/add.log
-            vercel integration add upstash/upstash-kv --name contri-limits --plan "${PLAN:-free}" \
-              --environment production --environment preview --no-env-pull --non-interactive \
-              --format json --token "$VERCEL_TOKEN" 2>&1 | clean | tee -a ../storage-out/add.log || true
+            vercel integration add upstash/upstash-kv --name contri-limits --billing-plan "${PLAN:-free}" \
+              --environment production --environment preview --no-env-pull \
+              --json --non-interactive --token "$VERCEL_TOKEN" 2>&1 | clean | tee -a ../storage-out/add.log || true
           fi
           vercel integration list --integration upstash --format json --token "$VERCEL_TOKEN" 2>&1 | clean | tee ../storage-out/after.json || true
           # Which env var names the project has now (names only, never values).
