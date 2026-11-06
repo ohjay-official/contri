@@ -59,7 +59,7 @@ export async function joinScreen(invite) {
       closed
         ? h("p", { class: "callout" }, c.status === "Open" ? "This circle is full" : `This circle ${c.status === "Active" ? "has already started" : "is closed"}. Ask the organizer about the next one.`)
         : h("div", { class: "actions" }, join),
-      h("p", { class: "hint" }, `Nobody holds the money: a contract on NEAR keeps it and pays each round's pot by itself. Open until ${when(Number(BigInt(c.fill_by) / 1_000_000n))} for members to join.`),
+      h("p", { class: "hint" }, `No collector holds the money: a contract on NEAR keeps it and pays each round's pot by itself. Open until ${when(Number(BigInt(c.fill_by) / 1_000_000n))} for members to join.`),
     ),
   );
 }

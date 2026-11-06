@@ -1,6 +1,6 @@
 # Contract methods
 
-Every method takes JSON arguments and returns JSON, like any near-sdk contract. The contract reads and writes that JSON itself instead of using serde (see `contract/src/json.rs`), which keeps the code under 100 KB.
+Every method takes JSON arguments and returns JSON, like any near-sdk contract. The contract reads and writes that JSON itself instead of using serde (see `contract/src/json.rs`), which keeps the code to about 100 KB.
 
 The same reference in machine-readable form is the contract's ABI: [`contract/abi/contri_abi.json`](../contract/abi/contri_abi.json), also returned on chain by the `__contract_abi` view (zstd-compressed, as cargo-near embeds it). It is generated from typed declarations of these methods in `contract/interface`, and tests check that every value the contract returns matches those types.
 
@@ -108,13 +108,13 @@ A circle:
 }
 ```
 
-`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. With `random_order`, the contract draws the turn order from NEAR's per-block random seed when the circle fills. After `fill_by`, anyone can cancel the circle if it is still open. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight. `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
+`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. With `random_order`, the contract draws the turn order from NEAR's per-block random seed when the circle fills (best effort: block producers could bias it). After `fill_by`, anyone can cancel the circle if it is still open. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight. `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
 
-A member's `deposit` is one contribution in an open circle. In an invite-only circle the invite sets it, up to every round but the member's own: less for someone the organizer trusts, more for a stranger. Members creating a circle through NEAR Intents send `create:...` with their deposit and take the first seat.
+A member's `deposit` is exactly one contribution when they join, in every circle. In an invite-only circle the join also needs the invite key's signature over the joiner's account and that deposit. `refill:<circle>` can raise it later, up to every round but the member's own. Members creating a circle through NEAR Intents send `create:...` with their deposit and take the first seat.
 
 ## Seats as NFTs
 
-Each seat is a token `<circle>:<seat>`, owned by the member sitting in it. The views follow NEP-171 (core views), NEP-177 (metadata) and NEP-181 (enumeration). Seats change hands only through the contract's sale flow (`list_seat`, then `buy_seat`), which swaps the two turns and logs NEP-171 `nft_transfer` events. A cancelled circle's seats are burned.
+Each seat is a token `<circle>:<seat>`, owned by the member sitting in it. The views follow NEP-171 (core views), NEP-177 (metadata) and NEP-181 (enumeration). Seats change hands only through the contract's sale flow (`list_seat`, then `buy_seat`), which swaps the two turns and logs NEP-171 `nft_transfer` events. A circle that is cancelled before it fills never has seat tokens. Closing a finished circle deletes it, and its seats with it.
 
 | Method | Arguments | Returns |
 | --- | --- | --- |

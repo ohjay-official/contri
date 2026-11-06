@@ -1,8 +1,9 @@
 // @ts-check
 // Help: where each top-up, move and cash-out is, and its details for support.
 //
-// Contri can't move, freeze or return anyone's money: the member's keys come
-// from their passkey, and the pot is held by the contract. What support can
+// Contri never holds a member's keys: they come from their passkey, and the
+// pot is held by the contract (whose deploy key is deleted when it is locked,
+// see docs/SECURITY.md). What support can
 // do is find where a payment is. Every top-up and cash-out goes through a
 // one-time 1Click deposit address; this screen asks 1Click where each one is,
 // and copies the details a member sends to support.
@@ -84,7 +85,7 @@ export async function helpScreen() {
           h("div", { class: "help-banner-copy" },
             h("p", { class: "eyebrow" }, "Help"),
             h("h1", null, "How we can help"),
-            h("p", null, "Every top-up and cash-out you make on this phone is followed to the end, below. Nobody at Contri can move your money, but we can find where a payment is."),
+            h("p", null, "Every top-up and cash-out you make on this phone is followed to the end, below. Contri never holds your keys, but we can find where a payment is."),
           ),
         ),
         h("div", { class: "help-cards" },
@@ -92,8 +93,8 @@ export async function helpScreen() {
             h("div", { class: "hblob hblob-left", "aria-hidden": "true" }),
             h("div", { class: "hcard-inner" },
               h("span", { class: "hcard-num" }, "01"),
-              h("h2", null, "Nobody can move", h("br"), "your money but you"),
-              h("p", { class: "hcard-bottom" }, "Your keys come from your passkey and each pot is held by the contract, so nobody at Contri can move, freeze or take your money."),
+              h("h2", null, "Contri never", h("br"), "holds your keys"),
+              h("p", { class: "hcard-bottom" }, "Your keys are made on this phone from your passkey, and each pot is held by the contract. Until we lock the contract, the key it was deployed with can still change its code. Locking deletes that key."),
             ),
           ),
           h("article", { class: "hcard hcard-text" },
@@ -119,7 +120,7 @@ export async function helpScreen() {
         h("li", null, "If a payment into a circle didn't go through, your money stayed in that circle's account. Open the circle to try again."),
         h("li", null, "A top-up or cash-out that can't go through is refunded to your own account or private balance, never to anyone else."),
       ),
-      h("p", null, "Still stuck? Tap Copy details for support on the payment, and send it to Contri on ", h("a", { href: "https://x.com/contri_ng", target: "_blank", rel: "noopener noreferrer" }, "X (@contri_ng)"), ". Never send your recovery code: nobody from Contri will ever ask for it."),
+      h("p", null, "Still stuck? Tap Copy details for support on the payment, and send it to Contri on ", h("a", { href: "https://x.com/contri_ng", target: "_blank", rel: "noopener noreferrer" }, "X (@contri_ng)"), ". The details include your circle account and addresses, so sending them tells us they're yours. Never send your recovery code: nobody from Contri will ever ask for it."),
       ),
     ),
   );

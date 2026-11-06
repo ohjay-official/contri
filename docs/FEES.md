@@ -22,8 +22,8 @@ The circle asset is USDT on NEAR inside NEAR Intents: `nep141:usdt.tether-token.
 ## What this means for Contri
 
 - Money stays inside NEAR Intents for the whole circle. Contributions and payouts between members and the Contri contract are internal transfers, so they cost only NEAR gas, which the relayer pays.
-- Members cash out once, when they want, and the app recommends BNB Chain or Solana.
-- Tron works for top-ups of about 2.56 USDT or more, but the app warns that cashing out to Tron costs about 1.56 USDT.
+- Members cash out once, when they want, and the app lists BNB Chain and Solana first when you top up.
+- Tron works for top-ups of about 2.56 USDT or more. Cashing out to Tron costs more than other networks (0.87 USDT in a dry quote on 5 November 2026); the cash-out screen shows the fee when you tap See what arrives.
 
 ## Bridge limits for Tron (PoA bridge `supported_tokens`)
 
@@ -34,7 +34,7 @@ The circle asset is USDT on NEAR inside NEAR Intents: `nep141:usdt.tether-token.
 
 ## Deploying the contract
 
-Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stores, and gets it back when the storage is freed.
+Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stores, and the NEAR is free again when the storage is freed.
 
 | Version | Contract size | Storage locked |
 | --- | --- | --- |
@@ -46,11 +46,12 @@ Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stor
 | Invite-only circles (ed25519 invites) for privacy | 90 KB | 0.90 NEAR |
 | Community backing, trust deposits, refills; a bump allocator instead of wee_alloc | 95 KB | 0.95 NEAR |
 | Fair random draws, leaving before the start, fill deadlines, cleanup, live seat images | 99.4 KB | 0.99 NEAR |
-| Creating costs a deposit (no free spam), bigger deposits through invites | **99.8 KB** | **1.00 NEAR** (99,827 bytes) |
+| Creating costs a deposit (no free spam) | 99.8 KB | 1.00 NEAR (99,751 bytes deployed) |
+| Security fixes: storage reservations and credit slots, a $1 minimum, empty pots, one-contribution invites, fair backing, relative deadlines, gas floors with a share of leftover gas | **102.2 KB** | **1.02 NEAR** (102,245 bytes, CI build of the deployed source) |
 
-The 193 KB step removed two things: direct calls for members with a NEAR account, and the embedded ABI. Both are back in the last row (the ABI is generated from typed declarations in `contract/interface`, see `contract/abi/README.md`). Nothing else was removed, and the later steps added NFT enumeration views, NEP-171 events and a round-deadline view. CI measures the size on every push (`ci-results` branch, `size.json`).
+The 193 KB step removed two things: direct calls for members with a NEAR account, and the embedded ABI. Both came back in the 88 KB row (the ABI is generated from typed declarations in `contract/interface`, see `contract/abi/README.md`). Nothing else was removed, and the later steps added NFT enumeration views, NEP-171 events and a round-deadline view. CI measures the size on every push (`ci-results` branch, `size.json`).
 
-Expected total to launch: just under 1 NEAR for the code, up to 0.03 NEAR per circle for its data (a 20-member circle with its full payout history is about 3 KB; a 5-member one under 1 KB), and gas for the relayer. Storage is locked, not spent: it comes back when the data or the contract is deleted. Circles created through NEAR Intents cost the organizer a deposit, and circles created by a NEAR account bring 0.01 NEAR for their own storage, so nobody can fill the contract's storage for free.
+Expected total to launch: about 1 NEAR for the code, up to 0.03 NEAR per circle for its data (a 20-member circle with its full payout history is about 3 KB; a 5-member one under 1 KB), and gas for the relayer. Storage is locked, not spent. Freed storage goes back to the contract account's balance, where it pays for later circles; once the account is locked, nobody can withdraw it. Each member reserves the bytes their payout record, track record and a possible credit will need (about 440 bytes, 0.0044 NEAR) when they join, and the contract refuses (and refunds) anything that would add storage its NEAR doesn't cover, counting those reservations and 2,000 spare bytes. Running circles never run out of room; when the contract is full, new circles wait until someone sends it NEAR. Circles created through NEAR Intents cost the organizer a deposit of at least 1 USDT, circles created by a NEAR account bring 0.01 NEAR for their own storage, and the keeper closes cancelled circles to free their storage.
 
 ## Gas (measured)
 
@@ -59,13 +60,14 @@ Gas burnt per action in the end-to-end tests against NEAR Intents (`contract/san
 | Action | Gas burnt |
 | --- | --- |
 | Create a circle with the organizer's deposit | 9 Tgas |
-| Join (signed intent or `mt_transfer_call`) | 9–10 Tgas |
+| Join (signed intent or `mt_transfer_call`) | 9–11 Tgas |
 | Contribute | 9 Tgas |
 | Last contribution, which also pays the pot out | 15–17 Tgas |
 | Settle a round after a missed payment (and pay out) | 8 Tgas |
+| The payout callback in a 20-member circle's last round, the worst case | 5.4 Tgas, against a 30 Tgas floor |
 | Buy a seat (and pay the seller) | 15 Tgas |
 | Leave before the start (and get the deposit back) | 12 Tgas |
-| Release deposits (2 transfers) | 13 Tgas |
+| Release deposits (2 transfers) | 13–14 Tgas |
 | List a seat, close a circle | 1 Tgas |
 
 A 5-member circle over 5 rounds is about 35 transactions, roughly 0.04 NEAR of relayer gas.

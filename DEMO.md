@@ -1,6 +1,6 @@
 # Contri: 60-second demo script
 
-Written before any code. If a feature is not in this script, it is not in the first build.
+Written before any code, and kept as it was. The build added more than this script shows: random turn order, the private balance, and community backing in the contract. The finished demo film is 93 seconds and follows the real app on contri.ng.
 
 | Time | Voice | Screen |
 | --- | --- | --- |

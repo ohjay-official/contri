@@ -49,7 +49,7 @@ export function createScreen() {
     h("fieldset", { class: "choices" },
       h("legend", null, "Who receives the pot first"),
       h("label", { class: "choice" }, joinOrder, h("span", null, h("strong", null, "In the order people join"), h("span", { class: "hint" }, "You join first, so you receive first."))),
-      h("label", { class: "choice" }, randomOrder, h("span", null, h("strong", null, "Drawn at random"), h("span", { class: "hint" }, "Contri draws the order on chain once everyone has joined. Nobody can pick it."))),
+      h("label", { class: "choice" }, randomOrder, h("span", null, h("strong", null, "Drawn at random"), h("span", { class: "hint" }, "The contract draws the order once everyone has joined, so no member picks it. Best effort: NEAR's block producers could sway the draw."))),
     ),
     summary,
     h("div", { class: "actions" }, h("button", { class: "primary", type: "submit" }, "Continue")),

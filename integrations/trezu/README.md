@@ -10,6 +10,8 @@ What the backing does:
 
 - When a member misses a payment, Contri takes it from their deposit first, then from the backing.
 - When the circle ends or is cancelled, whatever backing is left is split back between the backers in proportion to what each put in, and `release_deposits` sends it.
-- Each circle takes up to 10 backers, each putting in at least one contribution.
+- Each circle takes up to 10 backers, each putting in at least one contribution. New backing is refused once backing has covered a missed payment, so a late backer never pays for losses from before they came in.
 
 The treasury needs USDT in its NEAR Intents balance first. Trezu treasuries hold their assets there.
+
+Status: backing is in the contract and unit-tested (`community_backing_covers_what_a_deposit_cannot`, `leftover_backing_goes_back_to_backers_in_proportion`, `backing_is_refused_once_some_has_covered_a_missed_payment`). This template hasn't been run against a live DAO yet, and the app doesn't show backing yet.

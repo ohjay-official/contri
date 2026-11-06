@@ -45,18 +45,19 @@
 
       <h2>The contract holds the pot</h2>
       <p>Each circle lives in Contri's contract on NEAR. When a circle is created, its rules are fixed: the amount, the number of members, how often, and how turns are ordered. Members join by paying a deposit of one contribution. Once every seat is filled, rounds begin.</p>
-      <p>Each round, every member pays one contribution. When the last one arrives, the contract sends the whole pot to the member whose turn it is, in the same transaction. If the deadline passes first, anyone can ask the contract to settle the round: missed contributions come out of the late members' deposits, and the pot pays in full while those deposits last. When the circle ends, what's left of each deposit goes back to its owner.</p>
-      <p>Turn order is either the order people joined, with the organizer first, or drawn at random by the contract from NEAR's block randomness once the circle is full, so nobody picks it.</p>
+      <p>Each round, every member pays one contribution. When the last one arrives, the contract sends the whole pot to the member whose turn it is, in the same transaction. If the deadline passes first, anyone can ask the contract to settle the round: missed contributions come out of the late members' deposits, then out of any backing the circle has, and the pot pays in full while those last. When the circle ends, what's left of each deposit goes back to its owner.</p>
+      <p>A deposit is one contribution, so it covers one missed round. If a member takes an early pot and then stops paying, their deposit covers the first round they miss, backing covers what it can after that, and the members paid later get a smaller pot. That is the same risk as in any àjọ, which is why circles work best among people who trust each other.</p>
+      <p>Turn order is either the order people joined, with the organizer first, or drawn at random by the contract from NEAR's block randomness once the circle is full. The draw is best effort: no member or organizer can pick it, but NEAR's block producers could sway it.</p>
 
       <h2>Money moves through NEAR Intents</h2>
       <p>Contributions are USDT held in NEAR Intents, NEAR's network for moving and swapping assets across chains. Members top up from an exchange or wallet on BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum through 1Click, which turns the deposit into USDT in their account. Cashing out works the same way in reverse, to any of those networks.</p>
       <p>A payment to a circle is an intent: a short message, signed on the member's phone, that says "move 5 USDT to Contri for circle 3, round 2". NEAR Intents checks the signature and hands the money and the message to the contract, which either accepts it or refunds it with the reason.</p>
 
       <h2>Your keys come from your passkey</h2>
-      <p>Contri has no accounts or passwords. When you sign in, your passkey gives the app a secret that only that passkey can produce on this site (the WebAuthn PRF extension). The app turns it into one key per circle. Each key's account is a fresh NEAR account that has never been seen before, and money reaches it through NEAR Intents' confidential route, so nothing on chain links your circles to each other. On a new phone, the same passkey gives the same keys back.</p>
+      <p>Contri has no accounts or passwords. When you sign in, your passkey gives the app a secret that only that passkey can produce on this site (the WebAuthn PRF extension). The app turns it into one key per circle. Each key's account is a fresh NEAR account that has never been seen before, and money reaches it through NEAR Intents' confidential route, so your circle accounts aren't linked by keys on chain. Amounts and timing can still hint at a link, and when you move money between your private balance and a circle, 1Click and Contri's server see both accounts. Passkeys only work on contri.ng, so write down the recovery code too: it brings the same keys back if the site ever goes away. On a new phone, the same passkey gives the same keys back.</p>
 
       <h2>Contri pays the transaction fees</h2>
-      <p>Members never need NEAR tokens. Contri's relayer takes your signed intent, checks it is a Contri payment, simulates it, and submits it, paying the NEAR fee. It can't change what you signed, and Contri's code keeps no logs of it. A keeper settles rounds whose deadline has passed and returns deposits after a circle ends. Anyone could do the same: the contract gives the keeper no special rights.</p>
+      <p>Members never need NEAR tokens. Contri's relayer takes your signed intent, checks it is a Contri payment, simulates it, and submits it, paying the NEAR fee. It can't change what you signed. Contri's code keeps no logs of it; Vercel, which hosts the relayer, keeps standard request logs for about an hour. A keeper settles rounds whose deadline has passed and returns deposits after a circle ends. Anyone could do the same: the contract gives the keeper no special rights.</p>
 
       <h2>Turns are tradable</h2>
       <p>Each seat is an NFT that shows its turn and status, drawn by the contract itself. A member who can wait lists their turn for a price; a member with a later turn who needs the money sooner buys it, and the contract swaps the two seats and pays the seller.</p>
@@ -66,6 +67,7 @@
         <li>The <a href="https://github.com/ohjay-official/contri">source code</a> for the contract, the app and the relayer.</li>
         <li>The contract's own tests, and end-to-end tests that run whole circles against the real NEAR Intents contract on a local NEAR network, including the app's own code.</li>
         <li>The contract's code is public, and the code running on NEAR is byte for byte what the project's CI builds from it, so anyone can check what it does.</li>
+        <li>The contract's account keys, on a <a href="https://nearblocks.io/address/circles.contring.near" rel="noopener noreferrer">NEAR explorer</a>. Until we lock the contract, the key it was deployed with can still change its code. Locking deletes that key.</li>
       </ul>
     </main>
   <footer class="scene-foot" aria-label="Site footer">

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Contri: Àjọ without the collector</title>
-  <meta name="description" content="Save in turns with people you trust. A contract on NEAR holds the pot and pays each turn by itself, so nobody can run with the money.">
+  <meta name="description" content="Save in turns with people you trust. A contract on NEAR holds the pot and pays each turn by itself, so no collector holds the money.">
   <meta name="referrer" content="no-referrer">
   <meta name="twitter:site" content="@contri_ng">
   <meta name="theme-color" content="#000000">
@@ -64,11 +64,11 @@
         <div data-fade>
           <p class="eyebrow">Security</p>
           <h2 id="security" class="display">Your Security Is <span class="serif">Our Priority.</span></h2>
-          <p class="lead">In a normal àjọ, one person holds everyone's money. Contri hands that job to a contract on NEAR, so nobody, not even us, can run with your money.</p>
+          <p class="lead">In a normal àjọ, one person holds everyone's money. Contri hands that job to a contract on NEAR, so no collector holds the pot. Until we lock the contract, the key it was deployed with can still change its code. Locking deletes that key.</p>
           <ul class="ticks">
             <li><strong>No collector.</strong> The pot pays out in the same moment the last member pays.</li>
             <li><strong>No password, no seed phrase.</strong> You sign in with your face or fingerprint, through a passkey.</li>
-            <li><strong>No names on the chain.</strong> Circle names are encrypted on your phone before they are saved.</li>
+            <li><strong>Circle names encrypted.</strong> Contri encrypts your circle's name on your phone before it goes on chain.</li>
           </ul>
         </div>
         <div class="orbits-wrap" data-fade="120" aria-label="Pay in from any of these networks">
@@ -99,7 +99,7 @@
           <li class="way" data-fade="80">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="15" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="9" cy="15" r="1.4"/></svg>
             <h3>Turns Drawn Fairly</h3>
-            <p>Keep the order people joined, or let the contract draw turns at random once the circle is full, so nobody picks the best turn for themselves.</p>
+            <p>Keep the order people joined, or let the contract draw turns at random once the circle is full. The draw uses NEAR's block randomness, so it is best effort: only block producers could sway it.</p>
           </li>
           <li class="way" data-fade="160">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16"/><path d="M14 6l6 6-6 6"/><path d="M10 6 4 12l6 6" opacity=".4"/></svg>
@@ -119,7 +119,7 @@
           <li class="way" data-fade="160">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
             <h3>Deposits That Cover Misses</h3>
-            <p>Everyone puts down one contribution to join. If someone misses a round, it comes out of their deposit and the pot still pays in full.</p>
+            <p>Everyone puts down one contribution to join. A missed round comes out of that member's deposit, then out of any backing. Past that, the pot is short.</p>
           </li>
         </ul>
       </div>
@@ -176,7 +176,7 @@
         <dl class="seen-list">
           <div data-fade><dt>Your name, phone number, email</dt><dd>Nobody. Contri never asks for them. You sign in with a passkey.</dd></div>
           <div data-fade><dt>Your circle's name</dt><dd>Only people with the invite link. It is encrypted on your phone before it is saved.</dd></div>
-          <div data-fade><dt>Your other circles</dt><dd>Nobody looking at the chain. Each circle uses its own account, made from your passkey, and money comes in through NEAR Intents' confidential route, so no address connects them.</dd></div>
+          <div data-fade><dt>Your other circles</dt><dd>Each circle uses its own account, made from your passkey, so no key links them on chain. Amounts and timing can still hint at a link, and 1Click and our server see both sides of a private balance move.</dd></div>
           <div data-fade><dt>Who paid this round</dt><dd>Your circle, as it always has in àjọ. Outside it, an account number that doesn't name anyone.</dd></div>
         </dl>
       </div>
@@ -192,10 +192,11 @@
         </div>
         <div class="faq-list">
           <h2 id="faq" class="faq-title">Frequently Asked Questions</h2>
-          <details name="faq" open><summary>Who holds the money?</summary><p>No person. Contributions go to a contract on NEAR, a program whose rules anyone can read. It only pays a pot to the member whose turn it is, and only returns deposits to the members who made them. Our team can't move it outside those rules, and its code is public.</p></details>
+          <details name="faq" open><summary>Who holds the money?</summary><p>No person. Contributions go to a contract on NEAR, a program whose rules anyone can read. It only pays a pot to the member whose turn it is, and only returns deposits to the members who made them. Until we lock the contract, the key we deployed it with can still change its code. Locking deletes that key, and anyone can check the contract's keys on a NEAR explorer.</p></details>
           <details name="faq"><summary>What does it cost?</summary><p>Contri takes no fee. Moving money in and out goes through NEAR Intents' 1Click, whose fees are usually a few cents on BNB Chain or Solana. The app shows what arrives before you send. Contri pays the NEAR transaction fees for every payment you make in a circle.</p></details>
-          <details name="faq"><summary>What if Contri disappears?</summary><p>The contract keeps running without us, and anyone can settle a round once its deadline has passed. Your money is held in NEAR Intents under keys made from your passkey, and the recovery code from Your key brings them back in the open-source app.</p></details>
-          <details name="faq"><summary>What if I lose my phone?</summary><p>Sign in on a new phone with the same passkey. Passkeys are synced by Google Password Manager and iCloud Keychain, and every circle account comes back from it. If your passkey is ever deleted, the recovery code you wrote down from Your key brings everything back.</p></details>
+          <details name="faq"><summary>What if Contri disappears?</summary><p>The contract keeps running without us, and anyone can settle a round once its deadline has passed. Your money is held in NEAR Intents under keys made from your passkey. Passkeys only work on contri.ng, so if the site goes away, the recovery code from Your key is how you reach your money with the open-source app. Write it down.</p></details>
+          <details name="faq"><summary>What if I lose my phone?</summary><p>Sign in on a new phone with the same passkey. Passkeys are synced by Google Password Manager and iCloud Keychain, and every circle account comes back from it. If your passkey is ever deleted, the recovery code from Your key brings everything back, if you wrote it down.</p></details>
+          <details name="faq"><summary>What if someone takes the pot early and stops paying?</summary><p>Their deposit covers their first missed round, then any backing the circle has covers the rest. Past that, the members paid after them get a smaller pot. Contri can't make anyone pay, so save with people you trust, and give the early turns to the people you trust most.</p></details>
           <details name="faq"><summary>What if a top-up doesn't arrive?</summary><p>Open Help in the app. It shows every top-up and cash-out made from this phone and where each one is. A swap that can't complete is refunded to your own circle account or private balance, never to anyone else. Still stuck? Copy the details from Help and send them to us.</p></details>
           <details name="faq"><summary>Is this a bank or an investment?</summary><p>No. Contri doesn't lend, pay interest or invest your money. It is software that runs a savings circle among people who already trust each other.</p></details>
         </div>

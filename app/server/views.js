@@ -2,7 +2,8 @@
 // Read-only chain access for the app. The browser asks Contri's server, which
 // asks a NEAR RPC node, so no RPC provider sees a member's IP address next to
 // the circle accounts it looks up (which would link them). Only Contri's views
-// and balance views on NEAR Intents are answered. Nothing is logged.
+// and balance views on NEAR Intents are answered. Contri's code logs nothing;
+// Vercel keeps its own request logs.
 
 import { view } from "../public/js/lib/near.js";
 import { RelayError } from "./relay.js";

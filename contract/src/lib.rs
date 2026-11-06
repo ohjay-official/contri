@@ -274,8 +274,8 @@ impl Circle {
         }
     }
 
-    /// The most a member's deposit can be: every round but their own payout,
-    /// so an organizer can ask a stranger to cover all their future payments.
+    /// The most a member's deposit can grow to with refills: every round but
+    /// their own payout. Joining always deposits exactly one contribution.
     fn max_deposit(&self) -> u128 {
         self.contribution.0.saturating_mul(self.size as u128 - 1)
     }
@@ -1661,8 +1661,8 @@ fn seat_image(c: &Circle, seat: u32, for_sale: bool) -> String {
     )
 }
 
-/// Shuffles the turn order with NEAR's per-block random seed. Nobody, the
-/// organizer included, can pick who goes first.
+/// Shuffles the turn order with NEAR's per-block random seed. No member can pick
+/// who goes first; best effort, since block producers could bias the seed.
 fn draw_turns(members: &mut [Member]) {
     let seed = env::random_seed_array();
     for i in (1..members.len()).rev() {

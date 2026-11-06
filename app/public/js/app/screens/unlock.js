@@ -56,7 +56,7 @@ export function unlockScreen(done, reason) {
         : h("p", { class: "callout" }, "This browser can't use passkeys. Keep your key on this device below, or open Contri in Chrome or Safari."),
       h("details", { class: "more" },
         h("summary", null, "Other ways in"),
-        h("p", null, "Without a passkey, your key stays in this browser only. You'll get a recovery code to write down: it's the only way back in if this phone is lost."),
+        h("p", null, "Without a passkey, your key stays in this browser only, unencrypted, like a hot wallet: anything that can read this browser's storage can take it. Keep small amounts this way. You'll get a recovery code to write down: it's the only way back in if this phone is lost."),
         h("div", { class: "actions" }, device, restore),
       ),
     ),
@@ -71,7 +71,7 @@ function recoveryScreen(done) {
   show(
     h("section", { class: "stack narrow" },
       h("h1", null, "Write down your recovery code"),
-      h("p", null, "Your key is kept in this browser. If you clear it or lose this phone, this code is the only way to get back to your circles and your money. Anyone with it can use them, so keep it private and offline."),
+      h("p", null, "Your key is kept in this browser, unencrypted, like a hot wallet. If you clear it or lose this phone, this code is the only way to get back to your circles and your money. Anyone with it can use them, so keep it private and offline."),
       h("p", { class: "code-block", translate: "no" }, code),
       h("div", { class: "actions" }, ok),
     ),

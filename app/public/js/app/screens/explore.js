@@ -47,7 +47,7 @@ export async function exploreScreen() {
       intro(),
       h("section", { class: "stack explore-list" },
         h("h2", { class: "rise-words section-words" }, ..."Every circle, as anyone can see it.".split(" ").map((w) => h("span", null, w))),
-        h("p", { class: "lead" }, `Read straight from Contri's contract (${cfg.contractId || "not deployed yet"}). Names are encrypted, so you see what any stranger can: amounts, turns and payouts, by accounts that lead nowhere.`),
+        h("p", { class: "lead" }, `Read straight from Contri's contract (${cfg.contractId || "not deployed yet"}). Names are encrypted, so you see what any stranger can: amounts, turns and payouts, by accounts that don't name anyone.`),
         circles.length
           ? h("p", null, h("strong", null, `${usd(paidOut)}`), ` paid out so far across ${circles.length} circle${circles.length === 1 ? "" : "s"}, ${running} running now.`)
           : h("p", { class: "empty" }, "No circles yet"),

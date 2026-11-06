@@ -13,8 +13,9 @@
 //
 // So the public chain shows money arriving at a circle account from 1Click,
 // and leaving it to 1Click: never the exchange account or wallet behind it.
-// 1Click routes each move, so it sees both ends of that one move; Contri's
-// server passes the request on and keeps nothing.
+// 1Click routes each move, so it sees both ends of that one move, and so does
+// Contri's server, which passes the request on. Contri's code keeps nothing;
+// Vercel keeps its own request logs.
 //
 // Moves out of the vault are intents the vault signs: 1Click builds the
 // intent (`/v0/generate-intent`), the member's app signs exactly that, and

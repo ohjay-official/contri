@@ -71,7 +71,8 @@ export async function circleScreen(id, openShare = false) {
       primary.push(h("a", { class: "button primary", href: `#/add/${slot?.index}` }, `Add money to pay ${usd(c.contribution)}`));
     }
   }
-  // Reminders: the remaining round deadlines as a calendar file. Made on this phone; nothing is sent anywhere.
+  // Reminders: the remaining round deadlines as a calendar file. Made on this phone and sent nowhere by the
+  // app, but it holds the circle's name, so a synced calendar carries it (privacy.html says so).
   if (me && mySeat >= 0 && c.status === "Active") {
     const cal = h("button", { class: "secondary", type: "button" }, "Add payment reminders to my calendar");
     cal.addEventListener("click", () => {

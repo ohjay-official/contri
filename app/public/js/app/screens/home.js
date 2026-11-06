@@ -92,7 +92,7 @@ export async function homeScreen() {
     ? null
     : h("div", { class: "callout stack" },
         h("p", null, h("strong", null, "Write down your recovery code")),
-        h("p", null, "If your passkey is ever deleted, it's how you get your circles and money back."),
+        h("p", null, "If your passkey is ever deleted, or contri.ng ever goes away, it's how you get your circles and money back."),
         h("div", { class: "actions" }, h("a", { class: "button secondary", href: "#/settings" }, "Show my recovery code")),
       );
 

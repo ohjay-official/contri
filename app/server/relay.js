@@ -13,7 +13,9 @@
 // (`simulate_intents`), before any gas is spent. Requests are also limited
 // per caller and per signer (see limit.js).
 //
-// Nothing is logged or stored: no IP addresses, no accounts, no payloads.
+// Contri's code logs and stores nothing here: no IP addresses, no accounts, no
+// payloads. The rate limits keep counts (salted IP hash, signer) for two
+// minutes, and Vercel keeps its own request logs.
 
 import { fromBase58, fromBase64, toHex } from "../public/js/lib/bytes.js";
 import { nep413Hash } from "../public/js/lib/intents.js";

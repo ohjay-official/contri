@@ -63,8 +63,8 @@ export async function settingsScreen() {
     h("div", { class: "sphere" }),
     h("span", { class: "glass-tag t1" }, h("i", { class: "dot" }), num(n, n === 1 ? "account" : "accounts")),
     h("span", { class: "glass-tag t2" }, h("i", { class: "dot" }), num(0, "names stored")),
-    h("span", { class: "glass-tag t3" }, h("i", { class: "dot amber" }), num(0, "links between them")),
-    h("p", { class: "kcard-copy" }, "Each circle gets its own account. Nobody looking at the blockchain can tell they're yours."),
+    h("span", { class: "glass-tag t3" }, h("i", { class: "dot amber" }), num(0, "keys shared")),
+    h("p", { class: "kcard-copy" }, "Each circle gets its own account. No key on the blockchain ties them to each other or to you."),
   );
   scramble(middle);
 
@@ -81,7 +81,7 @@ export async function settingsScreen() {
           ? "Contri signs you in with a passkey: the fingerprint, face or screen lock you already use. Every circle you join gets its own account made from it, and nobody else holds it, not even Contri."
           : passkey
           ? "Nobody else holds it, not even Contri. Every circle account, and your private balance, comes from it, on this phone, each time you open the app."
-          : "It's kept in this browser, without a passkey. Every circle account, and your private balance, comes from it."),
+          : "It's kept in this browser, without a passkey and unencrypted, like a hot wallet: anything that can read this browser's storage can take it. Every circle account, and your private balance, comes from it."),
       ),
       h("section", { class: "key-cards", "aria-label": "Your key at a glance" },
         h("article", { class: "kcard kcard-left", tabindex: "0", "aria-label": "One key" },
@@ -116,7 +116,7 @@ export async function settingsScreen() {
         h("h2", null, "Your recovery code"),
         h("p", null,
           passkey
-            ? "Write it down and keep it offline. If your passkey is ever deleted, this code brings back your circles and your money: open Contri, choose Other ways in, then Restore from a recovery code."
+            ? "Write it down and keep it offline. Passkeys only work on contri.ng, so if your passkey is ever deleted or the site goes away, this code brings back your circles and your money: open Contri, or the open-source app, choose Other ways in, then Restore from a recovery code."
             : "It's the only way back if this phone is lost or the browser is cleared: open Contri, choose Other ways in, then Restore from a recovery code."),
         h("p", { class: "hint" }, "Anyone with this code can use your circles and move your money. Never share it, and Contri will never ask for it."),
         h("div", { class: "actions" }, reveal),
@@ -124,7 +124,7 @@ export async function settingsScreen() {
         h("h2", null, "This device"),
         passkey
           ? h("p", null, "Contri stays unlocked on this device until you lock it here, so switching apps, closing the browser or restarting doesn't ask for your passkey again. Your phone's screen lock is what protects it. Lock it if other people use this device.")
-          : h("p", null, "Anyone who can use this browser can open Contri. If other people use this device, remove the key here, or sign in with a passkey instead."),
+          : h("p", null, "Anyone who can use this browser can open Contri, and anything that can read its storage can copy your key, so keep only small amounts this way. If other people use this device, write down your recovery code, then remove the key here."),
         h("div", { class: "actions" }, signOut),
         confirmRemove,
       ),
