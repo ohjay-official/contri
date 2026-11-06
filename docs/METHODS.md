@@ -62,7 +62,7 @@ Private: only the contract itself can call them.
 | Method | Arguments | What it does |
 | --- | --- | --- |
 | `on_payout` | `circle_id`, `round`, `amount` | Closes the round if the payout transfer succeeded. If it failed, the pot stays and `pay_out` can retry. |
-| `on_sent` | `to`, `amount` | If a transfer out failed, the amount becomes a credit the member can claim. |
+| `on_sent` | `to`, `amount`, `slot` | If a transfer out failed, the amount becomes a credit the member can claim, written into the storage slot reserved for it (`slot`), which is then freed. |
 
 ## Views
 

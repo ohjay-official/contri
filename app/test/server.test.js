@@ -7,7 +7,7 @@ import { signerFromSeed } from "../public/js/lib/keys.js";
 import { needs } from "../server/keeper.js";
 import { formatUnits, toSend } from "../server/oneclick.js";
 import { allow } from "../server/limit.js";
-import { checkPayload, memberNote, relay } from "../server/relay.js";
+import { checkPayload, memberNote, paymentProblem, relay } from "../server/relay.js";
 import { issueTicket, ticketed } from "../server/ticket.js";
 import { views } from "../server/views.js";
 
@@ -111,8 +111,11 @@ test("the read proxy answers only Contri and balance views", async () => {
 test("the keeper acts only when a circle needs it", () => {
   const m = (/** @type {boolean} */ paid, deposit = "5") => ({ account_id: "a", deposit, paid_this_round: paid, defaulted: false, missed: 0 });
   /** @type {any} */
-  const base = { paying: false, backers: [], round_deadline: "60000000000" };
+  const base = { paying: false, backers: [], round_deadline: "60000000000", fill_by: "60000000000" };
   assert.equal(needs({ ...base, status: "Open", members: [m(false)] }, 0), null);
+  // An open circle that never filled is cancelled once fill_by has passed.
+  assert.equal(needs({ ...base, status: "Open", members: [m(false)] }, 60_000), null);
+  assert.equal(needs({ ...base, status: "Open", members: [m(false)] }, 60_001), "cancel_circle");
   assert.equal(needs({ ...base, status: "Active", members: [m(true), m(false)] }, 0), null);
   assert.equal(needs({ ...base, status: "Active", members: [m(true), m(false)] }, 61_000), "settle_round");
   assert.equal(needs({ ...base, status: "Active", members: [m(true), m(true)] }, 0), "pay_out");
@@ -182,4 +185,41 @@ test("the contract's refund reasons reach members in plain words", () => {
   assert.equal(memberNote("contri: refunding 5000000: circle is full"), "Circle is full");
   assert.equal(memberNote("contri: refunding 3000000: Contri is out of storage room right now"), "Contri is full right now and can't take new circles or members. Try again later");
   assert.equal(memberNote("contri: refunding 999999: contribution must be at least 1 USDT"), "The amount each round has to be at least $1");
+});
+
+test("the relayer refuses payments the contract would refund, before paying gas", () => {
+  const me = "a".repeat(64);
+  /** @type {any} */
+  const open = { status: "Open", size: 3, contribution: "5000000", round: 0, paying: false, listings: [null, null, null], members: [{ account_id: "o", deposit: "5000000", paid_this_round: false }] };
+  /** @type {any} */
+  const running = {
+    ...open,
+    status: "Active",
+    round: 1,
+    listings: [null, "2000000", null],
+    members: [{ account_id: "o", deposit: "5000000", paid_this_round: true }, { account_id: "b", deposit: "5000000", paid_this_round: false }, { account_id: me, deposit: "5000000", paid_this_round: false }],
+  };
+  assert.equal(paymentProblem("create:5000000:3:86400:join:-:x", 5_000_000n, me, null), null);
+  assert.match(String(paymentProblem("create:500000:3:86400:join:-:x", 500_000n, me, null)), /at least \$1/);
+  assert.match(String(paymentProblem("create:5000000:21:86400:join:-:x", 5_000_000n, me, null)), /2 to 20/);
+  assert.match(String(paymentProblem("create:5000000:3:86400:join:-:x", 1_000_000n, me, null)), /one contribution/);
+  assert.match(String(paymentProblem("join:9", 5_000_000n, me, null)), /no such circle/);
+  assert.equal(paymentProblem("join:0", 5_000_000n, me, open), null);
+  assert.match(String(paymentProblem("join:0", 4_000_000n, me, open)), /one contribution/);
+  assert.match(String(paymentProblem("join:0", 5_000_000n, "o", open)), /already in/);
+  assert.match(String(paymentProblem("join:0", 5_000_000n, me, running)), /isn't taking/);
+  assert.equal(paymentProblem("contribute:0:1", 5_000_000n, me, running), null);
+  assert.match(String(paymentProblem("contribute:0:0", 5_000_000n, me, running)), /already closed/);
+  assert.match(String(paymentProblem("contribute:0:1", 5_000_000n, "o", running)), /already paid/);
+  assert.match(String(paymentProblem("contribute:0:1", 5_000_000n, "x", running)), /not in this circle/);
+  assert.match(String(paymentProblem("contribute:0:1", 5_000_000n, me, { ...running, paying: true })), /payout is going out/);
+  assert.equal(paymentProblem("buy_seat:0:1", 2_000_000n, me, running), null);
+  assert.match(String(paymentProblem("buy_seat:0:1", 3_000_000n, me, running)), /price/);
+  assert.match(String(paymentProblem("buy_seat:0:2", 2_000_000n, "b", running)), /isn't for sale/);
+  assert.match(String(paymentProblem("buy_seat:0:1", 2_000_000n, "b", running)), /earlier than your own/);
+  assert.match(String(paymentProblem("buy_seat:0:0", 2_000_000n, me, running)), /already been paid/);
+  assert.equal(paymentProblem("back:0", 5_000_000n, "dao.near", running), null);
+  assert.match(String(paymentProblem("back:0", 1_000_000n, "dao.near", running)), /at least one contribution/);
+  assert.equal(paymentProblem("refill:0", 5_000_000n, me, running), null);
+  assert.match(String(paymentProblem("refill:0", 6_000_000n, me, running)), /more deposit/);
 });

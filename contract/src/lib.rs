@@ -24,7 +24,7 @@
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
-use near_sdk::{env, near, require, AccountId, Gas, NearToken, PanicOnDefault, PromiseError};
+use near_sdk::{env, near, require, AccountId, Gas, GasWeight, NearToken, PanicOnDefault, PromiseError};
 
 #[cfg(target_arch = "wasm32")]
 mod bump;
@@ -44,10 +44,13 @@ pub const MAX_PERIOD_SECS: u64 = 60 * 60 * 24 * 31;
 pub const MAX_NAME_LEN: usize = 256;
 
 const NS_PER_SEC: u64 = 1_000_000_000;
+/// The least gas a transfer and its callback get. Both also share whatever
+/// gas the call has left at the end (see `transfer_then`), so a transfer that
+/// costs NEAR Intents more than this still goes through.
 const GAS_MT_TRANSFER: Gas = Gas::from_tgas(15);
-const GAS_CALLBACK: Gas = Gas::from_tgas(15);
+const GAS_CALLBACK: Gas = Gas::from_tgas(20);
 /// Gas needed to start a payout from inside another call.
-const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(35);
+const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(40);
 const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
 const ZERO: NearToken = NearToken::from_yoctonear(0);
 /// Most backers a circle takes, which bounds the gas to return their money.
@@ -72,8 +75,13 @@ const RECORD_BYTES: u64 = 117;
 /// What each member reserves when they join: their payout record and their
 /// track record, which payout callbacks write (see `reserve`).
 const MEMBER_RESERVE: u64 = PAYOUT_BYTES + RECORD_BYTES;
-/// Kept free on top of reservations: credits from failed transfers and the
-/// reservation keys themselves.
+/// One account's credit entry: "k" + a 64-character account, a u128, and 40
+/// bytes of overhead. A failed transfer out writes one, from a callback that
+/// can't refuse, so everyone who can be sent money holds one of these
+/// reserved while they can (see `slots`).
+const CREDIT_BYTES: u64 = 121;
+/// Kept free on top of reservations: the reservation keys themselves, and
+/// credits for members of circles created before credit slots existed.
 const SPARE_BYTES: u64 = 2_000;
 /// Default and maximum page size for list views.
 const PAGE: u64 = 50;
@@ -606,13 +614,18 @@ impl Contri {
         );
     }
 
-    /// After any other transfer out. A failed one becomes a claimable credit.
-    /// Args: `to`, `amount`.
+    /// After any other transfer out. A failed one becomes a claimable credit,
+    /// written into the credit slot the transfer held, which is then freed.
+    /// Args: `to`, `amount`, `slot` (whether a slot was held; older transfers
+    /// have no `slot`).
     #[private]
     pub fn on_sent(&mut self) {
         let a = args();
         if !transfer_succeeded() {
             self.add_credit(arg_account(&a, "to"), arg_u128(&a, "amount"));
+        }
+        if a.get("slot").is_some_and(|v| matches!(v, json::Json::Bool(true))) {
+            reserve_bytes(-(CREDIT_BYTES as i64));
         }
     }
 
@@ -884,6 +897,7 @@ impl Contri {
         );
         let mut sent = 0;
         let per_send = GAS_MT_TRANSFER.as_gas() + GAS_CALLBACK.as_gas() + Gas::from_tgas(10).as_gas();
+        let slotted = has_slots(c.id);
         // Members' deposits, then backers' shares of what was left.
         let owed = c
             .members
@@ -897,7 +911,7 @@ impl Contri {
             if env::prepaid_gas().saturating_sub(env::used_gas()).as_gas() < per_send {
                 break;
             }
-            self.send(to.clone(), amount.0, format!("contri:{}:release", c.id));
+            self.send(to.clone(), amount.0, format!("contri:{}:release", c.id), slotted);
             *amount = U128(0);
             sent += 1;
         }
@@ -990,10 +1004,13 @@ impl Contri {
         // The circle's key and value, its organizer's seat, and the two
         // reservation keys the first circle adds.
         let bytes = 40 + 9 + borsh::to_vec(&c).map_or(0, |v| v.len() as u64);
-        ensure_room(bytes + MEMBER_BYTES + MEMBER_RESERVE + 100)?;
+        ensure_room(bytes + MEMBER_BYTES + MEMBER_RESERVE + CREDIT_BYTES + 100)?;
         self.next_circle_id += 1;
         if load::<u64>(FIRST_RESERVED_KEY).is_none() {
             store(FIRST_RESERVED_KEY, &id);
+        }
+        if load::<u64>(FIRST_SLOTTED_KEY).is_none() {
+            store(FIRST_SLOTTED_KEY, &id);
         }
         emit(
             "circle_created",
@@ -1036,8 +1053,9 @@ impl Contri {
         if c.members.len() as u32 >= c.size {
             return Err("circle is full".into());
         }
-        ensure_room(MEMBER_BYTES + MEMBER_RESERVE)?;
+        ensure_room(MEMBER_BYTES + MEMBER_RESERVE + CREDIT_BYTES)?;
         reserve(circle_id, MEMBER_RESERVE as i64);
+        slots(circle_id, 1);
         c.members.push(Member {
             account_id: who.clone(),
             deposit: U128(amount),
@@ -1128,8 +1146,12 @@ impl Contri {
         }
         let seller = c.members[s].account_id.clone();
         c.members.swap(s, buyer_seat);
+        // The sold listing's slot goes with the payment to the seller. A
+        // listing of the buyer's old seat ends here, and so does its slot.
         c.listings[s] = None;
-        c.listings[buyer_seat] = None;
+        if c.listings[buyer_seat].take().is_some() {
+            slots(circle_id, -1);
+        }
         emit(
             "seat_sold",
             format!(
@@ -1144,7 +1166,7 @@ impl Contri {
             ),
         );
         save_circle(&c);
-        self.send(seller, amount, format!("contri:{circle_id}:seat:{seat}"));
+        self.send(seller, amount, format!("contri:{circle_id}:seat:{seat}"), has_slots(circle_id));
         Ok(())
     }
 
@@ -1166,7 +1188,8 @@ impl Contri {
         match c.backers.iter().position(|b| &b.account_id == who) {
             Some(i) => c.backers[i].amount = U128(c.backers[i].amount.0 + amount),
             None if c.backers.len() < MAX_BACKERS => {
-                ensure_room(BACKER_BYTES)?;
+                ensure_room(BACKER_BYTES + CREDIT_BYTES)?;
+                slots(circle_id, 1);
                 c.backers.push(Backer { account_id: who.clone(), amount: U128(amount), due: U128(0) })
             }
             None => return Err("circle already has the most backers".into()),
@@ -1224,8 +1247,14 @@ impl Contri {
         if price.is_some_and(|p| p.0 == 0) {
             return Err("price must be more than zero".into());
         }
-        if price.is_some() && c.listings[s].is_none() {
-            ensure_room(LISTING_BYTES)?;
+        // A listing holds a credit slot for the payment to the seller.
+        match (price.is_some(), c.listings[s].is_some()) {
+            (true, false) => {
+                ensure_room(LISTING_BYTES + CREDIT_BYTES)?;
+                slots(circle_id, 1);
+            }
+            (false, true) => slots(circle_id, -1),
+            _ => {}
         }
         c.listings[s] = price;
         emit(
@@ -1247,6 +1276,7 @@ impl Contri {
         c.status = CircleStatus::Cancelled;
         reserve(circle_id, -((c.members.len() as u64 * MEMBER_RESERVE) as i64));
         close_backing(&mut c);
+        free_idle_slots(&c);
         emit("circle_cancelled", format!(r#"{{"circle":{circle_id},"by":"{who}"}}"#));
         save_circle(&c);
         Ok(())
@@ -1263,7 +1293,9 @@ impl Contri {
         emit("left", format!(r#"{{"circle":{circle_id},"member":"{who}"}}"#));
         save_circle(&c);
         if m.deposit.0 > 0 {
-            self.send(m.account_id, m.deposit.0, format!("contri:{circle_id}:leave"));
+            self.send(m.account_id, m.deposit.0, format!("contri:{circle_id}:leave"), has_slots(circle_id));
+        } else {
+            slots(circle_id, -1);
         }
         Ok(())
     }
@@ -1288,15 +1320,19 @@ impl Contri {
         if owed == 0 {
             return Err("nothing to claim".into());
         }
+        // Removing the credit frees its bytes, which become the slot this
+        // transfer holds in case it fails too.
         save_credit(who, 0);
-        self.send(who.clone(), owed, "contri:credit".into());
+        reserve_bytes(CREDIT_BYTES as i64);
+        self.send(who.clone(), owed, "contri:credit".into(), true);
         Ok(())
     }
 
     /// Sends `amount` of the circle token from this contract's NEAR Intents
     /// balance to `to`. If the transfer fails, the amount becomes a claimable credit.
-    fn send(&self, to: AccountId, amount: u128, memo: String) {
-        let callback_args = format!(r#"{{"to":"{to}","amount":"{amount}"}}"#);
+    /// `slot`: whether a credit slot is held for `to`, which `on_sent` frees.
+    fn send(&self, to: AccountId, amount: u128, memo: String, slot: bool) {
+        let callback_args = format!(r#"{{"to":"{to}","amount":"{amount}","slot":{slot}}}"#);
         self.transfer_then(&to, amount, &memo, "on_sent", callback_args);
     }
 
@@ -1327,14 +1363,26 @@ impl Contri {
             jstr(&self.token_id),
             jstr(memo)
         );
-        let transfer = env::promise_create(
-            self.intents_id.clone(),
+        // Each gets its floor plus an equal share of the gas left when this
+        // call ends, so neither runs out because a floor was set too low.
+        let transfer = env::promise_batch_create(&self.intents_id);
+        env::promise_batch_action_function_call_weight(
+            transfer,
             "mt_transfer",
-            transfer_args,
+            transfer_args.as_bytes(),
             ONE_YOCTO,
             GAS_MT_TRANSFER,
+            GasWeight(1),
         );
-        env::promise_then(transfer, env::current_account_id(), callback, callback_args, ZERO, GAS_CALLBACK);
+        let then = env::promise_batch_then(transfer, &env::current_account_id());
+        env::promise_batch_action_function_call_weight(
+            then,
+            callback,
+            callback_args.as_bytes(),
+            ZERO,
+            GAS_CALLBACK,
+            GasWeight(1),
+        );
     }
 
     pub(crate) fn finalize_payout(&mut self, circle_id: u64, round: u32, amount: U128, ok: bool) -> bool {
@@ -1363,7 +1411,9 @@ impl Contri {
         for m in c.members.iter_mut() {
             m.paid_this_round = false;
         }
-        c.listings[round as usize] = None;
+        if c.listings[round as usize].take().is_some() {
+            slots(circle_id, -1);
+        }
         c.round += 1;
         if c.round >= c.size {
             c.status = CircleStatus::Finished;
@@ -1379,6 +1429,7 @@ impl Contri {
             }
             reserve(circle_id, -((c.size as u64 * RECORD_BYTES) as i64));
             close_backing(&mut c);
+            free_idle_slots(&c);
             emit("circle_finished", format!(r#"{{"circle":{circle_id}}}"#));
         }
         save_circle(&c);
@@ -1433,6 +1484,7 @@ fn store<T: BorshSerialize>(key: &[u8], value: &T) {
 
 const RESERVED_KEY: &[u8] = b"R";
 const FIRST_RESERVED_KEY: &[u8] = b"F";
+const FIRST_SLOTTED_KEY: &[u8] = b"G";
 
 fn reserved() -> u64 {
     load(RESERVED_KEY).unwrap_or(0)
@@ -1443,7 +1495,33 @@ fn reserve(circle_id: u64, bytes: i64) {
     if circle_id < load(FIRST_RESERVED_KEY).unwrap_or(u64::MAX) {
         return;
     }
+    reserve_bytes(bytes);
+}
+
+fn reserve_bytes(bytes: i64) {
     store(RESERVED_KEY, &reserved().saturating_add_signed(bytes));
+}
+
+/// Whether a circle holds credit slots: those created after slots existed.
+fn has_slots(circle_id: u64) -> bool {
+    circle_id >= load(FIRST_SLOTTED_KEY).unwrap_or(u64::MAX)
+}
+
+/// Reserves `n` credit slots for a circle, or frees them when negative. A
+/// slot is held by each member from joining until their deposit is sent, by
+/// each backer until their share is sent, and by each listed seat until the
+/// seller is paid or the listing ends.
+fn slots(circle_id: u64, n: i64) {
+    if has_slots(circle_id) {
+        reserve_bytes(n * CREDIT_BYTES as i64);
+    }
+}
+
+/// When a circle ends, frees the slots of members and backers who will be
+/// sent nothing: a deposit used up by missed payments, or no backing left.
+fn free_idle_slots(c: &Circle) {
+    let idle = c.members.iter().filter(|m| m.deposit.0 == 0).count() + c.backers.iter().filter(|b| b.due.0 == 0).count();
+    slots(c.id, -(idle as i64));
 }
 
 fn ensure_room(bytes: u64) -> Result<(), String> {

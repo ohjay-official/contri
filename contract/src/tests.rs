@@ -623,7 +623,7 @@ fn payout_is_an_intents_transfer_then_a_callback() {
     // 1. intents.near moves the pot out of this contract's own balance.
     assert_eq!(receipts[0].receiver_id, acc(INTENTS));
     match &receipts[0].actions[..] {
-        [MockAction::FunctionCallWeight { method_name, args, attached_deposit, prepaid_gas, .. }] => {
+        [MockAction::FunctionCallWeight { method_name, args, attached_deposit, prepaid_gas, gas_weight, .. }] => {
             assert_eq!(method_name, b"mt_transfer");
             let args: Value = serde_json::from_slice(args).unwrap();
             assert_eq!(
@@ -637,6 +637,7 @@ fn payout_is_an_intents_transfer_then_a_callback() {
             );
             assert_eq!(*attached_deposit, NearToken::from_yoctonear(1));
             assert_eq!(*prepaid_gas, Gas::from_tgas(15));
+            assert_eq!(gas_weight.0, 1, "the transfer also gets a share of the gas left over");
         }
         other => panic!("unexpected actions {other:?}"),
     }
@@ -644,6 +645,14 @@ fn payout_is_an_intents_transfer_then_a_callback() {
     // 2. Then a callback on this contract, which waits for the transfer.
     assert_eq!(receipts[1].receiver_id, acc("contri.near"));
     assert_eq!(receipts[1].receipt_indices, vec![0]);
+    match &receipts[1].actions[..] {
+        [MockAction::FunctionCallWeight { method_name, prepaid_gas, gas_weight, .. }] => {
+            assert_eq!(method_name, b"on_payout");
+            assert_eq!(*prepaid_gas, Gas::from_tgas(20));
+            assert_eq!(gas_weight.0, 1);
+        }
+        other => panic!("unexpected actions {other:?}"),
+    }
 }
 
 #[test]
@@ -1579,13 +1588,14 @@ fn nothing_grows_storage_the_contract_cannot_pay_for() {
     // organizer's payout record and track record.
     let roomy = (usage + SPARE_BYTES + 2_000) as u128 * BYTE;
     assert_eq!(transfer_holding(&mut c, ADA, CONTRIBUTION, &msg, usage, roomy), 0);
-    assert_eq!(reserved(), MEMBER_RESERVE);
+    assert_eq!(reserved(), MEMBER_RESERVE + CREDIT_BYTES);
     // A join is refused once the reservations fill what the NEAR covers.
-    let full = (usage + SPARE_BYTES + MEMBER_RESERVE + MEMBER_BYTES + MEMBER_RESERVE - 1) as u128 * BYTE;
+    let joining = MEMBER_BYTES + MEMBER_RESERVE + CREDIT_BYTES;
+    let full = (usage + SPARE_BYTES + MEMBER_RESERVE + CREDIT_BYTES + joining - 1) as u128 * BYTE;
     assert_eq!(transfer_holding(&mut c, BAYO, CONTRIBUTION, "join:0", usage, full), CONTRIBUTION);
     assert_eq!(c.circle_of(0).unwrap().members.len(), 1);
     assert_eq!(transfer_holding(&mut c, BAYO, CONTRIBUTION, "join:0", usage, full + BYTE), 0);
-    assert_eq!(reserved(), 2 * MEMBER_RESERVE);
+    assert_eq!(reserved(), 2 * (MEMBER_RESERVE + CREDIT_BYTES));
 }
 
 #[test]
@@ -1602,7 +1612,7 @@ fn payout_callbacks_only_use_storage_that_was_reserved() {
         assert_eq!(transfer(&mut c, &implicit(i), CONTRIBUTION, "join:0", 1), 0);
     }
     let held = reserved();
-    assert_eq!(held, 20 * MEMBER_RESERVE);
+    assert_eq!(held, 20 * (MEMBER_RESERVE + CREDIT_BYTES));
     let mut written = 0;
     for round in 0..20u32 {
         let at = 2 + round as u64 * DAY;
@@ -1616,7 +1626,140 @@ fn payout_callbacks_only_use_storage_that_was_reserved() {
         assert!(written <= held - reserved(), "round {round}: callbacks wrote {written} B, more than they released");
     }
     assert_eq!(c.circle_of(0).unwrap().status, CircleStatus::Finished);
-    assert_eq!(reserved(), 0, "a finished circle holds no reservation");
+    assert_eq!(reserved(), 20 * CREDIT_BYTES, "only the slots for the deposits still to send");
+}
+
+#[test]
+fn failed_transfers_out_only_write_credits_into_reserved_slots() {
+    // The worst case: NEAR Intents refuses every transfer of a 20-member
+    // circle's release, and every member's account is 64 characters. Each
+    // failure writes a credit from a callback that can't refuse; each must
+    // land in a slot reserved when the member joined.
+    let mut c = setup();
+    let msg = format!("create:{CONTRIBUTION}:20:{DAY}:join:-:x");
+    assert_eq!(transfer(&mut c, &implicit(0), CONTRIBUTION, &msg, 0), 0);
+    for i in 1..20 {
+        assert_eq!(transfer(&mut c, &implicit(i), CONTRIBUTION, "join:0", 1), 0);
+    }
+    // Every round paid by everyone, so every deposit is still there to return.
+    for round in 0..20u32 {
+        let at = 2 + round as u64 * DAY;
+        for i in 0..20 {
+            contribute(&mut c, &implicit(i), 0, round, at);
+        }
+        set("contri.near", at + 1);
+        assert!(c.finalize_payout(0, round, U128(20 * CONTRIBUTION), true));
+    }
+    let held = reserved();
+    assert_eq!(held, 20 * CREDIT_BYTES);
+    let mut sends = vec![];
+    while sends.len() < 20 {
+        set("anyone.near", 30 * DAY);
+        let sent = c.internal_release(0);
+        assert!(sent > 0, "release makes progress");
+        for r in get_created_receipts().iter().filter(|r| r.receiver_id == acc("contri.near")) {
+            let near_sdk::mock::MockAction::FunctionCallWeight { args, .. } = &r.actions[0] else { panic!() };
+            sends.push(String::from_utf8(args.clone()).unwrap());
+        }
+    }
+    assert_eq!(reserved(), held, "slots stay held while the transfers are in flight");
+    let mut written = 0;
+    for args in &sends {
+        assert!(args.contains(r#""slot":true"#));
+        set_callback(args, PromiseResult::Failed);
+        let (_, g) = grown(|| c.on_sent());
+        written += g;
+    }
+    assert_eq!(c.credit_of(&acc(&implicit(7))), U128(CONTRIBUTION));
+    assert!(written <= held, "credits wrote {written} B, more than the {held} B reserved");
+    assert_eq!(reserved(), 0, "every slot is freed once its transfer resolves");
+}
+
+#[test]
+fn listing_a_seat_holds_a_slot_for_paying_the_seller() {
+    let mut c = full_circle_of_three();
+    let base = reserved();
+    auth(&mut c, BAYO, "list_seat:0:1:2000000", 20);
+    assert_eq!(reserved(), base + CREDIT_BYTES);
+    // A new price keeps the same slot.
+    auth(&mut c, BAYO, "list_seat:0:1:3000000", 21);
+    assert_eq!(reserved(), base + CREDIT_BYTES);
+    auth(&mut c, BAYO, "unlist_seat:0:1", 22);
+    assert_eq!(reserved(), base);
+    // Sold: the slot goes with the payment, and the buyer's own listing ends.
+    auth(&mut c, BAYO, "list_seat:0:1:2000000", 23);
+    auth(&mut c, CHIOMA, "list_seat:0:2:9000000", 24);
+    assert_eq!(reserved(), base + 2 * CREDIT_BYTES);
+    assert_eq!(transfer(&mut c, CHIOMA, 2_000_000, "buy_seat:0:1", 25), 0);
+    assert_eq!(reserved(), base + CREDIT_BYTES, "the buyer's listing slot is freed");
+    let args = format!(r#"{{"to":"{BAYO}","amount":"2000000","slot":true}}"#);
+    set_callback(&args, PromiseResult::Successful(vec![]));
+    c.on_sent();
+    assert_eq!(reserved(), base);
+}
+
+#[test]
+fn a_listing_still_up_when_its_turn_is_paid_frees_its_slot() {
+    let mut c = full_circle_of_three();
+    let base = reserved();
+    auth(&mut c, ADA, "list_seat:0:0:2000000", 20);
+    for who in [ADA, BAYO, CHIOMA] {
+        contribute(&mut c, who, 0, 0, 100);
+    }
+    set("contri.near", 101);
+    assert!(c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true));
+    assert_eq!(reserved(), base - PAYOUT_BYTES);
+}
+
+#[test]
+fn claiming_a_credit_holds_a_slot_in_case_it_fails_again() {
+    let mut c = setup();
+    set("contri.near", 0);
+    c.add_credit(acc(ADA), 700);
+    auth(&mut c, ADA, "claim_credit", 600);
+    assert_eq!(reserved(), CREDIT_BYTES);
+    let args = format!(r#"{{"to":"{ADA}","amount":"700","slot":true}}"#);
+    set_callback(&args, PromiseResult::Failed);
+    c.on_sent();
+    assert_eq!(c.credit_of(&acc(ADA)), U128(700));
+    assert_eq!(reserved(), 0);
+}
+
+#[test]
+fn members_whose_deposit_was_used_up_free_their_slot_at_the_end() {
+    let mut c = full_circle_of_three();
+    // Bayo never pays: his one-contribution deposit covers round 0 only.
+    for round in 0..3u32 {
+        let at = 10 + round as u64 * DAY;
+        contribute(&mut c, ADA, 0, round, at + 100);
+        contribute(&mut c, CHIOMA, 0, round, at + 100);
+        set("anyone.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000);
+        c.internal_settle(0);
+        set("contri.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000 + 1);
+        let pot = c.circle_of(0).unwrap().pot;
+        if pot.0 > 0 {
+            assert!(c.finalize_payout(0, round, pot, true));
+        }
+    }
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.status, CircleStatus::Finished);
+    assert_eq!(circle.members.iter().filter(|m| m.deposit.0 > 0).count(), 2);
+    assert_eq!(reserved(), 2 * CREDIT_BYTES, "Bayo has nothing coming, so no slot");
+}
+
+#[test]
+fn circles_from_before_slots_hold_none() {
+    let mut c = setup();
+    set("contri.near", 0);
+    store(FIRST_SLOTTED_KEY, &1u64);
+    create(&mut c, 3);
+    join(&mut c, ADA, 0);
+    assert_eq!(reserved(), MEMBER_RESERVE);
+    auth(&mut c, ADA, "leave:0", 20);
+    let r = get_created_receipts();
+    let near_sdk::mock::MockAction::FunctionCallWeight { args, .. } = &r[1].actions[0] else { panic!() };
+    assert!(String::from_utf8(args.clone()).unwrap().contains(r#""slot":false"#));
+    assert_eq!(reserved(), 0);
 }
 
 #[test]
@@ -1625,10 +1768,22 @@ fn leaving_and_cancelling_release_reservations() {
     create(&mut c, 3);
     join(&mut c, ADA, 0);
     join(&mut c, BAYO, 0);
-    assert_eq!(reserved(), 2 * MEMBER_RESERVE);
+    let member = MEMBER_RESERVE + CREDIT_BYTES;
+    assert_eq!(reserved(), 2 * member);
+    // Bayo's slot stays held until his deposit's transfer resolves.
     auth(&mut c, BAYO, "leave:0", 20);
-    assert_eq!(reserved(), MEMBER_RESERVE);
+    assert_eq!(reserved(), member + CREDIT_BYTES);
+    let args = format!(r#"{{"to":"{BAYO}","amount":"{CONTRIBUTION}","slot":true}}"#);
+    set_callback(&args, PromiseResult::Successful(vec![]));
+    c.on_sent();
+    assert_eq!(reserved(), member);
     auth(&mut c, ADA, "cancel:0", 21);
+    assert_eq!(reserved(), CREDIT_BYTES, "Ada's deposit is still to send");
+    set("anyone.near", 22);
+    assert_eq!(c.internal_release(0), 1);
+    let args = format!(r#"{{"to":"{ADA}","amount":"{CONTRIBUTION}","slot":true}}"#);
+    set_callback(&args, PromiseResult::Successful(vec![]));
+    c.on_sent();
     assert_eq!(reserved(), 0);
 }
 

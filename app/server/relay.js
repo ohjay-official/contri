@@ -122,6 +122,7 @@ export async function relay(body, c) {
     const signer = await checkPayload(p, c, Date.now(), tickets);
     if (!allow(`relay-signer:${signer}`, 10)) throw new RelayError("Too many requests from this account. Wait a minute and try again.", 429);
     await checkAuthCalls(p, signer, c);
+    await checkPayments(p, signer, c);
   }
 
   /** @type {any} */
@@ -177,6 +178,90 @@ async function checkAuthCalls(p, signer, c) {
     const involved = circle && (circle.organizer === signer || circle.members.some((/** @type {any} */ m) => m.account_id === signer));
     if (!involved) throw new RelayError("only the circle's members can do that");
   }
+}
+
+/**
+ * A payment to Contri that the contract would refund costs the relayer gas
+ * all the same, and NEAR Intents' simulation doesn't run Contri's side. So the
+ * contract's own checks run here first, against the circle as it is now: the
+ * right amount, the right round, a seat that is free or for sale.
+ * @param {any} p @param {string} signer @param {Config} c
+ */
+async function checkPayments(p, signer, c) {
+  for (const i of JSON.parse(p.payload.message).intents) {
+    if (i.intent !== "transfer" || i.receiver_id !== c.contractId) continue;
+    const amount = BigInt(Object.values(i.tokens)[0]);
+    const why = paymentProblem(i.msg, amount, signer, i.msg.startsWith("create:") ? null : await circleFor(i.msg, c));
+    if (why) throw new RelayError(why);
+  }
+}
+
+/** @param {string} msg @param {Config} c */
+async function circleFor(msg, c) {
+  return view(c.rpcUrl, c.contractId, "get_circle", { circle_id: Number(msg.split(":")[1]) }).catch(() => null);
+}
+
+const MIN_CONTRIBUTION = 1_000_000n;
+
+/**
+ * Why the contract would refund this payment, or null. Mirrors the checks in
+ * the contract's handle_transfer; the contract still makes them itself.
+ * @param {string} msg @param {bigint} amount @param {string} signer @param {any} circle
+ */
+export function paymentProblem(msg, amount, signer, circle) {
+  const [op, , arg] = msg.split(":");
+  if (op === "create") {
+    const [, contribution, size, period, , , ...name] = msg.split(":");
+    const n = new TextEncoder().encode(name.join(":").trim()).length;
+    if (BigInt(contribution) < MIN_CONTRIBUTION) return "The amount each round has to be at least $1";
+    if (!(Number(size) >= 2 && Number(size) <= 20)) return "A circle needs 2 to 20 members";
+    if (!(Number(period) >= 60 && Number(period) <= 31 * 86_400)) return "A round has to last between one minute and 31 days";
+    if (n < 1 || n > 256) return "The circle's name is too long";
+    if (amount !== BigInt(contribution)) return "Starting a circle takes one contribution as your deposit";
+    return null;
+  }
+  if (!circle) return "There's no such circle";
+  const contribution = BigInt(circle.contribution);
+  const seat = circle.members.findIndex((/** @type {any} */ m) => m.account_id === signer);
+  const running = circle.status === "Active";
+  switch (op) {
+    case "join":
+      if (circle.status !== "Open") return "This circle isn't taking members";
+      if (seat >= 0) return "You're already in this circle";
+      if (circle.members.length >= circle.size) return "This circle is full";
+      if (amount !== contribution) return "The deposit to join is one contribution";
+      return null;
+    case "contribute":
+      if (!running) return "This circle isn't running";
+      if (circle.paying) return "A payout is going out right now; try again in a minute";
+      if (Number(arg) !== circle.round) return "That round has already closed; refresh and try again";
+      if (seat < 0) return "You're not in this circle";
+      if (circle.members[seat].paid_this_round) return "You've already paid this round";
+      if (amount !== contribution) return "The payment has to be exactly one contribution";
+      return null;
+    case "buy_seat": {
+      const s = Number(arg);
+      const price = circle.listings[s];
+      if (!running) return "Turns can only be bought while the circle runs";
+      if (circle.paying) return "A payout is going out right now; try again in a minute";
+      if (s < circle.round || s >= circle.members.length) return "That turn has already been paid";
+      if (price === null || price === undefined) return "That turn isn't for sale any more";
+      if (amount !== BigInt(price)) return "The price of that turn has changed; refresh and try again";
+      if (seat < 0) return "Only members can buy a turn";
+      if (seat <= s) return "You can only buy a turn earlier than your own";
+      return null;
+    }
+    case "back":
+      if (circle.status !== "Open" && !running) return "This circle has ended";
+      if (amount < contribution) return "Backing has to be at least one contribution";
+      return null;
+    case "refill":
+      if (circle.status !== "Open" && !running) return "This circle has ended";
+      if (seat < 0) return "You're not in this circle";
+      if (BigInt(circle.members[seat].deposit) + amount > contribution * BigInt(circle.size - 1)) return "That's more deposit than this circle can use";
+      return null;
+  }
+  return "Contri wouldn't understand this payment";
 }
 
 /**

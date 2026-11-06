@@ -2,8 +2,9 @@
 // The keeper: calls Contri's anyone-can-call methods when a circle needs them.
 // The contract pays the pot out by itself when the last member pays; the
 // keeper handles the rest: a round whose deadline passed with someone unpaid
-// (settle_round), a payout to retry (pay_out), and deposits to send back once
-// a circle ends (release_deposits). It runs on a schedule and whenever the app
+// (settle_round), a payout to retry (pay_out), a circle that never filled
+// by its fill_by time (cancel_circle), and deposits to send back once a
+// circle ends (release_deposits). It runs on a schedule and whenever the app
 // opens a circle that needs it. Anyone could run it; it holds no special rights.
 
 import { needs } from "../public/js/lib/contri.js";
@@ -16,7 +17,7 @@ import { RelayError } from "./relay.js";
 
 export { needs };
 
-const GAS = { settle_round: 150n * TGAS, pay_out: 100n * TGAS, release_deposits: 250n * TGAS };
+const GAS = { settle_round: 150n * TGAS, pay_out: 100n * TGAS, cancel_circle: 30n * TGAS, release_deposits: 250n * TGAS };
 
 /**
  * Checks one circle (`body.circle`) or every circle, and acts where needed.
