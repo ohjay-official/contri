@@ -42,6 +42,27 @@ export function allow(key, max, nowMs = Date.now()) {
 const REDIS_URL = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL ?? "";
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN ?? "";
 
+/**
+ * Whether the shared counts work right now: "ok", "off" (no database), or the
+ * kind of failure (an HTTP status or an error name). Never the URL or token.
+ */
+export async function limitsCheck() {
+  if (!REDIS_URL || !REDIS_TOKEN) return "off";
+  try {
+    const res = await fetch(`${REDIS_URL}/pipeline`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${REDIS_TOKEN}`, "content-type": "application/json" },
+      body: JSON.stringify([["PING"]]),
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return `http ${res.status}`;
+    const [first] = await res.json();
+    return first?.result === "PONG" ? "ok" : "unexpected reply";
+  } catch (e) {
+    return e instanceof Error ? e.name : "error";
+  }
+}
+
 /** Whether a Redis database is connected for shared limits. */
 export const sharedLimits = () => Boolean(REDIS_URL && REDIS_TOKEN);
 
