@@ -162,8 +162,11 @@ assert.equal(await balance(`cashout.${CONTRI}`), USDT);
 // The relayer refuses intents it shouldn't pay for, before spending gas.
 const evil = await signIntents(ada, [transfer(INTENTS, TOKEN, USDT, { msg: "x" })], { now: await chainNow(), recipient: INTENTS });
 await assert.rejects(call(relayPost, { signed: [evil] }), /only to Contri/);
+// A payment Contri would refund is refused before any gas, from the circle as it is now.
+const late = await signIntents(bayo, a.contribute(id, 2, 1000n * USDT), { now: await chainNow(), recipient: INTENTS });
+await assert.rejects(call(relayPost, { signed: [late] }), /isn't running|already closed|exactly one contribution/);
 // And NEAR Intents' simulation catches what would fail on chain: spending more than the balance.
-const broke = await signIntents(bayo, a.contribute(id, 2, 1000n * USDT), { now: await chainNow(), recipient: INTENTS });
+const broke = await signIntents(bayo, [transfer(CONTRI, TOKEN, 1000n * USDT, { msg: `create:${1000n * USDT}:2:60:join:-:x` })], { now: await chainNow(), recipient: INTENTS });
 await assert.rejects(call(relayPost, { signed: [broke] }), /would reject/);
 
 console.log("app e2e: passed");
