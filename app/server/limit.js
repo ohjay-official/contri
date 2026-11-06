@@ -42,6 +42,9 @@ export function allow(key, max, nowMs = Date.now()) {
 const REDIS_URL = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL ?? "";
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN ?? "";
 
+/** Whether a Redis database is connected for shared limits. */
+export const sharedLimits = () => Boolean(REDIS_URL && REDIS_TOKEN);
+
 /**
  * Counts one request for `key` on this instance and, when Redis is connected,
  * across all of them. False when either count is already at `max` this minute.

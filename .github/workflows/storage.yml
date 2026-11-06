@@ -1,0 +1,73 @@
+name: storage
+
+# Provisions the Redis database (Upstash, from the Vercel Marketplace) that
+# shares the server's request limits across instances (app/server/limit.js),
+# and connects it to the contri project. Uses the VERCEL_TOKEN secret. What
+# it prints is filtered so no connection string or token reaches the log or
+# the storage-results branch.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/storage.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  redis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the Vercel CLI
+        # Pinned: the CLI runs with the Vercel token.
+        run: npm install -g vercel@65.11.0 --no-audit --no-fund 2>&1 | tail -1 && vercel --version
+      - name: Link the project, provision Redis, connect it
+        working-directory: app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          mkdir -p ../storage-out
+          # Anything that looks like a key, token or URL with credentials is masked.
+          clean() { sed -E 's#(redis|rediss|https?)://[^ "]*@[^ "]*#<masked url>#g; s#[A-Za-z0-9_=+/-]{28,}#<masked>#g'; }
+          vercel link --yes --project contri --token "$VERCEL_TOKEN" 2>&1 | clean | tee ../storage-out/link.log
+          vercel integration list --integration upstash --format json --token "$VERCEL_TOKEN" 2>&1 | clean | tee ../storage-out/before.json || true
+          if grep -q '"contri-limits"' ../storage-out/before.json; then
+            echo "already provisioned" | tee ../storage-out/add.log
+          else
+            vercel integration add upstash/upstash-kv --help --token "$VERCEL_TOKEN" 2>&1 | clean | tee ../storage-out/help.log || true
+            PLAN=$(grep -Eio 'free[a-z0-9_-]*' ../storage-out/help.log | head -1)
+            echo "plan: ${PLAN:-free}" | tee ../storage-out/add.log
+            vercel integration add upstash/upstash-kv --name contri-limits --plan "${PLAN:-free}" \
+              --environment production --environment preview --no-env-pull --non-interactive \
+              --format json --token "$VERCEL_TOKEN" 2>&1 | clean | tee -a ../storage-out/add.log || true
+          fi
+          vercel integration list --integration upstash --format json --token "$VERCEL_TOKEN" 2>&1 | clean | tee ../storage-out/after.json || true
+          # Which env var names the project has now (names only, never values).
+          vercel env ls production --token "$VERCEL_TOKEN" 2>&1 | grep -Eo '^ *[A-Z][A-Z0-9_]+' | sed 's/^ *//' | sort -u | tee ../storage-out/env-names.txt || true
+      - name: Redeploy so the server picks the database up
+        working-directory: app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if grep -q '^KV_REST_API_URL$' ../storage-out/env-names.txt && grep -q '^KV_REST_API_TOKEN$' ../storage-out/env-names.txt; then
+            vercel deploy --prod --yes --token "$VERCEL_TOKEN" 2>&1 | grep -Eo 'https://[a-z0-9.-]+\.vercel\.app' | tail -1 | tee ../storage-out/deploy.log
+            sleep 20
+            curl -s https://contri.ng/api/config | tee ../storage-out/config.json
+          else
+            echo "not redeployed: the database's settings aren't on the project" | tee ../storage-out/deploy.log
+          fi
+      - name: Publish results to the storage-results branch
+        if: always()
+        run: |
+          cd storage-out
+          git init -q && git checkout -q -b storage-results
+          git config user.name "contri-ci" && git config user.email "actions@users.noreply.github.com"
+          git add -A && git commit -q -m "storage ${GITHUB_SHA}"
+          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" storage-results && break; [ "$i" = 3 ] && exit 1; sleep $((i * 5)); done

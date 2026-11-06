@@ -8,8 +8,9 @@
 // unlocked secret is kept sealed:
 //
 //   - AES-GCM with a key the browser makes non-extractable and keeps in
-//     IndexedDB: script can use it to unseal, but nothing can read its bytes,
-//     so the stored session is useless copied off the device;
+//     IndexedDB: page scripts can use it to unseal but can't export its bytes.
+//     It isn't tied to the phone's hardware: the phone's screen lock is what
+//     protects an unlocked Contri;
 //   - the sealed secret in localStorage;
 //   - locking deletes both.
 //

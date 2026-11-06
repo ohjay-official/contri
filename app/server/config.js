@@ -3,6 +3,8 @@
 // GitHub secrets in CI). Nothing here is ever sent to the browser except
 // what `publicConfig` returns.
 
+import { sharedLimits } from "./limit.js";
+
 /** @param {string} name @param {string} fallback @returns {string} */
 const env = (name, fallback) => {
   const v = process.env[name];
@@ -37,6 +39,8 @@ export const publicConfig = (c) => ({
   intentsId: c.intentsId,
   tokenId: c.tokenId,
   relaying: Boolean(c.relayerId && c.relayerKey),
+  // Whether request limits are shared by every server instance (see limit.js).
+  sharedLimits: sharedLimits(),
   // Public on chain anyway; lets anyone check it can still pay for gas.
   relayer: c.relayerId || null,
 });

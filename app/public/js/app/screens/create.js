@@ -36,7 +36,7 @@ export function createScreen() {
     const n = Number(size.value);
     const secs = Number(period.value);
     summary.textContent = a > 0n
-      ? `Each round, one member receives ${usd(a * BigInt(n))}. The circle runs ${n} rounds, ${every(secs)}. Everyone puts down ${usd(a)} as a deposit when they join, which comes back at the end.`
+      ? `Each round, one member receives ${usd(a * BigInt(n))}. The circle runs ${n} rounds, ${every(secs)}. Everyone puts down ${usd(a)} as a deposit when they join, which comes back at the end, less any payment it covered.`
       : "";
   };
   for (const el of [amount, size, period]) el.addEventListener("input", update);

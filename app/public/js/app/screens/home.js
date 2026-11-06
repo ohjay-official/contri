@@ -20,7 +20,13 @@ export function standing(c, me) {
   if (c.status === "Finished") return { tone: "quiet", text: "Finished. Everyone got their turn." };
   const deadline = roundDeadlineMs(c) ?? 0;
   if (due === "pay") return { tone: "due", text: `Pay ${usd(c.contribution)} by ${when(deadline)}` };
-  if (due === "wait") return { tone: "due", text: "You missed this round. Your deposit covers it when the round is settled." };
+  if (due === "wait") {
+    // The deposit covers a missed round only while it still holds a whole contribution.
+    const m = c.members.find((x) => x.account_id === me);
+    return m && BigInt(m.deposit) >= BigInt(c.contribution)
+      ? { tone: "due", text: "You missed this round. Your deposit covers it when the round is settled." }
+      : { tone: "due", text: "You missed this round and your deposit is used up, so this round's pot will be short." };
+  }
   if (seat === c.round) return { tone: "good", text: `You receive ${usd(potSize(c))} this round` };
   if (seat > c.round) return { tone: "quiet", text: `Paid this round. You receive ${usd(potSize(c))} ${fromNow(payoutDateMs(c, seat) ?? 0)}` };
   return { tone: "quiet", text: "Paid this round. You've had your turn." };
@@ -120,7 +126,7 @@ function privateCard() {
   return h("div", { class: "stack money" },
     h("h2", null, "Private balance"),
     h("p", { class: "balance-line" }, "In your private balance: ", amount),
-    h("p", { class: "hint" }, "Kept on NEAR Intents' private ledger, where nobody can see it. Pay any circle from it, and send payouts back to it."),
+    h("p", { class: "hint" }, "Kept on NEAR Intents' private ledger, which has no public explorer, so nobody looking at the public chain can see it. Pay any circle from it, and send payouts back to it."),
     h("div", { class: "actions row" }, h("a", { class: "button secondary", href: "#/private/add" }, "Add privately"), cash),
   );
 }
