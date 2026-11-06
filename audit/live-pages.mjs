@@ -13,22 +13,32 @@ for (const [name, type] of [["chromium", chromium], ["webkit", webkit], ["firefo
   const browser = await type.launch();
   for (const w of widths) {
     const ctx = await browser.newContext({ viewport: { width: w, height: w < 800 ? 800 : 900 }, ...(w < 800 && name !== "firefox" ? { isMobile: true, hasTouch: true } : {}) });
-    const page = await ctx.newPage();
+    let page = await ctx.newPage();
     const errors = [], failed = [];
-    page.on("console", (m) => { if (m.type() === "error" || m.type() === "warning") errors.push(`${m.type()}: ${m.text().slice(0, 240)}`); });
-    page.on("pageerror", (e) => errors.push(`pageerror: ${String(e).slice(0, 240)}`));
-    page.on("requestfailed", (r) => { if (!/aborted|cancel/i.test(r.failure()?.errorText ?? "")) failed.push(`${r.url()} ${r.failure()?.errorText}`); });
-    page.on("response", (r) => { if (r.status() >= 400 && !r.url().includes("no-such-page")) failed.push(`${r.status()} ${r.url()}`); });
-    await page.addInitScript(() => document.addEventListener("securitypolicyviolation", (e) => console.error(`CSP ${e.violatedDirective} ${e.blockedURI}`)));
+    const watch = (pg) => {
+      pg.on("console", (m) => { if (m.type() === "error" || m.type() === "warning") errors.push(`${m.type()}: ${m.text().slice(0, 240)}`); });
+      pg.on("pageerror", (e) => errors.push(`pageerror: ${String(e).slice(0, 240)}`));
+      pg.on("requestfailed", (r) => { if (!/aborted|cancel/i.test(r.failure()?.errorText ?? "")) failed.push(`${r.url()} ${r.failure()?.errorText}`); });
+      pg.on("response", (r) => { if (r.status() >= 400 && !r.url().includes("no-such-page")) failed.push(`${r.status()} ${r.url()}`); });
+    pg.addInitScript(() => document.addEventListener("securitypolicyviolation", (e) => console.error(`CSP ${e.violatedDirective} ${e.blockedURI}`)));
+    };
+    watch(page);
     for (const p of pages) {
       errors.length = 0; failed.length = 0;
       try { await page.goto(D + p, { waitUntil: "networkidle", timeout: 45000 }); } catch (e) { errors.push(`goto: ${String(e).slice(0, 160)}`); }
-      await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 500) { scrollTo(0, y); await new Promise((r) => setTimeout(r, 80)); } scrollTo(0, 0); });
-      await page.waitForTimeout(600);
-      const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: innerWidth, title: document.title, anchors: [...document.querySelectorAll("a[href]")].map((a) => a.href) }));
+      let m;
+      try {
+        await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 500) { scrollTo(0, y); await new Promise((r) => setTimeout(r, 80)); } scrollTo(0, 0); });
+        await page.waitForTimeout(600);
+        m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: innerWidth, title: document.title, anchors: [...document.querySelectorAll("a[href]")].map((a) => a.href) }));
+      } catch (e) {
+        report.push({ browser: name, width: w, page: p, crashed: String(e).slice(0, 160), errors: [...new Set(errors)], failed: [...new Set(failed)] });
+        await page.close().catch(() => {}); page = await ctx.newPage(); watch(page);
+        continue;
+      }
       m.anchors.forEach((h) => links.add(h));
       report.push({ browser: name, width: w, page: p, sideways: m.sw > m.vw + 1, title: m.title, errors: [...new Set(errors)], failed: [...new Set(failed)] });
-      if (name === "chromium" && (w === 320 || w === 1440)) await page.screenshot({ path: `${O}/${w}${p.replace(/[/#]/g, "_")}.png`, fullPage: true }).catch(() => {});
+      if (name === "chromium" && (w === 320 || w === 1440)) await page.screenshot({ path: `${O}/${w}${p.replace(/[/#]/g, "_")}.png` }).catch(() => {});
     }
     await ctx.close();
   }
@@ -43,7 +53,7 @@ for (const href of links) {
 }
 writeFileSync(`${O}/pages.json`, JSON.stringify(report, null, 1));
 writeFileSync(`${O}/links.txt`, linkReport.sort().join("\n") + "\n");
-const bad = report.filter((r) => r.sideways || r.errors.length || r.failed.length);
+const bad = report.filter((r) => r.crashed || r.sideways || r.errors.length || r.failed.length);
 console.log(`${report.length} page loads, ${bad.length} with sideways scroll, errors or failed requests`);
-for (const r of bad) console.log(`${r.browser} ${r.width} ${r.page}: sideways=${r.sideways} errors=${JSON.stringify(r.errors)} failed=${JSON.stringify(r.failed)}`);
+for (const r of bad) console.log(`${r.browser} ${r.width} ${r.page}: ${r.crashed ? "CRASHED " + r.crashed + " " : ""}sideways=${r.sideways} errors=${JSON.stringify(r.errors)} failed=${JSON.stringify(r.failed)}`);
 console.log(linkReport.filter((l) => !/^200 /.test(l)).join("\n") || "every link answered 200");
