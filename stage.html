@@ -1,0 +1,476 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: "Instrument Sans"; src: url("instrument-sans.woff") format("woff"); font-weight: 400 700; }
+@font-face { font-family: "Instrument Serif"; src: url("instrument-serif.woff2") format("woff2"); font-weight: 400 700; }
+:root { --paper: #0b0907; --ink: #f7f3ef; --ink2: #b7aea6; --ember: #ff7a4c; --peach: #ffbc98; --deep: #c63c0e; --cream: #fffaf6; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); }
+body { font-family: "Instrument Sans", system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; inset: 0; overflow: hidden; background: var(--paper); }
+.layer { position: absolute; inset: 0; }
+#glow { background: radial-gradient(900px 600px at var(--gx, 70%) var(--gy, 30%), rgba(255, 122, 76, 0.16), transparent 70%), radial-gradient(800px 700px at var(--hx, 20%) var(--hy, 90%), rgba(198, 60, 14, 0.14), transparent 70%); }
+#rings { opacity: 0.5; }
+#vignette { background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%); pointer-events: none; }
+#grain { mix-blend-mode: overlay; opacity: 0.18; }
+
+/* The laptop */
+#cam { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; }
+#laptop { position: absolute; left: -654px; top: -414px; width: 1308px; transform-origin: 654px 414px; }
+#lid { position: relative; width: 1308px; height: 828px; padding: 14px; border-radius: 30px; background: linear-gradient(180deg, #1c1917, #0d0c0b); box-shadow: inset 0 0 0 1.5px rgba(255, 235, 220, 0.26), inset 0 0 0 4px #050403, 0 40px 120px rgba(0, 0, 0, 0.6), 0 0 160px rgba(255, 110, 60, 0.07); }
+#lid::before { content: ""; position: absolute; top: 5px; left: 50%; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #22201e; box-shadow: inset 0 0 1px rgba(255,255,255,.25); }
+#screen { position: relative; width: 1280px; height: 800px; overflow: hidden; border-radius: 16px; background: #000; }
+#screen img { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; transform-origin: 50% 50%; }
+#glare { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 32%); pointer-events: none; }
+#base { position: relative; left: -106px; width: 1520px; height: 30px; margin-top: -2px; border-radius: 3px 3px 26px 26px / 3px 3px 22px 22px; background: linear-gradient(180deg, #3a3532 0%, #24201e 30%, #141210 100%); box-shadow: inset 0 1px 0 rgba(255, 240, 230, 0.28), 0 30px 50px rgba(0, 0, 0, 0.55); }
+#base::before { content: ""; position: absolute; top: 0; left: 50%; width: 240px; height: 10px; margin-left: -120px; border-radius: 0 0 12px 12px; background: linear-gradient(180deg, #0f0d0c, #1d1a18); }
+#shadow { position: absolute; left: -760px; top: 400px; width: 1520px; height: 140px; background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0,0,0,.65), transparent 70%); filter: blur(10px); }
+
+/* Text */
+.cap { position: absolute; white-space: nowrap; }
+.cap .k { display: block; margin-bottom: 18px; color: var(--ember); font-size: 22px; font-weight: 600; letter-spacing: 0.01em; }
+.cap .l { display: block; font-size: 64px; line-height: 1.04; font-weight: 600; letter-spacing: -0.035em; color: var(--cream); }
+.cap .l .s { font-size: 1.1em; font-family: "Instrument Serif", serif; font-weight: 700; color: var(--peach); letter-spacing: -0.04em; }
+.cap .w { display: inline-block; will-change: transform, opacity, filter; }
+.cap.center { left: 0; width: 1920px; text-align: center; }
+.cap.center .l { font-size: 56px; }
+.cap.side { left: 120px; }
+.cap.side .l { font-size: 66px; }
+#sideshade { background: linear-gradient(90deg, var(--paper) 0%, rgba(11, 9, 7, 0.96) 30%, rgba(11, 9, 7, 0) 46%); }
+
+.big { position: absolute; left: 0; width: 1920px; text-align: center; white-space: nowrap; }
+.mark { color: var(--ember); }
+svg text { font-family: "Instrument Sans", sans-serif; }
+#flash { background: #fff; opacity: 0; mix-blend-mode: overlay; }
+#fade { background: #000; opacity: 0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow" class="layer"></div>
+  <svg id="rings" class="layer" viewBox="0 0 1920 1080"></svg>
+  <div id="cam"><div id="shadow"></div><div id="laptop"><div id="lid"><div id="screen"><img id="imA" alt=""><img id="imB" alt=""><div id="glare"></div></div></div><div id="base"></div></div></div>
+  <div id="sideshade" class="layer"></div>
+  <svg id="fx" class="layer" viewBox="0 0 1920 1080"></svg>
+  <div id="caps" class="layer"></div>
+  <div id="bigs" class="layer"></div>
+  <div id="close" class="layer"></div>
+  <canvas id="grain" class="layer" width="960" height="540"></canvas>
+  <div id="vignette" class="layer"></div>
+  <div id="flash" class="layer"></div>
+  <div id="fade" class="layer"></div>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const eio = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const eout = (x) => 1 - Math.pow(1 - x, 3);
+const eout5 = (x) => 1 - Math.pow(1 - x, 5);
+const ein = (x) => x * x * x;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const MANIFEST = window.MANIFEST || {};
+
+// ---------------- Timeline ----------------
+// Each screen scene: [start, end, clip, offset into clip (s), layout]
+const S = [];
+let T = 0;
+const scene = (len, o) => { S.push({ start: T, end: T + len, ...o }); T += len; };
+const HOOK = 6.0, TITLE = 2.6;
+T = HOOK + TITLE;
+scene(6.2, { clip: "hero", off: 0.3, layout: "reveal" });
+scene(9.6, { clip: "scroll", off: 0, layout: "center" });
+scene(7.4, { clip: "appA", off: 0, layout: "side" });
+scene(11.4, { clip: "appB", off: 0, layout: "side" });
+const DIAG = T; T += 6.4;
+scene(7.2, { clip: "circle", off: 0, layout: "side" });
+scene(5.6, { clip: "how", off: 0.2, layout: "center" });
+scene(5.0, { clip: "privacy", off: 0.2, layout: "center" });
+scene(4.4, { clip: "explore", off: 0.4, layout: "center" });
+scene(3.4, { clip: "key", off: 0.1, layout: "center" });
+scene(3.2, { clip: "help", off: 0.1, layout: "center" });
+scene(4.4, { clip: "proof", off: 0, layout: "center" });
+scene(3.8, { clip: "tv", off: 0.9, layout: "tv" });
+const CLOSE = T; T += 6.2;
+const END = T;
+window.DURATION = END;
+const at = (clip) => S.find((s) => s.clip === clip);
+
+// Captions: [t0, t1, layout, kicker, text]; text marks a serif accent with *...*
+const CAPS = [
+  [at("hero").start + 0.9, at("hero").start + 3.5, "center", "", "Savings circles on *NEAR.*"],
+  [at("hero").start + 3.5, at("hero").end - 0.1, "center", "", "A contract holds every *pot.*"],
+  [at("scroll").start + 0.3, at("scroll").start + 2.6, "center", "", "Pay in from *7 networks.*"],
+  [at("scroll").start + 2.6, at("scroll").start + 5.4, "center", "", "Fair turns. Deposits that *cover misses.*"],
+  [at("scroll").start + 5.4, at("scroll").start + 7.2, "center", "", "Every payout *on the record.*"],
+  [at("scroll").start + 7.2, at("scroll").start + 9.1, "center", "", "Your name stays *off the chain.*"],
+  [at("appA").start + 0.4, at("appA").start + 3.6, "side", "Sign in", "A passkey.|No email.|*No password.*"],
+  [at("appA").start + 3.6, at("appA").end - 0.05, "side", "Start a circle", "Pick the amount,|the people,|*the pace.*"],
+  [at("appB").start + 0.3, at("appB").start + 7.6, "side", "Pay in", "From the wallet|or exchange you|*already use.*"],
+  [at("appB").start + 7.7, at("appB").end - 0.05, "side", "Invite", "Share one link|*on WhatsApp.*"],
+  [DIAG + 0.4, DIAG + 3.0, "center", "", "Everyone pays in. The *contract holds it.*"],
+  [DIAG + 3.0, DIAG + 6.3, "center", "", "The last payment *pays the pot.*"],
+  [at("circle").start + 0.3, at("circle").start + 3.6, "side", "Your seat", "Your turn is|an NFT|*you own.*"],
+  [at("circle").start + 3.6, at("circle").end - 0.05, "side", "Swap turns", "Need it sooner?|Buy an|*earlier turn.*"],
+  [at("how").start + 0.3, at("how").end - 0.1, "center", "", "Every step, *explained.*"],
+  [at("privacy").start + 0.3, at("privacy").end - 0.1, "center", "", "Each circle gets its own *account.*"],
+  [at("explore").start + 0.3, at("explore").end - 0.1, "center", "", "Every circle, *live from the chain.*"],
+  [at("key").start + 0.2, at("key").end - 0.05, "center", "", "One passkey. *Every circle.*"],
+  [at("help").start + 0.2, at("help").end - 0.05, "center", "", "Every dollar *followed to the end.*"],
+  [at("proof").start + 0.2, at("proof").end - 0.1, "center", "", "Run on NEAR mainnet with *real USDT.*"],
+];
+window.CUES = { S, CAPS, DIAG, CLOSE, HOOK, TITLE, END };
+
+// ---------------- Captions ----------------
+const capEls = CAPS.map(([t0, t1, layout, kicker, text]) => {
+  const el = document.createElement("div");
+  el.className = "cap " + layout;
+  if (kicker) { const k = document.createElement("span"); k.className = "k"; k.textContent = kicker; el.append(k); }
+  for (const line of text.split("|")) {
+    const l = document.createElement("span"); l.className = "l";
+    let serif = false;
+    for (const part of line.split("*")) {
+      if (part) {
+        const seg = document.createElement("span"); if (serif) seg.className = "s";
+        part.split(/(\s+)/).forEach((w) => { if (/^\s+$/.test(w)) seg.append(w); else if (w) { const s = document.createElement("span"); s.className = "w"; s.textContent = w; seg.append(s); } });
+        l.append(seg);
+      }
+      serif = !serif;
+    }
+    el.append(l);
+  }
+  $("#caps").append(el);
+  return el;
+});
+function renderCaps(t) {
+  CAPS.forEach(([t0, t1, layout], i) => {
+    const el = capEls[i];
+    if (t < t0 - 0.01 || t > t1 + 0.01) { el.style.display = "none"; return; }
+    el.style.display = "block";
+    if (layout === "center") el.style.top = "60px";
+    else el.style.top = `${540 - el.offsetHeight / 2}px`;
+    const out = prog(t, t1 - 0.32, t1);
+    const words = el.querySelectorAll(".w, .k");
+    words.forEach((w, j) => {
+      const p = eout5(prog(t, t0 + j * 0.045, t0 + j * 0.045 + 0.62));
+      const o = p * (1 - eio(out));
+      w.style.opacity = o.toFixed(3);
+      w.style.transform = `translateY(${((1 - p) * 34 - eio(out) * 18).toFixed(2)}px)`;
+      w.style.filter = `blur(${((1 - p) * 10 + out * 6).toFixed(2)}px)`;
+    });
+  });
+}
+
+// ---------------- Camera ----------------
+const LAY = {
+  center: { x: 960, y: 622, s: 0.9, rx: 0, ry: 0, shade: 0 },
+  side: { x: 1290, y: 860, s: 1.78, rx: 0, ry: 0, shade: 1 },
+  tv: { x: 960, y: 600, s: 1.02, rx: 0, ry: 0, shade: 0 },
+  reveal: { x: 960, y: 622, s: 0.9, rx: 0, ry: 0, shade: 0 },
+  off: { x: 960, y: 1700, s: 0.84, rx: 30, ry: 0, shade: 0 },
+};
+function camAt(t) {
+  let i = S.findIndex((s) => t >= s.start && t < s.end);
+  if (t >= CLOSE) i = S.length - 1;
+  if (t >= DIAG && t < DIAG + 6.4) return { ...LAY.center, y: 1700, s: 0.7, rx: 25, gone: true };
+  if (i < 0) return { ...LAY.off };
+  const sc = S[i];
+  let cam = { ...LAY[sc.layout] };
+  if (sc.layout === "reveal") {
+    const p = eout5(prog(t, sc.start, sc.start + 1.6));
+    cam = { x: 960, y: lerp(1500, 622, p), s: lerp(0.72, 0.9, p), rx: lerp(42, 0, p), ry: 0, shade: 0 };
+    return cam;
+  }
+  // slow drift inside a scene
+  const k = (t - sc.start) / (sc.end - sc.start);
+  if (sc.layout === "center") cam.s *= 1 + 0.025 * k;
+  if (sc.layout === "side") cam.s *= 1 + 0.02 * k;
+  if (sc.layout === "tv") cam.s *= 1 + 0.18 * eio(k);
+  // blend in from the previous camera
+  const prev = i > 0 ? S[i - 1] : null;
+  const fromDiag = prev && prev.end < sc.start - 0.01;
+  const blendLen = 0.75;
+  if (prev && t < sc.start + blendLen) {
+    const p = eio(prog(t, sc.start, sc.start + blendLen));
+    const pc = fromDiag ? { ...LAY.center, y: 1700, s: 0.7, rx: 25 } : { ...LAY[prev.layout] };
+    if (prev.layout === "center") pc.s *= 1.025;
+    if (prev.layout === "side") pc.s *= 1.02;
+    for (const key of ["x", "y", "s", "rx", "ry", "shade"]) cam[key] = lerp(pc[key], cam[key], p);
+  }
+  return cam;
+}
+function renderCam(t) {
+  const c = camAt(t);
+  // close: the laptop backs away
+  let x = c.x, y = c.y, s = c.s, rx = c.rx, op = 1;
+  if (t >= CLOSE) { const p = eio(prog(t, CLOSE, CLOSE + 1.0)); s = lerp(s, s * 1.6, p); op = 1 - p; }
+  $("#cam").style.transform = `translate(${x}px, ${y}px) perspective(2600px) rotateX(${rx}deg) scale(${s})`;
+  $("#cam").style.opacity = op;
+  $("#cam").style.display = c.gone || t < HOOK + TITLE - 0.01 ? "none" : "block";
+  $("#sideshade").style.opacity = c.shade ?? 0;
+}
+
+// ---------------- Screen ----------------
+const pad = (n) => String(n).padStart(5, "0");
+function frameOf(sc, t) {
+  const n = MANIFEST[sc.clip] || 1;
+  const f = Math.floor((t - sc.start + sc.off) * 30 + 1e-6);
+  return clamp(f, 0, n - 1);
+}
+const loaded = new Map();
+async function setImg(img, src) {
+  if (img.dataset.src === src) return;
+  img.dataset.src = src;
+  img.src = src;
+  try { await img.decode(); } catch {}
+}
+async function renderScreen(t) {
+  const i = S.findIndex((s) => t >= s.start && t < s.end);
+  const sc = i >= 0 ? S[i] : t >= CLOSE ? S[S.length - 1] : null;
+  const A = $("#imA"), B = $("#imB");
+  if (!sc) { A.style.opacity = 0; B.style.opacity = 0; return; }
+  const cur = `frames/${sc.clip}/${pad(frameOf(sc, Math.min(t, sc.end - 0.001)))}.jpg`;
+  const prev = i > 0 ? S[i - 1] : null;
+  const XF = 0.42;
+  if (prev && prev.end >= sc.start - 0.01 && t < sc.start + XF) {
+    const p = eio(prog(t, sc.start, sc.start + XF));
+    await Promise.all([setImg(A, `frames/${prev.clip}/${pad(frameOf(prev, prev.end - 0.001))}.jpg`), setImg(B, cur)]);
+    A.style.opacity = 1; A.style.transform = `scale(${1 - 0.03 * p})`; A.style.filter = `blur(${p * 8}px)`;
+    B.style.opacity = p; B.style.transform = `scale(${1.04 - 0.04 * p})`; B.style.filter = `blur(${(1 - p) * 8}px)`;
+  } else {
+    await setImg(B, cur);
+    A.style.opacity = 0; B.style.opacity = 1; B.style.transform = "none"; B.style.filter = "none";
+  }
+  // the screen lights up on the reveal
+  const rv = at("hero");
+  $("#screen").style.filter = t < rv.start + 1.0 ? `brightness(${lerp(0.15, 1, eout(prog(t, rv.start + 0.2, rv.start + 1.0)))})` : "none";
+}
+
+// ---------------- Hook, title, diagram, close ----------------
+const NS = "http://www.w3.org/2000/svg";
+const fx = $("#fx");
+const el = (tag, attrs, parent = fx) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.append(e); return e; };
+
+// Hook words
+const WORDS = ["Àjọ.", "Esusu.", "Adashe.", "Susu."];
+const hookWords = WORDS.map((w) => { const d = document.createElement("div"); d.className = "big"; d.style.top = "380px"; d.style.fontFamily = '"Instrument Serif", serif'; d.style.fontWeight = 700; d.style.fontSize = "250px"; d.style.letterSpacing = "-0.04em"; d.style.lineHeight = "1"; d.textContent = w; $("#bigs").append(d); return d; });
+const W0 = 0.25, WD = 0.44;
+const hookLine1 = document.createElement("div"); hookLine1.className = "big"; $("#bigs").append(hookLine1);
+const hookLine2 = document.createElement("div"); hookLine2.className = "big"; $("#bigs").append(hookLine2);
+for (const [d, txt] of [[hookLine1, "One person holds <span class=\"serif\">everyone's money.</span>"], [hookLine2, "What if <span class=\"serif\">nobody did?</span>"]]) {
+  d.innerHTML = txt; d.style.top = "96px"; d.style.fontSize = "60px"; d.style.fontWeight = 600; d.style.letterSpacing = "-0.035em"; d.style.color = "var(--cream)";
+  d.querySelector(".serif").style.cssText = 'font-family:"Instrument Serif",serif;font-weight:700;color:var(--peach)';
+}
+const titleWord = document.createElement("div"); titleWord.className = "big"; titleWord.textContent = "Contri";
+titleWord.style.cssText += ";top:350px;font-size:230px;font-weight:600;letter-spacing:-0.055em;line-height:1;color:var(--cream)";
+const titleSub = document.createElement("div"); titleSub.className = "big"; titleSub.innerHTML = 'Àjọ without the <span style="font-family:\'Instrument Serif\',serif;font-weight:700;color:var(--peach)">collector.</span>';
+titleSub.style.cssText += ";top:620px;font-size:60px;font-weight:500;letter-spacing:-0.03em;color:var(--ink2)";
+$("#bigs").append(titleWord, titleSub);
+
+// The ring diagram, used by the hook and the payout diagram.
+const CX = 960, CY = 600, R = 270;
+const ringG = el("g", {});
+const orbit = el("circle", { cx: CX, cy: CY, r: R, fill: "none", stroke: "rgba(255,188,152,0.25)", "stroke-width": 1.5, "stroke-dasharray": "3 9" }, ringG);
+const members = [];
+const NAMES = ["Adaeze", "Bayo", "Chioma", "You", "Emeka", "Funke"];
+for (let i = 0; i < 6; i++) {
+  const g = el("g", {}, ringG);
+  const c = el("circle", { r: 30, fill: "#1a1310", stroke: "rgba(255,188,152,0.55)", "stroke-width": 2 }, g);
+  const tx = el("text", { "text-anchor": "middle", y: 66, "font-size": 24, fill: "#b7aea6", "font-weight": 500 }, g);
+  tx.textContent = NAMES[i];
+  const ini = el("text", { "text-anchor": "middle", y: 9, "font-size": 24, fill: "#fffaf6", "font-weight": 600 }, g);
+  ini.textContent = NAMES[i][0];
+  members.push({ g, c, tx, ini });
+}
+const coins = Array.from({ length: 6 }, () => el("circle", { r: 11, fill: "#ff7a4c" }, ringG));
+const centerG = el("g", {}, ringG);
+const person = el("circle", { cx: CX, cy: CY, r: 62, fill: "#1a1310", stroke: "#fffaf6", "stroke-width": 2.5 }, centerG);
+const personLbl = el("text", { x: CX, y: CY + 104, "text-anchor": "middle", "font-size": 26, fill: "#fffaf6", "font-weight": 600 }, centerG);
+personLbl.textContent = "Collector";
+const personIcon = el("path", { d: `M ${CX - 22} ${CY + 30} a 22 22 0 0 1 44 0 M ${CX} ${CY - 26} m -15 0 a 15 15 0 1 0 30 0 a 15 15 0 1 0 -30 0`, fill: "none", stroke: "#fffaf6", "stroke-width": 3 }, centerG);
+const hexPts = (r) => Array.from({ length: 6 }, (_, i) => { const a = Math.PI / 6 + (i * Math.PI) / 3; return `${CX + r * Math.cos(a)},${CY + r * Math.sin(a)}`; }).join(" ");
+const hexGlow = el("polygon", { points: hexPts(96), fill: "rgba(255,122,76,0.12)", stroke: "none", filter: "url(#blur)" }, ringG);
+const hex = el("polygon", { points: hexPts(86), fill: "#1d0f09", stroke: "#ff7a4c", "stroke-width": 4, "stroke-linejoin": "round" }, ringG);
+const hexLbl = el("text", { x: CX, y: CY + 140, "text-anchor": "middle", "font-size": 26, fill: "#ffbc98", "font-weight": 600 }, ringG);
+hexLbl.textContent = "Contract on NEAR";
+const potTxt = el("text", { x: CX, y: CY + 14, "text-anchor": "middle", "font-size": 40, fill: "#fffaf6", "font-weight": 600 }, ringG);
+const paidTag = el("g", {}, ringG);
+const paidRect = el("rect", { rx: 12, width: 210, height: 46, fill: "#ff7a4c" }, paidTag);
+const paidTxt = el("text", { x: 105, y: 31, "text-anchor": "middle", "font-size": 22, fill: "#170a05", "font-weight": 700 }, paidTag);
+paidTxt.textContent = "Paid $25.00";
+const defs = el("defs", {}); const f = el("filter", { id: "blur", x: "-50%", y: "-50%", width: "200%", height: "200%" }, defs); el("feGaussianBlur", { stdDeviation: 18 }, f);
+const bigCoin = el("circle", { r: 20, fill: "#ffbc98" }, ringG);
+
+function memberPos(i, n, rot = -Math.PI / 2) { const a = rot + (i * 2 * Math.PI) / n; return [CX + R * Math.cos(a), CY + R * Math.sin(a)]; }
+
+function renderDiagrams(t) {
+  // ----- hook -----
+  const inHook = t < HOOK + 0.6;
+  WORDS.forEach((w, i) => {
+    const a = W0 + i * WD, b = a + WD;
+    const d = hookWords[i];
+    if (t < a || t >= b) { d.style.opacity = 0; return; }
+    const p = eout5(prog(t, a, a + 0.22));
+    d.style.opacity = p; d.style.transform = `scale(${lerp(1.12, 1, p)})`; d.style.filter = `blur(${(1 - p) * 14}px)`;
+    d.style.color = i % 2 ? "var(--cream)" : "var(--peach)";
+  });
+  const RING0 = W0 + 4 * WD; // ring arrives
+  const show = (x, a, b) => { x.style.opacity = eout(prog(t, a, a + 0.4)) * (1 - eout(prog(t, b - 0.3, b))); x.style.transform = `translateY(${(1 - eout5(prog(t, a, a + 0.5))) * 24}px)`; x.style.filter = `blur(${(1 - eout5(prog(t, a, a + 0.5))) * 8}px)`; };
+  show(hookLine1, RING0 + 0.1, 4.05);
+  show(hookLine2, 4.05, HOOK);
+
+  // ring visibility: hook (RING0..HOOK+0.5) and payout diagram (DIAG..DIAG+6.4)
+  const inDiag = t >= DIAG - 0.2 && t < DIAG + 6.6;
+  const hookRing = t >= RING0 && t < HOOK + 0.8;
+  ringG.style.display = hookRing || inDiag ? "inline" : "none";
+  if (hookRing) {
+    const ringIn = eout5(prog(t, RING0, RING0 + 0.6));
+    const leave = eio(prog(t, HOOK, HOOK + 0.7));
+    ringG.style.opacity = 1 - leave;
+    ringG.setAttribute("transform", `translate(${CX} ${CY}) scale(${lerp(0.85, 1, ringIn) * (1 - 0.5 * leave)}) translate(${-CX} ${-CY})`);
+    orbit.style.opacity = ringIn;
+    for (let i = 0; i < 6; i++) {
+      const [x, y] = memberPos(i, 6, -Math.PI / 2 + t * 0.12);
+      const m = members[i];
+      const p = eout5(prog(t, RING0 + i * 0.05, RING0 + i * 0.05 + 0.4));
+      m.g.setAttribute("transform", `translate(${x} ${y}) scale(${p})`);
+      m.g.style.opacity = 1 - 0.55 * eio(prog(t, 4.05, 4.4));
+      m.tx.style.display = "none";
+      // coins to the collector, then (after the question) to the contract
+      const ca = RING0 + 0.55 + i * 0.12, cb = ca + 0.6;
+      const cp = eio(prog(t, ca, cb));
+      const c = coins[i];
+      c.setAttribute("cx", lerp(x, CX, cp)); c.setAttribute("cy", lerp(y, CY, cp));
+      c.style.opacity = t > ca && t < cb + 0.05 ? 1 : 0;
+    }
+    // collector: present, then gone
+    const gone = eio(prog(t, 4.05, 4.5));
+    centerG.style.opacity = 1 - gone;
+    person.setAttribute("stroke-dasharray", gone > 0 ? "8 10" : "none");
+    centerG.setAttribute("transform", `translate(${CX} ${CY}) scale(${lerp(1, 0.6, gone) * (1 + 0.06 * Math.sin(prog(t, RING0 + 0.55, RING0 + 1.4) * Math.PI))}) translate(${-CX} ${-CY})`);
+    // the contract takes its place
+    const hx = eout5(prog(t, 4.55, 5.2));
+    hex.style.display = hexGlow.style.display = hexLbl.style.display = "inline";
+    hex.setAttribute("stroke-dasharray", "600"); hex.setAttribute("stroke-dashoffset", String(600 * (1 - hx)));
+    hex.style.opacity = hx > 0 ? 1 : 0; hexGlow.style.opacity = hx; hexLbl.style.opacity = eout(prog(t, 4.9, 5.3));
+    hex.setAttribute("fill-opacity", hx);
+    potTxt.style.opacity = 0; paidTag.style.opacity = 0; bigCoin.style.opacity = 0;
+  }
+  if (inDiag && !hookRing) {
+    const d = t - DIAG;
+    const inn = eout5(prog(d, 0, 0.7)), leave = eio(prog(d, 5.9, 6.4));
+    ringG.style.opacity = inn * (1 - leave);
+    ringG.setAttribute("transform", `translate(${CX} ${CY + 20}) scale(${lerp(0.9, 1, inn)}) translate(${-CX} ${-CY})`);
+    centerG.style.opacity = 0; orbit.style.opacity = 1;
+    hex.style.display = hexGlow.style.display = hexLbl.style.display = "inline";
+    hex.setAttribute("stroke-dasharray", "none"); hex.style.opacity = 1; hex.setAttribute("fill-opacity", 1);
+    hexLbl.style.opacity = 1;
+    let pot = 0;
+    const N = 5;
+    for (let i = 0; i < 6; i++) {
+      const m = members[i];
+      if (i >= N) { m.g.style.opacity = 0; coins[i].style.opacity = 0; continue; }
+      const [x, y] = memberPos(i, N);
+      m.g.style.opacity = 1; m.tx.style.display = "inline";
+      m.tx.setAttribute("y", y > CY + 10 ? 70 : -48);
+      m.g.setAttribute("transform", `translate(${x} ${y}) scale(${eout5(prog(d, 0.1 + i * 0.06, 0.6 + i * 0.06))})`);
+      const ca = 0.9 + i * 0.42, cb = ca + 0.55;
+      const cp = eio(prog(d, ca, cb));
+      coins[i].setAttribute("cx", lerp(x, CX, cp)); coins[i].setAttribute("cy", lerp(y, CY, cp));
+      coins[i].style.opacity = d > ca && d < cb ? 1 : 0;
+      if (d >= cb) pot += 5;
+      const isYou = NAMES[i] === "You";
+      m.c.setAttribute("stroke", isYou ? "#ff7a4c" : "rgba(255,188,152,0.55)");
+      m.tx.setAttribute("fill", isYou ? "#ff7a4c" : "#b7aea6");
+    }
+    // pot leaves for turn 3 (Chioma) when the last coin lands
+    const last = 0.9 + 4 * 0.42 + 0.55;
+    const go = eio(prog(d, last + 0.35, last + 1.05));
+    potTxt.style.opacity = 1;
+    potTxt.textContent = go > 0.02 ? "$0" : `$${pot}`;
+    const [tx3, ty3] = memberPos(2, N);
+    bigCoin.style.opacity = d > last + 0.35 && d < last + 1.1 ? 1 : 0;
+    bigCoin.setAttribute("cx", lerp(CX, tx3, go)); bigCoin.setAttribute("cy", lerp(CY, ty3, go));
+    const pulse = Math.max(0, 1 - Math.abs(d - last) / 0.3);
+    hex.setAttribute("stroke-width", 4 + pulse * 6);
+    hexGlow.style.opacity = 0.6 + pulse;
+    const tagP = eout5(prog(d, last + 1.05, last + 1.5));
+    paidTag.style.opacity = tagP;
+    paidTag.setAttribute("transform", `translate(${tx3 + 46} ${ty3 - 23 + (1 - tagP) * 14})`);
+    members[2].c.setAttribute("fill", go >= 1 ? "#ff7a4c" : "#1a1310");
+    members[2].ini.setAttribute("fill", go >= 1 ? "#170a05" : "#fffaf6");
+  } else if (!hookRing) {
+    for (const m of members) { m.c.setAttribute("fill", "#1a1310"); m.ini.setAttribute("fill", "#fffaf6"); }
+  }
+
+  // ----- title -----
+  const ta = HOOK, tb = HOOK + TITLE;
+  const tin = eout5(prog(t, ta + 0.15, ta + 0.85));
+  const tout = eio(prog(t, tb - 0.2, tb + 0.7));
+  titleWord.style.opacity = tin * (1 - tout);
+  titleWord.style.letterSpacing = `${lerp(0.02, -0.055, eout5(prog(t, ta + 0.1, ta + 1.6)))}em`;
+  titleWord.style.transform = `translateY(${-tout * 160}px) scale(${lerp(1.08, 1, tin)})`;
+  titleWord.style.filter = `blur(${(1 - tin) * 16 + tout * 10}px)`;
+  const sin = eout5(prog(t, ta + 0.6, ta + 1.3));
+  titleSub.style.opacity = sin * (1 - tout);
+  titleSub.style.transform = `translateY(${(1 - sin) * 30 - tout * 160}px)`;
+  titleSub.style.filter = `blur(${(1 - sin) * 8 + tout * 10}px)`;
+}
+
+// Closing card: the brand mark exactly as the site draws it.
+$("#close").innerHTML = `
+  <div id="cl-mark" style="position:absolute;left:0;top:300px;width:1920px;display:flex;justify-content:center;align-items:center;gap:34px">
+    <svg viewBox="0 0 32 32" width="150" height="150" style="color:#ff7a4c"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle cx="25.5" cy="21.5" r="3.5" fill="#0b0907" stroke="currentColor" stroke-width="2"/><circle cx="6.5" cy="21.5" r="3.5" fill="#0b0907" stroke="currentColor" stroke-width="2"/></svg>
+    <span style="font-size:150px;font-weight:600;letter-spacing:-0.05em;color:#fffaf6;line-height:1">Contri</span>
+  </div>
+  <div id="cl-sub" class="big" style="top:520px;font-size:56px;font-weight:500;letter-spacing:-0.03em;color:#b7aea6">Àjọ without the <span style="font-family:'Instrument Serif',serif;font-weight:700;color:#ffbc98">collector.</span></div>
+  <div id="cl-links" class="big" style="top:680px;font-size:34px;font-weight:600;letter-spacing:-0.01em;color:#fffaf6">contri.ng<span style="color:#887e76;margin:0 26px">·</span>@contri_ng</div>
+  <div id="cl-near" class="big" style="top:930px;font-size:22px;font-weight:500;letter-spacing:0.02em;color:#887e76">Built on NEAR · NEAR Hackathon 2026</div>`;
+function renderClose(t) {
+  const d = t - CLOSE;
+  $("#close").style.display = d < 0 ? "none" : "block";
+  if (d < 0) return;
+  const parts = [["#cl-mark", 0.5], ["#cl-sub", 1.0], ["#cl-links", 1.5], ["#cl-near", 1.9]];
+  for (const [sel, a] of parts) {
+    const p = eout5(prog(d, a, a + 0.8));
+    const e = $(sel);
+    e.style.opacity = p; e.style.transform = `translateY(${(1 - p) * 30}px) scale(${sel === "#cl-mark" ? lerp(0.92, 1, p) : 1})`; e.style.filter = `blur(${(1 - p) * 10}px)`;
+  }
+  $("#fade").style.opacity = eio(prog(t, END - 0.7, END));
+}
+
+// Background: glow drift and faint orbit rings
+const rings = $("#rings");
+for (let i = 1; i <= 5; i++) el("circle", { cx: 960, cy: 540, r: 180 * i, fill: "none", stroke: "rgba(255,188,152,0.05)", "stroke-width": 1 }, rings);
+function renderBg(t) {
+  const g = $("#glow").style;
+  g.setProperty("--gx", `${60 + 14 * Math.sin(t * 0.21)}%`); g.setProperty("--gy", `${28 + 10 * Math.cos(t * 0.17)}%`);
+  g.setProperty("--hx", `${22 + 12 * Math.cos(t * 0.19)}%`); g.setProperty("--hy", `${84 + 8 * Math.sin(t * 0.23)}%`);
+  rings.setAttribute("transform", `rotate(${t * 2} 960 540)`);
+  rings.style.opacity = t < HOOK + TITLE || t >= CLOSE || (t >= DIAG && t < DIAG + 6.4) ? 0.9 : 0.25;
+  // flash on hard beats
+  const beats = [W0, W0 + WD, W0 + 2 * WD, W0 + 3 * WD, HOOK + 0.15, CLOSE + 0.5];
+  let fl = 0; for (const b of beats) fl = Math.max(fl, 1 - Math.abs(t - b) / 0.12);
+  $("#flash").style.opacity = (fl * 0.25).toFixed(3);
+}
+// Film grain: a fixed noise tile, shifted each frame.
+const gctx = $("#grain").getContext("2d");
+const noise = gctx.createImageData(960, 540);
+let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+for (let i = 0; i < noise.data.length; i += 4) { const v = 128 + (rnd() - 0.5) * 110; noise.data[i] = noise.data[i + 1] = noise.data[i + 2] = v; noise.data[i + 3] = 255; }
+gctx.putImageData(noise, 0, 0);
+function renderGrain(t) { const f = Math.floor(t * 30); $("#grain").style.transform = `translate(${(f * 37) % 60 - 30}px, ${(f * 53) % 40 - 20}px) scale(1.08)`; }
+
+window.render = async (t) => {
+  renderBg(t); renderGrain(t);
+  renderCam(t);
+  await renderScreen(t);
+  renderDiagrams(t);
+  renderCaps(t);
+  renderClose(t);
+};
+</script>
+</body>
+</html>

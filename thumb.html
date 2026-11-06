@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: "Instrument Sans"; src: url("instrument-sans.woff") format("woff"); font-weight: 400 700; }
+@font-face { font-family: "Instrument Serif"; src: url("instrument-serif.woff2") format("woff2"); font-weight: 400 700; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0b0907; font-family: "Instrument Sans", sans-serif; -webkit-font-smoothing: antialiased; }
+.bg { position: absolute; inset: 0; background: radial-gradient(1100px 800px at 78% 40%, rgba(255, 122, 76, 0.28), transparent 65%), radial-gradient(900px 700px at 8% 100%, rgba(198, 60, 14, 0.22), transparent 70%); }
+.copy { position: absolute; left: 110px; top: 0; bottom: 0; width: 900px; display: flex; flex-direction: column; justify-content: center; }
+.brand { display: flex; align-items: center; gap: 22px; color: #fffaf6; font-size: 64px; font-weight: 600; letter-spacing: -0.04em; }
+.brand svg { width: 70px; height: 70px; color: #ff7a4c; }
+h1 { margin-top: 46px; color: #fffaf6; font-size: 124px; line-height: 1.02; font-weight: 600; letter-spacing: -0.055em; }
+h1 .s { font-family: "Instrument Serif", serif; font-weight: 700; color: #ffbc98; font-size: 1.12em; letter-spacing: -0.05em; }
+.chip { display: inline-flex; align-self: flex-start; align-items: center; gap: 14px; margin-top: 54px; padding: 16px 26px; border: 1.5px solid rgba(255, 188, 152, 0.35); border-radius: 14px; background: rgba(40, 16, 8, 0.7); color: #fffaf6; font-size: 34px; font-weight: 600; letter-spacing: -0.01em; }
+.chip i { width: 14px; height: 14px; border-radius: 50%; background: #67dba9; box-shadow: 0 0 12px rgba(103, 219, 169, 0.8); }
+.lap { position: absolute; left: 1010px; top: 190px; width: 1308px; transform: perspective(2200px) rotateY(-24deg) rotateX(6deg) scale(0.86); transform-origin: 0 50%; }
+.lid { width: 1308px; height: 828px; padding: 14px; border-radius: 30px; background: linear-gradient(180deg, #1c1917, #0d0c0b); box-shadow: inset 0 0 0 1.5px rgba(255, 235, 220, 0.3), 0 60px 140px rgba(0, 0, 0, 0.7), 0 0 200px rgba(255, 110, 60, 0.18); }
+.lid img { display: block; width: 1280px; height: 800px; border-radius: 16px; }
+.base { position: relative; left: -106px; width: 1520px; height: 30px; margin-top: -2px; border-radius: 3px 3px 26px 26px / 3px 3px 22px 22px; background: linear-gradient(180deg, #3a3532 0%, #24201e 30%, #141210 100%); box-shadow: inset 0 1px 0 rgba(255, 240, 230, 0.28); }
+</style></head>
+<body>
+<div class="bg"></div>
+<div class="lap"><div class="lid"><img src="frames/hero/00010.jpg" alt=""></div><div class="base"></div></div>
+<div class="copy">
+  <div class="brand"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle cx="25.5" cy="21.5" r="3.5" fill="#0b0907" stroke="currentColor" stroke-width="2"/><circle cx="6.5" cy="21.5" r="3.5" fill="#0b0907" stroke="currentColor" stroke-width="2"/></svg>Contri</div>
+  <h1>Àjọ without<br>the <span class="s">collector.</span></h1>
+  <div class="chip"><i></i>Savings circles on NEAR</div>
+</div>
+</body></html>
