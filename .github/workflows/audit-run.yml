@@ -1,0 +1,107 @@
+name: audit-run
+
+# Read-only evidence for auditors, run only by a push to the audit-run branch:
+# a mainnet snapshot (keys, balances, circles, the README's transactions, the
+# deployed code hash against CI's build), the live site's headers, pages in
+# three browser engines at six widths, every link, Lighthouse, and the
+# contract's unit tests (with any audit tests on this branch). It uses no
+# secrets, sends no transaction and moves no money. Results go to the
+# audit-run-results branch.
+
+on:
+  push:
+    branches: [audit-run]
+
+permissions:
+  contents: write
+
+jobs:
+  evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Mainnet snapshot
+        continue-on-error: true
+        run: |
+          mkdir -p out
+          node audit/onchain.mjs > out/onchain.json 2> out/onchain.err || true
+          git fetch -q origin ci-results && git show FETCH_HEAD:ci-out/contri.wasm > /tmp/ci.wasm
+          node -e '
+            const fs = require("fs"), c = require("crypto");
+            const h = c.createHash("sha256").update(fs.readFileSync("/tmp/ci.wasm")).digest();
+            const A = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; let n = BigInt("0x" + h.toString("hex")), s = "";
+            while (n > 0n) { s = A[Number(n % 58n)] + s; n /= 58n; }
+            const o = JSON.parse(fs.readFileSync("out/onchain.json", "utf8"));
+            const onchain = o["circles.contring.near"].account.code_hash;
+            fs.writeFileSync("out/code-hash.txt", `ci-results contri.wasm: ${fs.statSync("/tmp/ci.wasm").size} bytes, sha256 (base58) ${s}\non chain code_hash: ${onchain}\nmatch: ${s === onchain}\n`);'
+          cat out/code-hash.txt
+      - name: Live site headers and bodies
+        continue-on-error: true
+        run: bash audit/live-site.sh https://contri.ng out/live
+      - name: Install browsers
+        continue-on-error: true
+        working-directory: app
+        timeout-minutes: 10
+        run: |
+          npm install --no-audit --no-fund 2>&1 | tail -1
+          npx playwright install --with-deps chromium webkit firefox 2>&1 | tail -2
+      - name: Pages in three engines at six widths, and every link
+        continue-on-error: true
+        timeout-minutes: 15
+        working-directory: app
+        run: node ../audit/live-pages.mjs https://contri.ng ../out/pages 2>&1 | tee ../out/pages.txt
+      - name: Lighthouse
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          mkdir -p out/lighthouse
+          for p in / /how-it-works /privacy /terms /app; do
+            n=$(echo "home$p" | tr '/' '_')
+            npx --yes lighthouse@12 "https://contri.ng$p" --quiet --chrome-flags="--headless=new --no-sandbox" --output=json --output-path="out/lighthouse/mobile$n.json" --only-categories=performance,accessibility,best-practices,seo || true
+          done
+          npx --yes lighthouse@12 "https://contri.ng/" --preset=desktop --quiet --chrome-flags="--headless=new --no-sandbox" --output=json --output-path="out/lighthouse/desktop_home.json" --only-categories=performance,accessibility,best-practices,seo || true
+          node audit/lighthouse-summary.mjs out/lighthouse > out/lighthouse.txt 2>&1; cat out/lighthouse.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence
+          path: out
+
+  contract-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests, including any audit tests on this branch
+        working-directory: contract
+        run: |
+          mkdir -p ../out
+          rustup toolchain install || true
+          cargo test 2>&1 | tee ../out/contract-tests.txt || true
+          grep -E "^test |test result" ../out/contract-tests.txt | grep -v " ok$" > ../out/contract-tests-summary.txt || true
+          grep "test result" ../out/contract-tests.txt >> ../out/contract-tests-summary.txt || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contract-tests
+          path: out
+
+  publish:
+    needs: [evidence, contract-tests]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: res
+          merge-multiple: true
+      - name: Publish to the audit-run-results branch
+        run: |
+          cd res
+          echo "commit ${GITHUB_SHA} $(date -u +%FT%TZ)" > RUN.txt
+          git init -q && git checkout -q -b audit-run-results
+          git config user.name "contri-ci" && git config user.email "actions@users.noreply.github.com"
+          git add -A && git commit -q -m "audit run ${GITHUB_SHA}"
+          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" audit-run-results && break; sleep $((i * 5)); done
