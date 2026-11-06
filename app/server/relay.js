@@ -19,7 +19,7 @@ import { fromBase58, fromBase64, toHex } from "../public/js/lib/bytes.js";
 import { nep413Hash } from "../public/js/lib/intents.js";
 import { signerFromSecretKey, verify } from "../public/js/lib/keys.js";
 import { events, outcome, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
-import { allow } from "./limit.js";
+import { allowShared } from "./limit.js";
 import { ticketed } from "./ticket.js";
 
 /** @typedef {import("./config.js").Config} Config */
@@ -37,6 +37,7 @@ const MAX_PAYLOADS = 2;
 const MAX_INTENTS = 2;
 const MAX_VALID_MS = 30 * 60_000;
 const MAX_MIN_GAS = 150n * TGAS;
+const RELAYS_PER_MINUTE = 60;
 const ACCOUNT = /^(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
 const N = "\\d{1,20}";
 /** What Contri's `mt_on_transfer` reads (the contract's `parse_transfer`). */
@@ -120,10 +121,14 @@ export async function relay(body, c) {
   const tickets = Array.isArray(given) ? given.slice(0, 4) : [];
   for (const p of signed) {
     const signer = await checkPayload(p, c, Date.now(), tickets);
-    if (!allow(`relay-signer:${signer}`, 10)) throw new RelayError("Too many requests from this account. Wait a minute and try again.", 429);
+    if (!(await allowShared(`relay-signer:${signer}`, 10))) throw new RelayError("Too many requests from this account. Wait a minute and try again.", 429);
     await checkAuthCalls(p, signer, c);
     await checkPayments(p, signer, c);
   }
+
+  // One cap on everything the relayer pays for, whoever asks: at most this
+  // many transactions a minute, so its NEAR can't drain faster than that.
+  if (!(await allowShared("relay-all", RELAYS_PER_MINUTE))) throw new RelayError("Contri is busy right now. Wait a minute and try again.", 429);
 
   /** @type {any} */
   let simulation;

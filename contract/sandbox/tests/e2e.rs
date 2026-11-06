@@ -434,3 +434,61 @@ async fn the_deploy_script_creates_upgrades_and_locks_the_contract() -> Result<(
     ensure!(keys.is_empty(), "locked: no keys left");
     Ok(())
 }
+
+/// The gas the payout callback burnt in a transaction, from the receipt that
+/// logged `paid_out`.
+fn payout_gas(r: &ExecutionFinalResult) -> Option<u64> {
+    r.receipt_outcomes()
+        .iter()
+        .find(|o| o.logs.iter().any(|l| l.contains("\"paid_out\"")))
+        .map(|o| o.gas_burnt.as_gas())
+}
+
+#[tokio::test]
+async fn the_payout_callback_fits_its_gas_floor_in_the_biggest_circle() -> Result<()> {
+    // The worst case for `on_payout`: 20 members, and the last round, which
+    // also writes every member's record. If the callback ran out of gas, the
+    // circle would stay "paying" for good, so its cost must sit well under
+    // the 30 Tgas floor it is always given.
+    let env = setup().await?;
+    let mut members = vec![];
+    for i in 0..20 {
+        let m = account(&env.root, &format!("m{i}")).await?;
+        env.fund(m.id().as_str(), 2 * C).await?;
+        members.push(m);
+    }
+    env.pay(&members[0], C, &format!("create:{C}:20:{PERIOD_SECS}:join:-:c2VhbGVk")).await?;
+    for m in &members[1..] {
+        env.pay(m, C, "join:0").await?;
+    }
+    ensure!(env.circle(0).await?["status"] == "Active");
+    // Round 0: nobody pays; the deposits cover it and settling pays a full pot.
+    env.pass_deadline(0).await?;
+    let r = env.call(&env.root, "settle_round", json!({"circle_id": 0})).await?;
+    let first = payout_gas(&r).ok_or_else(|| anyhow::anyhow!("round 0 paid nothing"))?;
+    // Rounds 1-18: nothing paid and no deposits left, so each settles empty.
+    for _ in 1..19 {
+        env.pass_deadline(0).await?;
+        env.call(&env.root, "settle_round", json!({"circle_id": 0})).await?;
+    }
+    ensure!(env.circle(0).await?["round"] == 19, "at the last round");
+    // The last round: everyone pays, and the last payment pays out and finishes.
+    let mut last = None;
+    for m in &members {
+        let r = m
+            .call(env.intents.id(), "mt_transfer_call")
+            .args_json(json!({"receiver_id": env.contri.id(), "token_id": env.token, "amount": C.to_string(), "msg": "contribute:0:19"}))
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(near_workspaces::types::Gas::from_tgas(100))
+            .transact()
+            .await?;
+        check(&format!("{} pays contribute:0:19", m.id()), &r)?;
+        last = payout_gas(&r).or(last);
+    }
+    ensure!(env.circle(0).await?["status"] == "Finished", "the circle finished");
+    let last = last.ok_or_else(|| anyhow::anyhow!("the last round paid nothing"))?;
+    let tgas = |g: u64| g as f64 / 1e12;
+    println!("on_payout: round 0 {:.1} Tgas, last round with 20 records {:.1} Tgas", tgas(first), tgas(last));
+    ensure!(last < 15_000_000_000_000, "on_payout burnt {:.1} Tgas, too close to its 30 Tgas floor", tgas(last));
+    Ok(())
+}

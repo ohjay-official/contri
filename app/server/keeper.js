@@ -4,8 +4,10 @@
 // keeper handles the rest: a round whose deadline passed with someone unpaid
 // (settle_round), a payout to retry (pay_out), a circle that never filled
 // by its fill_by time (cancel_circle), and deposits to send back once a
-// circle ends (release_deposits). It runs on a schedule and whenever the app
-// opens a circle that needs it. Anyone could run it; it holds no special rights.
+// circle ends (release_deposits), then closing a cancelled circle once
+// everyone is paid back (close_circle), which frees the contract's storage.
+// It runs on a schedule and whenever the app opens a circle that needs it.
+// Anyone could run it; it holds no special rights.
 
 import { needs } from "../public/js/lib/contri.js";
 import { signerFromSecretKey } from "../public/js/lib/keys.js";
@@ -17,7 +19,7 @@ import { RelayError } from "./relay.js";
 
 export { needs };
 
-const GAS = { settle_round: 150n * TGAS, pay_out: 100n * TGAS, cancel_circle: 30n * TGAS, release_deposits: 250n * TGAS };
+const GAS = { settle_round: 150n * TGAS, pay_out: 100n * TGAS, cancel_circle: 30n * TGAS, release_deposits: 250n * TGAS, close_circle: 30n * TGAS };
 
 /**
  * Checks one circle (`body.circle`) or every circle, and acts where needed.

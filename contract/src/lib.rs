@@ -48,9 +48,14 @@ const NS_PER_SEC: u64 = 1_000_000_000;
 /// gas the call has left at the end (see `transfer_then`), so a transfer that
 /// costs NEAR Intents more than this still goes through.
 const GAS_MT_TRANSFER: Gas = Gas::from_tgas(15);
-const GAS_CALLBACK: Gas = Gas::from_tgas(20);
+/// `on_payout` may write every member's record when a circle finishes; the
+/// sandbox test measures it in a 20-member circle and holds it under half of
+/// this. If it ever ran out, the circle would stay "paying" for good.
+const GAS_PAYOUT_CALLBACK: Gas = Gas::from_tgas(30);
+/// `on_sent` writes at most one credit.
+const GAS_SENT_CALLBACK: Gas = Gas::from_tgas(10);
 /// Gas needed to start a payout from inside another call.
-const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(40);
+const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(50);
 const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
 const ZERO: NearToken = NearToken::from_yoctonear(0);
 /// Most backers a circle takes, which bounds the gas to return their money.
@@ -896,7 +901,7 @@ impl Contri {
             "circle is still running"
         );
         let mut sent = 0;
-        let per_send = GAS_MT_TRANSFER.as_gas() + GAS_CALLBACK.as_gas() + Gas::from_tgas(10).as_gas();
+        let per_send = GAS_MT_TRANSFER.as_gas() + GAS_SENT_CALLBACK.as_gas() + Gas::from_tgas(10).as_gas();
         let slotted = has_slots(c.id);
         // Members' deposits, then backers' shares of what was left.
         let owed = c
@@ -1380,7 +1385,7 @@ impl Contri {
             callback,
             callback_args.as_bytes(),
             ZERO,
-            GAS_CALLBACK,
+            if callback == "on_payout" { GAS_PAYOUT_CALLBACK } else { GAS_SENT_CALLBACK },
             GasWeight(1),
         );
     }

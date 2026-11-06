@@ -144,7 +144,7 @@ export const findEvent = (evs, name) => evs.find((e) => e.event === name)?.data?
  * What a circle needs from the keeper now, if anything. Shared by the
  * keeper and the app, which asks the keeper when it sees a circle that needs it.
  * @param {Circle} c @param {number} nowMs
- * @returns {"settle_round" | "pay_out" | "cancel_circle" | "release_deposits" | null}
+ * @returns {"settle_round" | "pay_out" | "cancel_circle" | "release_deposits" | "close_circle" | null}
  */
 export function needs(c, nowMs) {
   if (c.paying) return null;
@@ -158,7 +158,10 @@ export function needs(c, nowMs) {
   if (c.status === "Open") return nowMs > Number(BigInt(c.fill_by) / 1_000_000n) ? "cancel_circle" : null;
   if (c.status === "Finished" || c.status === "Cancelled") {
     const owed = c.members.some((m) => BigInt(m.deposit) > 0n) || c.backers.some((b) => BigInt(b.due) > 0n);
-    return owed ? "release_deposits" : null;
+    if (owed) return "release_deposits";
+    // A cancelled circle never ran, so it has no history worth keeping: once
+    // everyone is paid back, closing it frees the contract's storage.
+    return c.status === "Cancelled" ? "close_circle" : null;
   }
   return null;
 }

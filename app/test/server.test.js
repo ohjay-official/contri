@@ -123,6 +123,8 @@ test("the keeper acts only when a circle needs it", () => {
   assert.equal(needs({ ...base, status: "Finished", members: [m(true, "0"), m(true, "5")] }, 0), "release_deposits");
   assert.equal(needs({ ...base, status: "Finished", members: [m(true, "0")] }, 0), null);
   assert.equal(needs({ ...base, status: "Cancelled", members: [], backers: [{ account_id: "d", amount: "9", due: "3" }] }, 0), "release_deposits");
+  // Once a cancelled circle has paid everyone back, it is closed to free storage.
+  assert.equal(needs({ ...base, status: "Cancelled", members: [m(false, "0")], backers: [{ account_id: "d", amount: "9", due: "0" }] }, 0), "close_circle");
 });
 
 test("token amounts for people round up to the cent", () => {

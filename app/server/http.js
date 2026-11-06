@@ -5,7 +5,7 @@
 // logged: not the request, not the IP address, not the error.
 
 import { config } from "./config.js";
-import { allow, caller } from "./limit.js";
+import { allowShared, caller } from "./limit.js";
 import { RelayError } from "./relay.js";
 
 const MAX_BODY = 64 * 1024;
@@ -19,7 +19,7 @@ export function handler(fn, limit) {
   return async (request) => {
     try {
       const who = await caller(request);
-      if (limit && who && !allow(`${limit.name}:${who}`, limit.perMinute)) throw new RelayError("Too many requests. Wait a minute and try again.", 429);
+      if (limit && who && !(await allowShared(`${limit.name}:${who}`, limit.perMinute))) throw new RelayError("Too many requests. Wait a minute and try again.", 429);
       let body = {};
       if (request.method === "POST") {
         const text = await request.text();

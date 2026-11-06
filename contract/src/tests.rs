@@ -648,7 +648,7 @@ fn payout_is_an_intents_transfer_then_a_callback() {
     match &receipts[1].actions[..] {
         [MockAction::FunctionCallWeight { method_name, prepaid_gas, gas_weight, .. }] => {
             assert_eq!(method_name, b"on_payout");
-            assert_eq!(*prepaid_gas, Gas::from_tgas(20));
+            assert_eq!(*prepaid_gas, Gas::from_tgas(30));
             assert_eq!(gas_weight.0, 1);
         }
         other => panic!("unexpected actions {other:?}"),
