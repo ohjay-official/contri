@@ -225,3 +225,42 @@ test("the relayer refuses payments the contract would refund, before paying gas"
   assert.equal(paymentProblem("refill:0", 5_000_000n, me, running), null);
   assert.match(String(paymentProblem("refill:0", 6_000_000n, me, running)), /more deposit/);
 });
+
+test("with Redis connected, limits are counted there, shared by every instance", async () => {
+  process.env.KV_REST_API_URL = "https://redis.test";
+  process.env.KV_REST_API_TOKEN = "t";
+  const realFetch = globalThis.fetch;
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  /** @type {any[]} */
+  const seen = [];
+  globalThis.fetch = /** @type {any} */ (
+    async (/** @type {string} */ url, /** @type {any} */ init) => {
+      const cmds = JSON.parse(init.body);
+      seen.push({ url, auth: init.headers.authorization, cmds });
+      const k = cmds[0][1];
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+      return new Response(JSON.stringify([{ result: counts.get(k) }, { result: 1 }]));
+    }
+  );
+  try {
+    // A fresh copy of the module, which reads the settings when it loads.
+    const { allowShared, sharedLimits } = await import(`../server/limit.js?redis=${Date.now()}`);
+    assert.equal(sharedLimits(), true);
+    // Another instance already counted 2 of the 3 allowed this minute.
+    const minute = Math.floor(Date.now() / 60_000);
+    counts.set(`limit:shared-test:${minute}`, 2);
+    assert.equal(await allowShared("shared-test", 3), true);
+    assert.equal(await allowShared("shared-test", 3), false, "the shared count is at the cap");
+    assert.equal(seen[0].url, "https://redis.test/pipeline");
+    assert.equal(seen[0].auth, "Bearer t");
+    assert.deepEqual(seen[0].cmds[1], ["EXPIRE", `limit:shared-test:${minute}`, "120"]);
+    // If Redis is down, requests go on with only this instance's limit.
+    globalThis.fetch = /** @type {any} */ (async () => { throw new Error("down"); });
+    assert.equal(await allowShared("shared-down", 3), true);
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+  }
+});
