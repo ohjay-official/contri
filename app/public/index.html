@@ -63,7 +63,7 @@
         <div data-fade>
           <p class="eyebrow">Security</p>
           <h2 id="security" class="display">Your Security Is <span class="serif">Our Priority.</span></h2>
-          <p class="lead">In a normal àjọ, one person holds everyone's money. Contri hands that job to a contract on NEAR, so no collector holds the pot. Until we lock the contract, the key it was deployed with, which our server also uses, can still change its code or move the money it holds. Locking deletes that key.</p>
+          <p class="lead">In a normal àjọ, one person holds everyone's money. Contri hands that job to a contract on NEAR, so no collector holds the pot. The contract is locked: nobody, us included, can change its code or move the money it holds.</p>
           <ul class="ticks">
             <li><strong>No collector.</strong> The pot pays out in the same moment the last member pays.</li>
             <li><strong>No password, no seed phrase.</strong> You sign in with your face or fingerprint, through a passkey.</li>
@@ -191,7 +191,7 @@
         </div>
         <div class="faq-list">
           <h2 id="faq" class="faq-title">Frequently Asked Questions</h2>
-          <details name="faq" open><summary>Who holds the money?</summary><p>No person. Contributions go to a contract on NEAR, a program whose rules anyone can read. It only pays a pot to the member whose turn it is, and only returns deposits to the members who made them. Until we lock the contract, the key we deployed it with, which our server also uses, can still change its code or move the money it holds. Locking deletes that key, and anyone can check the contract's keys on a NEAR explorer.</p></details>
+          <details name="faq" open><summary>Who holds the money?</summary><p>No person. Contributions go to a contract on NEAR, a program whose rules anyone can read. It only pays a pot to the member whose turn it is, and only returns deposits to the members who made them. The contract is locked: its account has no keys, so nobody, us included, can change its code or move the money it holds. Anyone can check that on a NEAR explorer.</p></details>
           <details name="faq"><summary>What does it cost?</summary><p>Circles are free: paying in, payouts, deposits and trading turns cost nothing, and Contri pays the NEAR transaction fees for every payment you make in a circle. Moving money in from another network or out to one costs a 0.25% fee, shared between Contri and 1Click, which moves it, plus the network's own fee, usually a few cents on BNB Chain or Solana. The app shows what arrives before you send.</p></details>
           <details name="faq"><summary>What if Contri disappears?</summary><p>The contract keeps running without us, and anyone can settle a round once its deadline has passed. Your money is held in NEAR Intents under keys made from your passkey. Passkeys only work on contri.ng, so if the site goes away or changes hands, don't use your passkey there: the recovery code from Your key, in the open-source app run with a NEAR account to pay network fees, is how you reach your money. Write it down.</p></details>
           <details name="faq"><summary>What if I lose my phone?</summary><p>Sign in on a new phone with the same passkey. Passkeys are synced by Google Password Manager and iCloud Keychain, and every circle account comes back from it. If your passkey is ever deleted, the recovery code from Your key brings everything back, if you wrote it down.</p></details>

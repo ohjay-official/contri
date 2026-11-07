@@ -17,7 +17,7 @@ Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: Real-World Money, Privacy & P
 
 ## How to test
 
-**Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng). **Contract:** [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near) on NEAR mainnet. It is not locked yet: the key it was deployed with, which is also the relayer's key, can upgrade it or move the money it holds. Locking deletes every key; see [Security](#security).
+**Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng). **Contract:** [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near) on NEAR mainnet, **locked on 7 November 2026** ([QxnCNCi…](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)): the account has no keys, so nobody, Contri included, can change its code or move the money it holds outside its rules. See [Security](#security).
 
 Three ways in, from quickest to most real. None needs a NEAR account.
 
@@ -58,7 +58,7 @@ After every deploy, `.github/workflows/web.yml` checks the live site the way vis
 
 **Watch without paying:** open **Live circles** at https://contri.ng/app#/explore. It shows every open, running or finished circle on the contract, read from the chain through Contri's server.
 
-**Run with real money on 7 November 2026**, on an Android phone (Chrome) and an iPhone (Safari), with real passkeys, on the contract code that's deployed now (code hash `8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC`, the same as CI's build). Circle 7: $1 a round, 2 members, every 10 minutes.
+**Run with real money on 7 November 2026**, on an Android phone (Chrome) and an iPhone (Safari), with real passkeys, on the code that was then locked (code hash `8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC`, the same as CI's build). Circle 7: $1 a round, 2 members, every 10 minutes.
 
 | Step | Transaction |
 | --- | --- |
@@ -121,8 +121,8 @@ Full design, what each party can see, the limits (amounts and timing), and what 
 
 ## Security
 
-- **The contract has no admin method.** Its code can't pay anyone outside a circle's rules. Until it is locked, though, the key it was deployed with (also the relayer's key) can upgrade it or move its money. `node app/scripts/deploy.js --lock` refuses unless the deployed code is exactly CI's build, swaps every key for a one-time key, checks NEAR Intents holds no key for the account and still lets it pay out, then deletes the one-time key. After that, Contri can't change the code or move money outside its rules. NEAR Intents' own governance (its DAO and roles) can still pause, freeze or force-move balances held on `intents.near`, and Tether can freeze USDT.
-- **Three rounds of AI-assisted security review before the lock** (5 and 6 November 2026; the third with eight independent auditors: contract, economics, server, on-chain, privacy, front end, integrations and a cold judge). They found storage that could run out under a running circle, transfers and callbacks that could run short of gas, a member who never paid still collecting their turn, a relayer anyone could lock up or use for free, invitees choosing their own deposit, and smaller issues. Each fix has a test; what was accepted instead is listed with its reason.
+- **The contract is locked and has no admin method.** Its code can't pay anyone outside a circle's rules, and since 7 November 2026 its account has no keys ([lock transaction](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)), so nobody can upgrade it or move its money. `node app/scripts/deploy.js --lock` refused unless the deployed code was exactly CI's build (code hash `8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC`), swapped the deploy key for a one-time key, checked NEAR Intents holds no key for the account and still lets it pay out, then deleted the one-time key and checked none were left. NEAR Intents' own governance (its DAO and roles) can still pause, freeze or force-move balances held on `intents.near`, and Tether can freeze USDT.
+- **Four rounds of AI-assisted security review before the lock** (5 to 7 November 2026; the third with eight independent auditors: contract, economics, server, on-chain, privacy, front end, integrations and a cold judge; the fourth a fresh review of the live build, which found nothing above Low). They found storage that could run out under a running circle, transfers and callbacks that could run short of gas, a member who never paid still collecting their turn, a relayer anyone could lock up or use for free, invitees choosing their own deposit, and smaller issues. Each fix has a test; what was accepted instead is listed with its reason.
 - **Every circle can finish.** Members reserve the storage their payouts and credits will need when they join, an empty round closes without a transfer, a round always gets a full period after the one before it, and anyone can settle a late round or release deposits.
 - **What it doesn't promise.** A deposit covers one missed round, so a member who takes an early pot and stops paying can leave later pots short (what anyone still owes at their own turn is held back from it). Random turn order uses NEAR's block seed and is best effort: block producers could bias it.
 

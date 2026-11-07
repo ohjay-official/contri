@@ -1,14 +1,14 @@
 # Contri architecture
 
-The pot never sits with a person or a server. It sits in the Contri contract's balance on NEAR Intents (`intents.near`), and the contract's code only moves it by a circle's rules. Until the contract is locked, the key it was deployed with (also the relayer's key) can upgrade that code; locking deletes every key on the account. See [SECURITY.md](SECURITY.md).
+The pot never sits with a person or a server. It sits in the Contri contract's balance on NEAR Intents (`intents.near`), and the contract's code only moves it by a circle's rules. The contract was locked on 7 November 2026 ([QxnCNCi…](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)): its account has no keys, so nobody can upgrade that code. See [SECURITY.md](SECURITY.md).
 
 ## Actors
 
 | Actor | What it is | What it can do |
 | --- | --- | --- |
 | Member | A person with a passkey, or a NEAR account | Sign intents: join, contribute, list or buy a seat, leave, cash out |
-| Contri contract | A NEAR smart contract. Its account holds one key, the deploy key, until it is locked; then none | Record contributions, enforce the turn order, pay out, swap seats |
-| Relayer (`app/server/relay.js`) | A Vercel function that submits already-signed intents to `intents.near` and pays the NEAR gas | It can't forge a member's signature or move a member's funds. It relays only Contri's token: transfers to Contri with a message the contract reads, and auth calls, after checking them against `get_circle` as the contract would; and transfers to a 1Click deposit account Contri's server opened in the last 30 minutes, with a ticket bound to that account, the payer and the exact amount, usable once. Until the lock, its key is also the contract account's key |
+| Contri contract | A NEAR smart contract. Locked: its account holds no keys | Record contributions, enforce the turn order, pay out, swap seats |
+| Relayer (`app/server/relay.js`) | A Vercel function that submits already-signed intents to `intents.near` and pays the NEAR gas | It can't forge a member's signature or move a member's funds. It relays only Contri's token: transfers to Contri with a message the contract reads, and auth calls, after checking them against `get_circle` as the contract would; and transfers to a 1Click deposit account Contri's server opened in the last 30 minutes, with a ticket bound to that account, the payer and the exact amount, usable once. Its key was also the contract account's key until the lock deleted that one |
 | Keeper (`app/server/keeper.js`) | The same code on a 10-minute GitHub Actions schedule, a daily Vercel cron, and on demand from the app | Call `settle_round`, `pay_out`, `release_deposits`, `cancel_circle` (past `fill_by`) and `close_circle` when a circle needs them. Anyone could; the contract decides what happens |
 | 1Click | NEAR Intents' cross-chain service | Turns a deposit on another chain into USDT in a member's Intents account, and back out |
 

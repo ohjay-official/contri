@@ -2,7 +2,7 @@
 // Help: where each top-up, move and cash-out is, and its details for support.
 //
 // Contri never holds a member's keys: they come from their passkey, and the
-// pot is held by the contract (whose deploy key is deleted when it is locked,
+// pot is held by the contract (which is locked: its account has no keys,
 // see docs/SECURITY.md). What support can
 // do is find where a payment is. Every top-up and cash-out goes through a
 // one-time 1Click deposit address; this screen asks 1Click where each one is,
@@ -94,7 +94,7 @@ export async function helpScreen() {
             h("div", { class: "hcard-inner" },
               h("span", { class: "hcard-num" }, "01"),
               h("h2", null, "Contri never", h("br"), "holds your keys"),
-              h("p", { class: "hcard-bottom" }, "Your keys are made on this phone from your passkey, and each pot is held by the contract. Until we lock the contract, the key it was deployed with can still change its code. Locking deletes that key."),
+              h("p", { class: "hcard-bottom" }, "Your keys are made on this phone from your passkey, and each pot is held by the contract, which is locked: nobody, us included, can change it or move its money."),
             ),
           ),
           h("article", { class: "hcard hcard-text" },
