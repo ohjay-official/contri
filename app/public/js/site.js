@@ -77,7 +77,7 @@ function hero(frame) {
     frame.style.setProperty("--u", `${u}px`);
     frame.style.setProperty("--shift", `${shift}px`);
     lite = phone;
-    dpr = Math.min(lite ? 1.5 : 2, devicePixelRatio || 1);
+    dpr = Math.min(lite ? 1.25 : 2, devicePixelRatio || 1);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     glow.width = Math.max(1, Math.round(W * dpr * gs));
@@ -210,7 +210,7 @@ function hero(frame) {
     gctx.ellipse(cx, cy, ri, ri * sy, 0, 0, Math.PI * 2);
     gctx.stroke();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.imageSmoothingQuality = "high";
+    ctx.imageSmoothingQuality = lite ? "low" : "high";
     ctx.drawImage(glow, 0, 0, canvas.width, canvas.height);
     ctx.globalCompositeOperation = "source-over";
   };

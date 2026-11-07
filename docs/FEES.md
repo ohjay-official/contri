@@ -53,7 +53,7 @@ Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stor
 | Creating costs a deposit (no free spam) | 99.8 KB | 1.00 NEAR (99,751 bytes deployed) |
 | Security fixes: storage reservations and credit slots, a $1 minimum, empty pots, one-contribution invites, fair backing, relative deadlines, gas floors with a share of leftover gas | 102.2 KB | 1.02 NEAR (102,245 bytes) |
 | Third audit round: arrears held back from a defaulter's own turn, emptied circles cancel, an 80 Tgas payout guard | 105.1 KB | 1.05 NEAR (105,123 bytes) |
-| Paying ahead | **107.4 KB** | **1.07 NEAR** (107,419 bytes, CI build) |
+| Paying ahead | **107.4 KB** | **1.07 NEAR** (107,428 bytes, CI build) |
 
 The 193 KB step removed two things: direct calls for members with a NEAR account, and the embedded ABI. Both came back in the 88 KB row (the ABI is generated from typed declarations in `contract/interface`, see `contract/abi/README.md`). Nothing else was removed, and the later steps added NFT enumeration views, NEP-171 events and a round-deadline view. CI measures the size on every push (`ci-results` branch, `size.json`).
 
