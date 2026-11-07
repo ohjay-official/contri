@@ -21,6 +21,14 @@ Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: Real-World Money, Privacy & P
 
 Three ways in, from quickest to most real. None needs a NEAR account.
 
+### 0. One command (about 20 seconds, Node 22, nothing to install)
+
+```
+node app/scripts/verify.mjs
+```
+
+It runs the app and server tests, starts the app offline, runs a whole circle end to end (two new members top up, create, join, pay two rounds, each gets the pot and their deposit back; every payment is signed by the app's own code and passes the relayer's real checks), then reads mainnet to check what this README claims: the contract has no keys, its code hash is the one given below, and the real-money circle finished with every pot paid. It prints PASS, FAIL or SKIP for each. `--all` adds the contract's unit tests if Rust is installed. CI runs it on every push (`app-results` branch, `verify.log`).
+
 ### 1. The app offline, in two minutes (no money, no chain)
 
 Needs Node 22. No install step: the app and its server have no runtime dependencies.
