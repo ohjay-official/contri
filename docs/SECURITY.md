@@ -103,6 +103,22 @@ Two additions after the eight-auditor round, reviewed again before the lock.
 | **Paying ahead** (`ahead:<c>:<rounds>`): a member pays this round and later ones at once; each new round takes one when it starts | Paying more rounds than are left: refused, so nothing paid ahead can be left in a finished circle, and a circle with rounds paid ahead can't be closed. A wrong amount, a stranger or a circle that isn't running: refunded. A round settled late doesn't charge a member who paid ahead. When every member paid ahead, the new round waits for the keeper (or anyone) to pay it out, as a round normally does. The member's record is 4 bytes bigger, counted in what each member reserves | `rounds_paid_ahead_pay_each_new_round_by_themselves`, `paying_ahead_is_refused_past_the_last_round_or_for_the_wrong_amount`, `when_everyone_paid_ahead_the_next_round_is_ready_to_pay_out`, `a_late_round_settles_without_charging_a_member_who_paid_ahead`, the sandbox's whole-circle run, and the relayer's own checks |
 | **A 0.25% fee** on top-ups from another chain and cash-outs to one, as a 1Click `appFees` entry | It is on the server, not in the contract, so it touches no pot. It is never added to moves between a member's own balances or to anything inside a circle. The app shows it before every top-up and cash-out, and asks members to send 0.75% over so fees don't leave them short. Paid to Contri's public NEAR Intents account, so its size and timing can show that a deposit or withdrawal went through Contri (PRIVACY.md) | `Contri's fee is on top-ups and cash-outs only, never on moves between a member's own balances` |
 
+### 7 November 2026: a fresh review of the live build, and checks before the lock
+
+| Finding | Status | Proof |
+| --- | --- | --- |
+| **The code on chain wasn't byte-for-byte CI's build** (our own evidence run): the deploy built from a committed, stale compressed ABI, so the lock's code-hash pin would have refused | **Fixed.** CI's ABI committed, CI now fails if it goes stale, redeployed; on-chain hash equals CI's (`8EdJpNP…`) | `contract.yml`, `audit-run-results/code-hash.txt` |
+| The privacy page didn't say what the fee payment shows (Medium) | **Fixed** | `privacy.html` |
+| Terms changed without a new date; "same transaction" and fee wording stronger than the code; 5.4 vs 5.5 Tgas (Low) | **Fixed** | site, README |
+| A round every member paid ahead waited behind the keeper's retry cap (Low) | **Fixed.** A round that opened paid goes out like any task | `a round every member paid ahead goes out on the keeper's next run, ahead of failed-payout retries` |
+| The send margin didn't follow the configured fee; the fee read as part of the network fee; pay-ahead didn't say it can't be undone; reminders shown with every round paid; `paid_ahead` logged with 0 rounds (Low) | **Fixed** | `members are asked to send whole cents, a little over what has to arrive`, `paying_ahead_is_refused_past_the_last_round_or_for_the_wrong_amount` |
+| A short deposit only said "less arrived" (seen in the real-money run) | **Fixed.** Help and the add-money screens show what arrived, what's missing, and the address to send it to | `a short deposit says how much more to send` |
+| The app header was wider than the screen with large text on Android (seen in the real-money run) | **Fixed.** It wraps | `contri.css` |
+| Live checks failed while mainnet had no circles; an inline script broke Safari's content policy; heading order; an unreadable 404 button; a slow hero on desktop and phones | **Fixed.** Lighthouse accessibility 100 on every page | `live-browser.mjs`, `web-results`, `audit-run-results/lighthouse.txt` |
+| The contract could still be changed by its deploy key | **Fixed by the lock** ([QxnCNCi…](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)) | `deploy-results/deploy.log` |
+| Paying ahead hasn't moved real money on mainnet yet | **Accepted.** It ran end to end in the sandbox against the real NEAR Intents contract | `a_whole_circle_through_near_intents` |
+| Money a 1Click refund returns as the coin sent still can't be shown or converted in the app | **Accepted for now.** Help shows the status and the details support needs | `help.js` |
+
 We disagreed with one suggestion: a function to recover a stuck payout. The contract can't tell whether a stuck transfer left, so recovering could pay a pot twice out of other circles' money. Measured gas headroom (5.5 of 30 Tgas) is the defence instead.
 
 ## Limits
