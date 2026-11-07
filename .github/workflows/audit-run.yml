@@ -39,6 +39,9 @@ jobs:
             const onchain = o["circles.contring.near"].account.code_hash;
             fs.writeFileSync("out/code-hash.txt", `ci-results contri.wasm: ${fs.statSync("/tmp/ci.wasm").size} bytes, sha256 (base58) ${s}\non chain code_hash: ${onchain}\nmatch: ${s === onchain}\n`);'
           cat out/code-hash.txt
+      - name: Circle 7's transactions (the real-money run)
+        continue-on-error: true
+        run: node audit/circle-txs.mjs 7 8 > out/circle7.json 2> out/circle7.err || true
       - name: Follow-up on chain (NEAR Intents roles, storage counters, code at each README transaction)
         continue-on-error: true
         run: node audit/followup.mjs > out/followup.json 2> out/followup.err || true
