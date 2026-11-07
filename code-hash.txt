@@ -1,0 +1,3 @@
+ci-results contri.wasm: 107428 bytes, sha256 (base58) 8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC
+on chain code_hash: 8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC
+match: true

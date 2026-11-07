@@ -1,0 +1,210 @@
+{
+ "checkedAt": "2026-11-07T07:48:51.113Z",
+ "intents": {
+  "super_admins": [
+   "intents.sputnik-dao.near",
+   "intents.near"
+  ],
+  "role_variants": [
+   "DAO",
+   "FeesManager",
+   "RelayerKeysManager",
+   "UnrestrictedWithdrawer",
+   "PauseManager",
+   "Upgrader",
+   "UnpauseManager",
+   "UnrestrictedAccountLocker",
+   "UnrestrictedAccountUnlocker",
+   "SaltManager",
+   "GarbageCollector",
+   "UnrestrictedAccountManager"
+  ],
+  "grantees": {
+   "DAO": [
+    "intents.sputnik-dao.near"
+   ],
+   "FeesManager": [],
+   "RelayerKeysManager": [
+    "relay-key-manager.near"
+   ],
+   "UnrestrictedWithdrawer": [],
+   "PauseManager": [
+    "8e69c33b572dad1f2da6f744c834705e651d3784af2471b58949f2fefd5b55d3",
+    "5024319f62e6f45f1b2364e6b92c58413d5279d20730cb2e616a613967cb692c",
+    "9600c0ec4de7a77f828965528c8c6028ba3aa430e4537cd25b7865d9430f63ae",
+    "ac39364aae9f15438b575f677768c2cf4a7cc74b7dcd198980e8618f003ff538",
+    "e33d30ea7c7b271a580bd609100d4f21a07c83f4eb643a1d151c2639471368d0",
+    "c98fb45fe2941904f763ff4c2fa2b621b5eb9a57f8daf420679957c08c1a1c34",
+    "pm.bridge.near"
+   ],
+   "Upgrader": [
+    "ctl-intents.near"
+   ],
+   "UnpauseManager": [],
+   "UnrestrictedAccountLocker": [
+    "b6be09281567fc42ee6a453c6156445deeb8f09723d769a751646216c5ea00fc",
+    "ac39364aae9f15438b575f677768c2cf4a7cc74b7dcd198980e8618f003ff538"
+   ],
+   "UnrestrictedAccountUnlocker": [],
+   "SaltManager": [],
+   "GarbageCollector": [],
+   "UnrestrictedAccountManager": []
+  },
+  "source_metadata": {
+   "version": "0.4.5",
+   "link": "https://github.com/near/intents/tree/16d04f6ec4401263f8914638710260da50bb46b0",
+   "standards": [
+    {
+     "standard": "dip4",
+     "version": "0.1.0"
+    },
+    {
+     "standard": "nep245",
+     "version": "1.0.0"
+    },
+    {
+     "standard": "nep330",
+     "version": "1.3.0"
+    }
+   ],
+   "build_info": {
+    "build_environment": "sourcescan/cargo-near:0.22.0-rust-1.97.1@sha256:7467038bdddc86484b73b416eeadce926ff59013e128e53dec5a19e1cb4b2234",
+    "build_command": [
+     "cargo",
+     "near",
+     "build",
+     "non-reproducible-wasm",
+     "--locked",
+     "--features=contract",
+     "--abi-features=abi,contract"
+    ],
+    "contract_path": "contracts/defuse",
+    "source_code_snapshot": "git+https://github.com/near/intents?rev=16d04f6ec4401263f8914638710260da50bb46b0",
+    "output_wasm_path": "/home/near/code/target/near/defuse/defuse.wasm"
+   }
+  },
+  "is_paused": null,
+  "circles.contring.near": {
+   "is_account_locked": false,
+   "public_keys_of": [],
+   "auth_by_predecessor": true
+  },
+  "contring.near": {
+   "is_account_locked": false,
+   "public_keys_of": [],
+   "auth_by_predecessor": true
+  },
+  "abi_available": true
+ },
+ "contri_state": {
+  "R_reserved_bytes": "0",
+  "F_first_reserved_circle": "1",
+  "G_first_slotted_circle": "2",
+  "keys": [
+   {
+    "key_prefix": "F",
+    "key_len": 1,
+    "value_len": 8
+   },
+   {
+    "key_prefix": "G",
+    "key_len": 1,
+    "value_len": 8
+   },
+   {
+    "key_prefix": "R",
+    "key_len": 1,
+    "value_len": 8
+   },
+   {
+    "key_prefix": "S",
+    "key_len": 5,
+    "value_len": 74
+   },
+   {
+    "key_prefix": "c",
+    "key_len": 9,
+    "value_len": 792
+   },
+   {
+    "key_prefix": "r",
+    "key_len": 65,
+    "value_len": 12
+   },
+   {
+    "key_prefix": "r",
+    "key_len": 65,
+    "value_len": 12
+   },
+   {
+    "key_prefix": "r",
+    "key_len": 65,
+    "value_len": 12
+   },
+   {
+    "key_prefix": "r",
+    "key_len": 65,
+    "value_len": 12
+   }
+  ]
+ },
+ "readme_code": [
+  {
+   "hash": "GzzRpgJXzz3hoz3jMUioYpdpu8Q8Ag9fPfCzgP9usWHp",
+   "add_key": [
+    {
+     "access_key": {
+      "nonce": 0,
+      "permission": "FullAccess"
+     },
+     "public_key": "ed25519:8ikg3ZpEFprsK79HQUwWA4MBKsnWQAoCejoJDcDEyK3x"
+    }
+   ],
+   "contri_block": "EEbP4ovAf1LrZCgXvWsG9eAvZfQSDtLV3gdnhu3JFj9d",
+   "block_time": "2026-11-05T05:49:52.519Z",
+   "code_hash_then": "4sCnCi9LaPbXvcjEanqJJqwE9wwudDiEKY19wkMUGmFu"
+  },
+  {
+   "hash": "BwMEkbXbqnfnmu4N8NssHbiv2FXbRFQGtKWhQS2Y44jt",
+   "contri_block": "JBgS11T959vXZ3EoLqEn3o6ijumXEeEDNwYFsi6MFbLq",
+   "block_time": "2026-11-05T06:59:49.044Z",
+   "code_hash_then": "4sCnCi9LaPbXvcjEanqJJqwE9wwudDiEKY19wkMUGmFu"
+  },
+  {
+   "hash": "Emi3RfFtsJo8sZaJDLwdKAHg57xNASBA6X99Zt64pfR3",
+   "contri_block": "83ns4KenuiakmbvseJXVvQ8LMKrSW7bDML36Dd9s6JGb",
+   "block_time": "2026-11-05T08:08:43.193Z",
+   "code_hash_then": "4sCnCi9LaPbXvcjEanqJJqwE9wwudDiEKY19wkMUGmFu"
+  },
+  {
+   "hash": "CANkBfZx5LsHoktSJr9MvMN9R3gSjjY5C1VEN9VGbXHe",
+   "contri_block": "sYwtqadLvqNPGzdzLhL9JPa3mZBpASKNqoNFwGdYpGC",
+   "block_time": "2026-11-05T08:09:29.661Z",
+   "code_hash_then": "4sCnCi9LaPbXvcjEanqJJqwE9wwudDiEKY19wkMUGmFu"
+  },
+  {
+   "hash": "4r349ov6rHvWg43G5dY1ZLiGJ5n6Zn7Xn1MeZ7KDAuTV",
+   "contri_block": "DvfCjWXB9DbJehNBDZXgA1FRqaL6BS78F2TXSb1f2cQN",
+   "block_time": "2026-11-05T08:13:18.129Z",
+   "code_hash_then": "4sCnCi9LaPbXvcjEanqJJqwE9wwudDiEKY19wkMUGmFu"
+  },
+  {
+   "hash": "E38hi5ZqWPKkWcLY8rEVbjnp3aFGjjoWRjZY3asFbVsT",
+   "contri_block": "WDNZziY9men2vK1XGAaQeXgGwgkQLpR6eRfpBvFT6sG",
+   "block_time": "2026-11-05T08:13:33.679Z",
+   "code_hash_then": "4sCnCi9LaPbXvcjEanqJJqwE9wwudDiEKY19wkMUGmFu"
+  },
+  {
+   "hash": "Gtiv9gp1J3hn5NU729dL2d5DK9xURnP98YfrurbbfLCy",
+   "contri_block": "F5RbxeSwo7dnBEUb4UpJkoteqa8fyhjQ9iR1reqTEHRR",
+   "block_time": "2026-11-05T08:15:06.160Z",
+   "code_hash_then": "4sCnCi9LaPbXvcjEanqJJqwE9wwudDiEKY19wkMUGmFu"
+  },
+  {
+   "hash": "5kN1RW3fT86pbqQJQQLtCBAd1U6u9p67ir9pJN366UdV",
+   "contri_block": "736MyuCjm5CnmM5BQnQZFMHpJcxW5U9guXrnv9AYqc5f",
+   "block_time": "2026-11-05T08:15:11.336Z",
+   "code_hash_then": "4sCnCi9LaPbXvcjEanqJJqwE9wwudDiEKY19wkMUGmFu"
+  }
+ ]
+}

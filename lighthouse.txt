@@ -1,0 +1,102 @@
+
+## desktop_home  (https://contri.ng/)
+Performance 100, Accessibility 100, Best Practices 100, SEO 100
+  First Contentful Paint: 0.3 s
+  Largest Contentful Paint: 0.4 s
+  Total Blocking Time: 0 ms
+  Cumulative Layout Shift: 0.012
+  Speed Index: 1.1 s
+  Avoids enormous network payloads: Total size was 236 KiB
+  - Minimize main-thread work (0.5): 2.9 s
+  - Minify CSS (0.5): Est savings of 2 KiB
+  - Reduce unused CSS (0.5): Est savings of 11 KiB
+  - Serve images in next-gen formats (0.5): Est savings of 35 KiB
+  - Use efficient cache lifetimes (0.5): Est savings of 8 KiB
+  - Network dependency tree (0)
+  - Render blocking requests (0.5)
+
+## mobilehome_  (https://contri.ng/)
+Performance 99, Accessibility 100, Best Practices 100, SEO 100
+  First Contentful Paint: 1.1 s
+  Largest Contentful Paint: 2.0 s
+  Total Blocking Time: 60 ms
+  Cumulative Layout Shift: 0.023
+  Speed Index: 1.3 s
+  Avoids enormous network payloads: Total size was 236 KiB
+  - Minimize main-thread work (0): 4.1 s
+  - Eliminate render-blocking resources (0.5): Est savings of 0 ms
+  - Minify CSS (0.5): Est savings of 2 KiB
+  - Reduce unused CSS (0.5): Est savings of 11 KiB
+  - Serve images in next-gen formats (0): Est savings of 35 KiB
+  - Use efficient cache lifetimes (0.5): Est savings of 8 KiB
+  - Network dependency tree (0)
+  - Render blocking requests (0.5)
+
+## mobilehome_app  (https://contri.ng/app)
+Performance 99, Accessibility 100, Best Practices 100, SEO 100
+  First Contentful Paint: 0.9 s
+  Largest Contentful Paint: 1.7 s
+  Total Blocking Time: 120 ms
+  Cumulative Layout Shift: 0
+  Speed Index: 0.9 s
+  Avoids enormous network payloads: Total size was 186 KiB
+  - Max Potential First Input Delay (0.76): 170 ms
+  - Minify CSS (0): Est savings of 2 KiB
+  - Minify JavaScript (0.5): Est savings of 4 KiB
+  - Reduce unused CSS (0): Est savings of 10 KiB
+  - Network dependency tree (0)
+  - Render blocking requests (0.5)
+
+## mobilehome_how-it-works  (https://contri.ng/how-it-works)
+Performance 96, Accessibility 100, Best Practices 100, SEO 100
+  First Contentful Paint: 1.1 s
+  Largest Contentful Paint: 2.7 s
+  Total Blocking Time: 0 ms
+  Cumulative Layout Shift: 0
+  Speed Index: 1.1 s
+  Avoids enormous network payloads: Total size was 2,176 KiB
+  - Largest Contentful Paint (0.85): 2.7 s
+  - Largest Contentful Paint element (0): 2,710 ms
+  - Eliminate render-blocking resources (0): Est savings of 80 ms
+  - Minify CSS (0.5): Est savings of 2 KiB
+  - Reduce unused CSS (0): Est savings of 11 KiB
+  - Serve images in next-gen formats (0): Est savings of 72 KiB
+  - Use efficient cache lifetimes (0): Est savings of 202 KiB
+  - Improve image delivery (0): Est savings of 204 KiB
+  - LCP request discovery (0)
+  - Network dependency tree (0)
+  - Render blocking requests (0): Est savings of 80 ms
+
+## mobilehome_privacy  (https://contri.ng/privacy)
+Performance 99, Accessibility 100, Best Practices 100, SEO 100
+  First Contentful Paint: 1.5 s
+  Largest Contentful Paint: 2.1 s
+  Total Blocking Time: 0 ms
+  Cumulative Layout Shift: 0.024
+  Speed Index: 1.5 s
+  Avoids enormous network payloads: Total size was 240 KiB
+  - Eliminate render-blocking resources (0): Est savings of 540 ms
+  - Minify CSS (0.5): Est savings of 2 KiB
+  - Reduce unused CSS (0): Est savings of 11 KiB
+  - Serve images in next-gen formats (0): Est savings of 35 KiB
+  - Use efficient cache lifetimes (0): Est savings of 8 KiB
+  - Improve image delivery (0): Est savings of 73 KiB
+  - Network dependency tree (0)
+  - Render blocking requests (0): Est savings of 540 ms
+
+## mobilehome_terms  (https://contri.ng/terms)
+Performance 99, Accessibility 100, Best Practices 100, SEO 100
+  First Contentful Paint: 1.1 s
+  Largest Contentful Paint: 2.0 s
+  Total Blocking Time: 0 ms
+  Cumulative Layout Shift: 0
+  Speed Index: 1.1 s
+  Avoids enormous network payloads: Total size was 233 KiB
+  - Eliminate render-blocking resources (0): Est savings of 70 ms
+  - Minify CSS (0): Est savings of 2 KiB
+  - Reduce unused CSS (0): Est savings of 11 KiB
+  - Serve images in next-gen formats (0): Est savings of 35 KiB
+  - Use efficient cache lifetimes (0.5): Est savings of 8 KiB
+  - Improve image delivery (0): Est savings of 73 KiB
+  - Network dependency tree (0)
+  - Render blocking requests (0): Est savings of 160 ms

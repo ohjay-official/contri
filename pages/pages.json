@@ -1,0 +1,1482 @@
+[
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 ()"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 320,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 ()"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 375,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 ()"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 393,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 ()"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 768,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 ()"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1024,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 ()"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "chromium",
+  "width": 1440,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/",
+  "crashed": "Error: page.evaluate: Target page, context or browser has been closed",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 320,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/",
+  "crashed": "Error: page.evaluate: Target page, context or browser has been closed",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 375,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/",
+  "crashed": "Error: page.evaluate: Target page, context or browser has been closed",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 393,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 768,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/",
+  "crashed": "Error: page.evaluate: Target page, context or browser has been closed",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1024,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [
+   "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "webkit",
+  "width": 1440,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 320,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 375,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 393,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 768,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": [
+   "https://contri.ng/media/scene.mp4 NS_ERROR_PARSED_DATA_CACHED"
+  ]
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1024,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/",
+  "sideways": false,
+  "title": "Contri: Àjọ without the collector",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/how-it-works",
+  "sideways": false,
+  "title": "How it works | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/privacy",
+  "sideways": false,
+  "title": "Privacy policy | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/terms",
+  "sideways": false,
+  "title": "Terms of use | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/no-such-page",
+  "sideways": false,
+  "title": "Page not found | Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/app",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/app#/explore",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/app#/help",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ },
+ {
+  "browser": "firefox",
+  "width": 1440,
+  "page": "/app#/settings",
+  "sideways": false,
+  "title": "Contri",
+  "errors": [],
+  "failed": []
+ }
+]

@@ -1,0 +1,467 @@
+### GET https://contri.ng/
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:55 GMT
+etag: "476f6493a8081484a1212810a5b8be92"
+last-modified: Sat, 07 Nov 2026 07:48:55 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::qsw9p-1794037735243-c53d116762de
+content-length: 19918
+
+
+(status 200, 19918 bytes, 0.660218s)
+
+### GET https://contri.ng/how-it-works
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="how-it-works"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:56 GMT
+etag: "b55fa3fa865142535d2c39dcf99afc1c"
+last-modified: Sat, 07 Nov 2026 07:48:56 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::k8jtt-1794037736065-400535aae129
+content-length: 10727
+
+
+(status 200, 10727 bytes, 0.767107s)
+
+### GET https://contri.ng/privacy
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="privacy"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:56 GMT
+etag: "f8ab5b865577e8bb92dcab93f5bbb2bc"
+last-modified: Sat, 07 Nov 2026 07:48:56 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::xq78v-1794037736609-7a551956976f
+content-length: 16504
+
+
+(status 200, 16504 bytes, 0.467782s)
+
+### GET https://contri.ng/terms
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="terms"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:56 GMT
+etag: "bd413c96add9b927cfbc6c83d9585e87"
+last-modified: Sat, 07 Nov 2026 07:48:56 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::swx29-1794037736757-add73df6e9d2
+content-length: 8740
+
+
+(status 200, 8740 bytes, 0.146057s)
+
+### GET https://contri.ng/app
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="app"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:57 GMT
+etag: "fe176885709b4b826060d948871f0fa2"
+last-modified: Sat, 07 Nov 2026 07:48:57 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::rzvm9-1794037737009-71357e0920b4
+content-length: 2109
+
+
+(status 200, 2109 bytes, 0.226356s)
+
+### GET https://contri.ng/join
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="app"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:57 GMT
+etag: "fe176885709b4b826060d948871f0fa2"
+last-modified: Sat, 07 Nov 2026 07:48:57 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: HIT
+x-vercel-id: cle1::b76xv-1794037737677-fa05547a6604
+content-length: 2109
+
+
+(status 200, 2109 bytes, 0.581083s)
+
+### GET https://contri.ng/no-such-page
+HTTP/2 404 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="404"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:58 GMT
+etag: "dc5614bb3d5da23b650a03cd320ce6d0"
+last-modified: Sat, 07 Nov 2026 07:48:58 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::jbb82-1794037737946-644615396090
+content-length: 4608
+
+
+(status 404, 4608 bytes, 0.318955s)
+
+### GET https://contri.ng/api/config
+HTTP/2 200 
+age: 0
+cache-control: no-store
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: application/json
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:58 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::iad1::754n2-1794037738064-393936249c52
+
+
+(status 200, 201 bytes, 0.626593s)
+
+### GET https://contri.ng/api/config?check=limits
+HTTP/2 200 
+age: 0
+cache-control: no-store
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: application/json
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:59 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::iad1::ztj28-1794037738925-b46e3501368d
+
+
+(status 200, 215 bytes, 0.438776s)
+
+### GET https://contri.ng/robots.txt
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="robots.txt"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/plain; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:59 GMT
+etag: "6c106cdd90f255ae3e8e074b64bf38be"
+last-modified: Sat, 07 Nov 2026 07:48:59 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::j6ghd-1794037739701-20e85e1bb4ab
+content-length: 78
+
+
+(status 200, 78 bytes, 0.655484s)
+
+### GET https://contri.ng/sitemap.xml
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="sitemap.xml"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: application/xml
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:59 GMT
+etag: "d82113d344ca4da87f3bcb7c8d56f8ae"
+last-modified: Sat, 07 Nov 2026 07:48:59 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::mlgwq-1794037739806-7c5cd6a3c9db
+content-length: 306
+
+
+(status 200, 306 bytes, 0.088623s)
+
+### GET https://contri.ng/manifest.webmanifest
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="manifest.webmanifest"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: application/manifest+json; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:48:59 GMT
+etag: "a0f1ac28900af2b2b3532fb99d37f5ac"
+last-modified: Sat, 07 Nov 2026 07:48:59 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::8kkpm-1794037739904-a8c8184a7b45
+content-length: 496
+
+
+(status 200, 496 bytes, 0.090321s)
+
+### GET https://contri.ng/favicon.svg
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="favicon.svg"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: image/svg+xml
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:49:00 GMT
+etag: "bf808f4ad89ca77eed9256344029bae2"
+last-modified: Sat, 07 Nov 2026 07:49:00 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::tk84n-1794037740533-4d7060e9422a
+content-length: 363
+
+
+(status 200, 363 bytes, 0.629231s)
+
+### GET https://contri.ng/og.png
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="og.png"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: image/png
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:49:00 GMT
+etag: "391d776a240261aabb7fd9e544fb5b42"
+last-modified: Sat, 07 Nov 2026 07:49:00 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::rzvm9-1794037740639-2624e3182425
+content-length: 180942
+
+
+(status 200, 180942 bytes, 0.109496s)
+
+### GET https://contri.ng/css/contri.css
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="contri.css"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/css; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:49:00 GMT
+etag: "0f93270879d42f0f3bdf74066ba3caf1"
+last-modified: Sat, 07 Nov 2026 07:49:00 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::whwxv-1794037740757-125394d000f4
+content-length: 47855
+
+
+(status 200, 47855 bytes, 0.133708s)
+
+### GET https://contri.ng/js/site.js
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="site.js"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: application/javascript; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:49:00 GMT
+etag: "4762540e3efa7e3da4cccbd469a37ec8"
+last-modified: Sat, 07 Nov 2026 07:49:00 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: MISS
+x-vercel-id: cle1::rzvm9-1794037740902-60ad70f80081
+content-length: 11914
+
+
+(status 200, 11914 bytes, 0.096939s)
+
+### GET https://contri.ng/www-check
+HTTP/2 404 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 3
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="404"
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+date: Sat, 07 Nov 2026 07:49:01 GMT
+etag: "dc5614bb3d5da23b650a03cd320ce6d0"
+last-modified: Sat, 07 Nov 2026 07:48:58 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+referrer-policy: no-referrer
+server: Vercel
+speculation-rules: "/speculation.json"
+strict-transport-security: max-age=63072000; includeSubDomains
+x-content-type-options: nosniff
+x-vercel-cache: HIT
+x-vercel-id: cle1::4hmzv-1794037741011-64298723351b
+content-length: 4608
+
+
+(status 404, 4608 bytes, 0.059070s)
+
+### http -> https
+HTTP/1.0 308 Permanent Redirect
+Content-Type: text/plain
+Location: https://contri.ng/
+Refresh: 0;url=https://contri.ng/
+server: Vercel
+### www
+HTTP/2 308 
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain
+date: Sat, 07 Nov 2026 07:49:01 GMT
+location: https://contri.ng/
+refresh: 0;url=https://contri.ng/
+server: Vercel
+strict-transport-security: max-age=63072000
+### TLS
+issuer=C = US, O = Let's Encrypt, CN = YR1
+subject=CN = contri.ng
+notBefore=Nov  5 03:46:40 2026 GMT
+notAfter=Feb  3 03:46:39 2027 GMT

@@ -1,0 +1,27 @@
+162 page loads, 17 with sideways scroll, errors or failed requests
+chromium 320 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 ()"] failed=[]
+chromium 375 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 ()"] failed=[]
+chromium 393 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 ()"] failed=[]
+chromium 768 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 ()"] failed=[]
+chromium 1024 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 ()"] failed=[]
+chromium 1440 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 ()"] failed=[]
+webkit 320 /: CRASHED Error: page.evaluate: Target page, context or browser has been closed sideways=undefined errors=[] failed=[]
+webkit 320 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 (Not Found)"] failed=[]
+webkit 375 /: CRASHED Error: page.evaluate: Target page, context or browser has been closed sideways=undefined errors=[] failed=[]
+webkit 375 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 (Not Found)"] failed=[]
+webkit 393 /: CRASHED Error: page.evaluate: Target page, context or browser has been closed sideways=undefined errors=[] failed=[]
+webkit 393 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 (Not Found)"] failed=[]
+webkit 768 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 (Not Found)"] failed=[]
+webkit 1024 /: CRASHED Error: page.evaluate: Target page, context or browser has been closed sideways=undefined errors=[] failed=[]
+webkit 1024 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 (Not Found)"] failed=[]
+webkit 1440 /no-such-page: sideways=false errors=["error: Failed to load resource: the server responded with a status of 404 (Not Found)"] failed=[]
+firefox 1024 /: sideways=false errors=[] failed=["https://contri.ng/media/scene.mp4 NS_ERROR_PARSED_DATA_CACHED"]
+403 https://nearblocks.io/address/circles.contring.near
+403 https://nearblocks.io/txns/2sugJcUq2MNwLfDGNmq84UFp2rpuwFE2k8ECNWi96vuE
+403 https://nearblocks.io/txns/3ed96vUENASX8fqn5td9wNGi4hT2XEyXAYunJZyJFSfh
+403 https://nearblocks.io/txns/4ieJcHgNETzt8NrbU2dB6gKNeQ3ZSFGQD2vbRbpQEgN9
+403 https://nearblocks.io/txns/CTq2BVedNKJsaCDSawDPvs83BChmV3ZEhuyP7Ydt1jAJ
+403 https://nearblocks.io/txns/CbVUzbEuGUmKNhodPkgzvWk7pKitbuy7YKgU3Qg7fCuf
+403 https://nearblocks.io/txns/GVs8hmxi4ZSQ1jBFNTKf8GbQGYYjynGCHEVttnMe2327
+403 https://nearblocks.io/txns/Hou3U9j1ELZnF22g1QQXmNefiu11zYSUcc8cpAxprriq
+403 https://x.com/contri_ng

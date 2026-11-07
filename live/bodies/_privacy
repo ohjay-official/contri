@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy policy | Contri</title>
+  <meta name="description" content="What Contri stores, what it never collects, and what is public on the blockchain.">
+  <meta name="referrer" content="no-referrer">
+  <meta name="twitter:site" content="@contri_ng">
+  <meta name="theme-color" content="#ebe8e4">
+  <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+  <link rel="manifest" href="/manifest.webmanifest?v=2">
+  <link rel="stylesheet" href="/css/contri.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="preload" href="/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/glass.css">
+  <script type="module" src="/js/site.js"></script>
+  <script type="module" src="/js/footer.js"></script>
+  <script type="module" src="/js/glass.js"></script>
+</head>
+<body class="site-page glass-page">
+  <div class="hero-glass">
+    <div class="rule rule--left" aria-hidden="true"><span class="rule__seg rule__seg--end"></span><span class="rule__plus">+</span><span class="rule__seg rule__seg--mid"></span><span class="rule__plus">+</span><span class="rule__seg rule__seg--end"></span></div>
+    <div class="rule rule--right" aria-hidden="true"><span class="rule__seg rule__seg--end"></span><span class="rule__plus">+</span><span class="rule__seg rule__seg--mid"></span><span class="rule__plus">+</span><span class="rule__seg rule__seg--end"></span></div>
+    <nav class="gnav" aria-label="Site">
+      <button class="gnav__item" id="menu-open" type="button" aria-expanded="false" aria-controls="menu" aria-label="Menu">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <span class="gnav__label gnav__label--menu">Menu</span>
+      </button>
+      <a class="gnav__brand" href="/" aria-label="Contri home"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle class="hole" cx="25.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/><circle class="hole" cx="6.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/></svg>Contri</a>
+      <a class="gnav__item" href="/app"><span class="gnav__dot" aria-hidden="true"></span><span class="gnav__label">Open Contri</span></a>
+    </nav>
+    <div class="hero-bottom">
+      <div class="lede">
+        <p class="lede__kicker">Privacy policy</p>
+        <h1 class="lede__title">Your money,<br>not your name</h1>
+        <p class="lede__body">Contri never asks who you are. No name, no phone number, no email: you sign in with a passkey, and each circle gets its own account, so no key on chain ties your circles to you or to each other.</p>
+        <a class="chamfer" href="#policy">
+          <span class="chamfer__glass" aria-hidden="true"></span>
+          <svg class="chamfer__outline" viewBox="0 0 260 48" preserveAspectRatio="none" aria-hidden="true"><polygon points="14,0 260,0 260,34 246,48 0,48 0,14" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>
+          <span class="chamfer__label">Read the full policy</span>
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <aside class="lens-panel" aria-label="What the blockchain sees">
+        <p class="lens-hint">Drag the lens across the circle. Inside it is the same circle, as anyone on the blockchain sees it.</p>
+        <div class="lens-field">
+          <div class="ledger base"><div class="lg-head"><span class="lg-title">Lagos Àjọ</span><span class="lg-meta">$20 a week · 5 members</span></div><ol><li><span class="lg-seat">1</span><span class="lg-who">Adaeze</span><span class="lg-st paid">Paid</span><span class="lg-amt">$20</span></li><li><span class="lg-seat">2</span><span class="lg-who">Bayo</span><span class="lg-st paid">Paid</span><span class="lg-amt">$20</span></li><li><span class="lg-seat">3</span><span class="lg-who">Chioma</span><span class="lg-st turn">Gets the pot</span><span class="lg-amt">$20</span></li><li><span class="lg-seat">4</span><span class="lg-who">Dapo</span><span class="lg-st paid">Paid</span><span class="lg-amt">$20</span></li><li><span class="lg-seat">5</span><span class="lg-who">Efe</span><span class="lg-st due">Not yet</span><span class="lg-amt">$20</span></li></ol><p class="lg-foot">Pot this round: $100, to Chioma</p></div>
+          <div class="lens" aria-hidden="true"><div class="lens-content"><div class="ledger chain"><div class="lg-head"><span class="lg-title mono">v1.k3Jx9qZr…</span><span class="lg-meta">20 USDT every 604800 s · 5 accounts</span></div><ol><li><span class="lg-seat">1</span><span class="lg-who"><span class="mono">3f9a…c21e</span></span><span class="lg-st paid">Paid</span><span class="lg-amt">$20</span></li><li><span class="lg-seat">2</span><span class="lg-who"><span class="mono">b04e…77d1</span></span><span class="lg-st paid">Paid</span><span class="lg-amt">$20</span></li><li><span class="lg-seat">3</span><span class="lg-who"><span class="mono">91c2…0e5a</span></span><span class="lg-st turn">Gets the pot</span><span class="lg-amt">$20</span></li><li><span class="lg-seat">4</span><span class="lg-who"><span class="mono">e7d3…4b18</span></span><span class="lg-st paid">Paid</span><span class="lg-amt">$20</span></li><li><span class="lg-seat">5</span><span class="lg-who"><span class="mono">5a6f…d902</span></span><span class="lg-st due">Not yet</span><span class="lg-amt">$20</span></li></ol><p class="lg-foot">Pot: 100 USDT to 91c2…0e5a</p></div></div><div class="lens-frost"></div><span class="lens-tag">On the blockchain</span></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="menu" id="menu">
+    <div class="menu__backdrop" id="menu-backdrop"></div>
+    <div class="menu__panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <button class="menu__close" id="menu-close" type="button">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        Close
+      </button>
+      <nav class="menu__nav" aria-label="Pages">
+        <a class="menu__link" href="/"><span class="menu__linkText">Home</span><svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        <a class="menu__link" href="/how-it-works"><span class="menu__linkText">How it works</span><svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        <a class="menu__link" href="/app#/explore"><span class="menu__linkText">Live circles</span><svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        <a class="menu__link" href="/terms"><span class="menu__linkText">Terms</span><svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        <a class="menu__link" href="/app"><span class="menu__linkText">Open Contri</span><svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+      </nav>
+      <div class="menu__foot"><span class="menu__footLabel">Get in touch</span><a class="menu__mail" href="https://x.com/contri_ng" rel="noopener noreferrer">@contri_ng on X</a></div>
+    </div>
+  </div>
+
+  <div class="policy-sheet">
+    <main class="prose light-prose" id="policy">
+      <h2 class="policy-title">Privacy policy</h2>
+      <p class="updated">Last updated 7 November 2026.</p>
+      <p>Contri is run by Oh-Jay, an independent developer in Nigeria. This page says what Contri collects, what it never collects, and what anyone can see on the blockchain. The code that does all of this is <a href="https://github.com/ohjay-official/contri">open source</a>, so you can check it.</p>
+
+      <h2>What we never collect</h2>
+      <ul>
+        <li>Your name, phone number, email address or any password. You sign in with a passkey on your own device.</li>
+        <li>Your contacts or location.</li>
+        <li>Analytics, advertising or tracking data. The site loads no third-party scripts, fonts or trackers.</li>
+      </ul>
+
+      <h2>What stays on your device</h2>
+      <ul>
+        <li>Your passkey, kept by your phone or password manager. Contri receives only a secret derived from it, which never leaves your browser.</li>
+        <li>Invite secrets for your circles, so the app can show their names, and any circle you were creating or joining.</li>
+        <li>If you chose to keep your key on this device instead of a passkey, that key, unencrypted, in your browser's storage. That works like a hot wallet: anything that can read this browser's storage can take it, so keep small amounts that way, or use a passkey.</li>
+        <li>While you're signed in, a sealed copy of your secret, so the app stays unlocked until you lock it. The key that seals it can't be exported from the browser.</li>
+        <li>The list of top-ups and cash-outs you made on this device, with their deposit addresses, the circle accounts involved and the addresses you cashed out to, and any names you gave other members.</li>
+        <li>If you add payment reminders to your calendar, the file has the circle's name in it. The app sends it nowhere, but a calendar that syncs (Google, Apple) will carry it.</li>
+      </ul>
+
+      <h2>What passes through our server</h2>
+      <p>The app asks Contri's server to read the blockchain, to submit your signed payments, to get deposit addresses from NEAR Intents' 1Click service, and to read and move your private balance. Our code doesn't log or store these requests, your IP address or your accounts. To stop anyone flooding it, the server counts requests per visitor for one minute, using a hash of the IP address salted with a secret the database's operator doesn't hold, and counts payments per paying account, which is public on chain anyway. The counts sit in a small database (Upstash Redis, connected through Vercel) so every server instance sees them, and each one is deleted after two minutes. Our hosting provider, Vercel, records each request (time, page, browser and IP address, not what was sent). On our plan we can see those records for an hour; how long Vercel itself keeps them is set by Vercel's privacy policy.</p>
+      <p>Because the app looks up all your circle accounts through our server, the server could tell they belong to one phone while it handles the request. When you move money between your private balance and a circle, the request names both accounts, so our server, and 1Click, see that they belong together. A cash-out names the circle account or private balance with the address you send to, reading your private balance passes it through our server, and opening Help looks up every top-up and cash-out on this phone at once. Our code keeps no record of any of it.</p>
+      <p>When you top up or cash out, 1Click receives the amount, the network, any address you enter and the Contri account involved. Contri asks 1Click for its confidential route, so these details can't be looked up publicly on 1Click. It never receives your name or contact details from us. Contri's 0.25% fee on a top-up or cash-out is paid to Contri's own public NEAR Intents account, so its size and timing can show that a deposit or withdrawal on another network went through Contri, though not which of your accounts it went to or came from.</p>
+
+      <h2>What is public on the blockchain</h2>
+      <p>Contri's contract keeps its rules and its money in the open so nobody has to trust a collector. Anyone can see each circle's amount, schedule, seats, payments, payouts and deposits. Members appear only as account numbers. Each circle you join uses a separate account derived from your passkey, and money reaches it through NEAR Intents' confidential route, so your circle accounts aren't linked by keys on chain, to each other or to you. Amounts and timing can still hint at a link: adding money to your private balance and paying circles from it over time makes that harder. A circle's name is stored encrypted and can only be read with its invite link; its length is visible.</p>
+      <p>Your circle's members see what àjọ members always see: who is in, who has paid, and who received the pot.</p>
+
+      <h2>Your choices</h2>
+      <p>You can stop using Contri at any time and cash out your balance. Contri's own code holds no personal data, so there is nothing for us to delete; Vercel keeps its request records under its own policy. Clearing your browser removes everything Contri kept on your device, including a key kept without a passkey, so write down your recovery code first. Records on the blockchain can't be deleted by anyone.</p>
+
+      <h2>Contact</h2>
+      <p>Questions about privacy: open an issue on <a href="https://github.com/ohjay-official/contri/issues">GitHub</a> or message <a href="https://x.com/contri_ng">@contri_ng on X</a>.</p>
+    </main>
+
+  </div>
+  <footer class="scene-foot" aria-label="Site footer">
+    <video class="scene-video" muted playsinline preload="none" poster="/media/scene.jpg" data-src="/media/scene.mp4" data-src-small="/media/scene-720.mp4" aria-hidden="true"></video>
+    <canvas class="scene-sky" aria-hidden="true"></canvas>
+    <canvas class="scene-fx" aria-hidden="true"></canvas>
+    <div class="scene-tint" aria-hidden="true"></div>
+    <div class="scene-grid">
+      <div class="scene-brand rise-in">
+        <button class="wordmark-power" type="button" aria-pressed="false" aria-label="Contri. Press the o to switch the scene off and on.">
+          <span aria-hidden="true">C</span><span class="power-o" aria-hidden="true"><svg viewBox="0 0 50 62"><path d="M14.2 22.6 A19 19 0 1 0 35.8 22.6"/><path d="M25 6.5 V33"/></svg><i class="power-halo"></i></span><span aria-hidden="true">ntri</span>
+        </button>
+        <p class="scene-tagline">Àjọ without the collector. A contract on NEAR holds every pot and pays each turn by itself.</p>
+        <p class="scene-copy">© 2026 Contri. All rights reserved.</p>
+      </div>
+      <nav class="scene-col rise-in" aria-label="Product">
+        <h3>Product</h3>
+        <a href="/how-it-works">How it works</a>
+        <a href="/app#/explore">Live circles</a>
+        <a href="/#faq">FAQ</a>
+        <a href="/app">Open Contri</a>
+      </nav>
+      <nav class="scene-col rise-in" aria-label="About">
+        <h3>About</h3>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms</a>
+        <a href="https://nearblocks.io/address/circles.contring.near" rel="noopener noreferrer">The contract</a>
+        <a href="https://github.com/ohjay-official/contri">Source code</a>
+      </nav>
+      <nav class="scene-col rise-in" aria-label="Social Media">
+        <h3>Social Media</h3>
+        <a href="https://x.com/contri_ng" rel="noopener noreferrer">X (@contri_ng)</a>
+        <a href="https://github.com/ohjay-official" rel="noopener noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

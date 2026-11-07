@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Contri</title>
+  <meta name="description" content="Your savings circles. A contract on NEAR holds the pot and pays each turn by itself.">
+  <meta name="referrer" content="no-referrer">
+  <meta name="twitter:site" content="@contri_ng">
+  <meta property="og:title" content="A savings circle on Contri">
+  <meta property="og:description" content="Save in turns with people you trust. A contract on NEAR holds the pot and pays each turn by itself.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://contri.ng/og.png?v=2">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0b0907">
+  <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+  <link rel="manifest" href="/manifest.webmanifest?v=2">
+  <link rel="stylesheet" href="/css/contri.css">
+  <script type="module" src="/js/app/main.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="/app#/" aria-label="Contri, your circles">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="5" r="4.5" fill="currentColor"/><circle class="hole" cx="25.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/><circle class="hole" cx="6.5" cy="21.5" r="3.5" stroke="currentColor" stroke-width="2"/></svg>
+      Contri
+    </a>
+    <nav aria-label="App"><a href="/app#/explore">Live circles</a> <a href="/app#/settings">Your key</a> <a href="/app#/help">Help</a></nav>
+  </header>
+  <main id="view" tabindex="-1">
+    <noscript><p>Contri needs JavaScript: it signs your payments on this phone, so your key never leaves it.</p></noscript>
+  </main>
+  <div id="notices" aria-live="polite"></div>
+</body>
+</html>
