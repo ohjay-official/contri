@@ -2,12 +2,12 @@
 
 **Àjọ without the collector.** In a rotating savings circle (àjọ, esusu, susu, chit fund), one person often holds everyone's money, and can disappear with it. Contri gives the pot to a locked contract on NEAR that pays each turn by itself, in the same transaction as the round's last payment.
 
-- **Try it now, no wallet:** https://contri.ng/demo ([steps just below](#try-it-in-2-minutes))
+- **Try it now, no wallet:** https://contri.ng/demo ([steps just below](#try-it-in-30-seconds))
 - **Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng)
 - **Check it in 20 seconds:** `node app/scripts/verify.mjs` ([what it checks](#1-one-command-about-20-seconds-node-22-nothing-to-install))
 - Built for NEAR HACKATHON (Nov 1-14, 2026), in the tracks `realworld`, `privacy` and `nfts` ([what fits each, and where to check](#tracks)). [How it was built, with what, and with which AI](#built-during-near-hackathon).
 
-## Try it in 2 minutes
+## Try it in 30 seconds
 
 **https://contri.ng/demo**, on any phone or computer: the real app with pretend money on a pretend chain in your browser tab. No wallet, passkey or money, and nothing is sent to a server or saved. The other members are pretend, and pay right after you do.
 
@@ -17,6 +17,9 @@ Do each step and check that you see what it says:
 2. **Tap Yaba traders.** You see the pot ring with **$25.00** and **to turn 3** in the middle, your seat marked **You** at turn 4, and, under **Swap turns**, a button **Buy turn 3 for $1.50**.
 3. **Tap Buy turn 3 for $1.50.** You see **Turn 3 is yours**, and in **Members, in turn order** you are now turn 3, marked **Receives this round**.
 4. **Tap Pay $5.00 for round 3.** You see **Paid. That closed the round: the $25.00 pot is yours.** The ring moves on to turn 4, and **Payouts** lists **Round 3: $25.00 to you**. The other members paid too; nobody held the pot in between.
+
+That's the idea in full: the pot went from the members to you, and nobody held it in between. With another minute:
+
 5. **Back on Your circles, tap Start a circle:** $2, 3 members, **Every 10 minutes (to try it out)**. Move money in and create it. The pretend members join within seconds and the circle starts. Pay round 1 and the pot goes out; try **Pay all rounds** too.
 6. **Open Live circles and Help,** and move money out to see a cash-out quote.
 
@@ -45,9 +48,9 @@ Submitted to three tracks (ids from the organizers' HACKATHON.md), each backed b
 
 | Track | What in Contri fits it | Where to check |
 | --- | --- | --- |
-| `realworld`: Real-World Money | Savings circles that millions of people already run, moved onto stablecoins. Members pay USDT or USDC from the exchange they already use on seven chains (1Click), the contract pays each pot in the same transaction as the round's last payment, and the business model is a 0.25% fee on money in and out. It ran with real USDT on two phones. | The demo ([steps](#try-it-in-2-minutes)); circle 7's transactions ([On mainnet](#4-on-mainnet-with-real-money)); [docs/FEES.md](docs/FEES.md) |
+| `realworld`: Real-World Money | Savings circles that millions of people already run, moved onto stablecoins. Members pay USDT or USDC from the exchange they already use on seven chains (1Click), the contract pays each pot in the same transaction as the round's last payment, and the business model is a 0.25% fee on money in and out. It ran with real USDT on two phones. | The demo ([steps](#try-it-in-30-seconds)); circle 7's transactions ([On mainnet](#4-on-mainnet-with-real-money)); [docs/FEES.md](docs/FEES.md) |
 | `privacy`: Privacy & Private AI | Private finance. One account per circle, derived from the passkey, so no key links a member's circles; invite-only circles with names encrypted on the phone; a private balance on Confidential Intents so the chain never sees the exchange or wallet behind it; no personal data, no cookies, no trackers. | [Privacy](#privacy); [docs/PRIVACY.md](docs/PRIVACY.md); https://contri.ng/privacy |
-| `nfts`: NFTs That Do Something | Each turn is a NEP-171 seat NFT that carries a right to money: whoever holds the seat receives that round's pot. A member who needs the pot sooner buys an earlier seat from one who can wait, and the contract swaps the seats and pays the seller. Each seat's picture is an SVG the contract draws from the circle's live state. | [Demo](#try-it-in-2-minutes) step 3 (buy turn 3); `nft_token` and `nft_tokens` on `circles.contring.near`; [docs/METHODS.md](docs/METHODS.md) |
+| `nfts`: NFTs That Do Something | Each turn is a NEP-171 seat NFT that carries a right to money: whoever holds the seat receives that round's pot. A member who needs the pot sooner buys an earlier seat from one who can wait, and the contract swaps the seats and pays the seller. Each seat's picture is an SVG the contract draws from the circle's live state. | [Demo](#try-it-in-30-seconds) step 3 (buy turn 3); `nft_token` and `nft_tokens` on `circles.contring.near`; [docs/METHODS.md](docs/METHODS.md) |
 
 ## What works today
 
