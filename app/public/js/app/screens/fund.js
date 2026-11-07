@@ -11,7 +11,7 @@ import { toHex } from "../../lib/bytes.js";
 import { actions, dueFor, findEvent, formatAmount, parseAmount, seatOf } from "../../lib/contri.js";
 import { decryptName, encryptName, inviteSigner, signJoin } from "../../lib/invite.js";
 import { getCircle, getConfig, relay, sign, swap } from "../api.js";
-import { follow, moveOut, privateBalance, STATUS } from "../private.js";
+import { follow, moveOut, privateBalance, STATUS, statusText } from "../private.js";
 import { circleOfSlot, nameOf, usd } from "../state.js";
 import { busy, copy, field, h, notice, show, sleep } from "../ui.js";
 import { balanceOf, confirmRecentPasskey, decodeSecret, local, logMove, remember, signer } from "../wallet.js";
@@ -310,7 +310,7 @@ export async function fundScreen(index) {
       render();
       if (depositAddress && purpose && balance < purpose.need) {
         const st = await swap("status", { depositAddress }).catch(() => null);
-        if (st?.status) progress.textContent = STATUS[st.status] ?? progress.textContent;
+        if (st?.status) progress.textContent = statusText(st) || progress.textContent;
         if (["SUCCESS", "REFUNDED", "FAILED"].includes(st?.status)) {
           await remember(index, { deposit: undefined });
           depositAddress = null;

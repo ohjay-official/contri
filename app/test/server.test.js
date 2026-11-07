@@ -6,7 +6,7 @@ import { authCall, signIntents, transfer } from "../public/js/lib/intents.js";
 import { signerFromSeed } from "../public/js/lib/keys.js";
 import { toBase58 } from "../public/js/lib/bytes.js";
 import { keep, needs, plan } from "../server/keeper.js";
-import { cashOut, formatUnits, toSend, topUp } from "../server/oneclick.js";
+import { cashOut, formatUnits, missing, toSend, topUp } from "../server/oneclick.js";
 import { privateHome, privateMove, privateTopUp } from "../server/confidential.js";
 import { allow, useOnce } from "../server/limit.js";
 import { authProblem, checkPayload, memberNote, paymentProblem, relay } from "../server/relay.js";
@@ -416,4 +416,12 @@ test("a round every member paid ahead goes out on the keeper's next run, ahead o
     { circle: 1, method: "pay_out" },
     { circle: 2, method: "pay_out" },
   ]);
+});
+
+test("a short deposit says how much more to send", () => {
+  assert.equal(missing("3.53", "3.51"), "0.02");
+  assert.equal(missing("3.53", "3.505"), "0.03", "rounded up: never too little");
+  assert.equal(missing("3.53", "3.53"), null);
+  assert.equal(missing("3.53", "4"), null);
+  assert.equal(missing("x", "1"), null);
 });

@@ -7,7 +7,7 @@
 // from 1Click, never the exchange or wallet behind it.
 
 import { parseAmount } from "../../lib/contri.js";
-import { addPrivately, clearPrivateTopUp, follow, pendingPrivateTopUp, privateBalance, STATUS } from "../private.js";
+import { addPrivately, clearPrivateTopUp, follow, pendingPrivateTopUp, privateBalance, STATUS, statusText } from "../private.js";
 import { nameOf, usd } from "../state.js";
 import { busy, field, h, show } from "../ui.js";
 import { local } from "../wallet.js";
@@ -34,7 +34,7 @@ export async function privateAddScreen(then) {
     const screen = depositBox.closest("section");
     if (!screen) return;
     // Followed in the background, so the button is free for another address.
-    follow(q.depositAddress, (st) => (progress.textContent = st === "SUCCESS" ? `Arrived: ${usd(parseAmount(q.receive))} is in your private balance.` : STATUS[st] ?? progress.textContent), screen, 24 * 60).then(async (last) => {
+    follow(q.depositAddress, (st, full) => (progress.textContent = st === "SUCCESS" ? `Arrived: ${usd(parseAmount(q.receive))} is in your private balance.` : statusText(full) || progress.textContent), screen, 24 * 60).then(async (last) => {
       if (["SUCCESS", "REFUNDED", "FAILED"].includes(last)) await clearPrivateTopUp();
       if (last !== "SUCCESS") return;
       balanceEl.textContent = usd(await privateBalance().catch(() => parseAmount(q.receive)));

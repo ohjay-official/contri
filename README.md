@@ -39,7 +39,7 @@ The mock behaves like the real thing, in memory, and touches no chain: a top-up 
 
 ```
 (cd contract && cargo test)                # 98 contract unit tests, incl. a JSON parser fuzzed against serde_json and an attacker-view audit's tests
-(cd app && npm test)                       # 54 app and server tests: keys vs an independent ed25519, NEP-413, borsh, relayer rules, private-balance checks, the fee, shared rate limits
+(cd app && npm test)                       # 55 app and server tests: keys vs an independent ed25519, NEP-413, borsh, relayer rules, private-balance checks, the fee, shared rate limits
 (cd app && npm install && npm run check)   # type-checks every .js file (JSDoc + tsc --strict)
 ```
 

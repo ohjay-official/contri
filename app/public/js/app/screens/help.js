@@ -9,7 +9,7 @@
 // and copies the details a member sends to support.
 
 import { swap } from "../api.js";
-import { STATUS } from "../private.js";
+import { statusText } from "../private.js";
 import { busy, copy, h, show } from "../ui.js";
 import { moves, unlocked } from "../wallet.js";
 import { NETWORKS } from "./fund.js";
@@ -62,7 +62,7 @@ export async function helpScreen() {
     swap("status", { depositAddress: m.depositAddress }).then(
       (st) => {
         state = st.status;
-        status.textContent = STATUS[st.status] ?? st.status;
+        status.textContent = statusText(st);
         status.className = `row-status ${st.status === "SUCCESS" ? "good" : st.status === "FAILED" || st.status === "REFUNDED" || st.status === "INCOMPLETE_DEPOSIT" ? "due" : "quiet"}`;
       },
       () => (status.textContent = "Couldn't check right now"),
@@ -72,7 +72,7 @@ export async function helpScreen() {
       h("span", { class: "row-sub" }, [amountOf(m), m.network ? `on ${network(m.network)}` : null, when(m.at)].filter(Boolean).join(", ")),
       status,
       h("span", { class: "hint", translate: "no" }, `Deposit address ${short(m.depositAddress)}`),
-      h("div", { class: "actions" }, copyBtn),
+      h("div", { class: "actions" }, copyBtn, h("button", { class: "secondary", onclick: () => copy(m.depositAddress, "Address copied") }, "Copy deposit address")),
     );
   });
 

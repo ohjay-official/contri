@@ -187,7 +187,12 @@ export async function swapStatus(body, c) {
   const res = await fetch(`${c.oneClickUrl}/v0/status?depositAddress=${encodeURIComponent(address)}`, { headers });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new RelayError(json.message ?? `1Click status failed (${res.status})`, 502);
-  return { status: json.status, updatedAt: json.updatedAt ?? null };
+  // How much has arrived against what the address needs, in the coin sent,
+  // so a short deposit can be completed: send the rest to the same address.
+  const need = json.quoteResponse?.quote?.amountInFormatted ?? null;
+  const got = json.swapDetails?.depositedAmountFormatted ?? null;
+  const short = json.status === "INCOMPLETE_DEPOSIT" && need && got ? missing(String(need), String(got)) : null;
+  return { status: json.status, updatedAt: json.updatedAt ?? null, need, got, short };
 }
 
 /** Tells 1Click about a deposit so it is picked up sooner. @param {any} body @param {Config} c */
@@ -201,6 +206,14 @@ export async function submitDeposit(body, c) {
     body: JSON.stringify({ txHash: String(body.txHash), depositAddress: String(body.depositAddress) }),
   });
   return { ok: res.ok };
+}
+
+/** `need` minus `got` (decimal strings), rounded up to the cent, or null if nothing is missing. @param {string} need @param {string} got */
+export function missing(need, got) {
+  if (!/^\d+(\.\d+)?$/.test(need) || !/^\d+(\.\d+)?$/.test(got)) return null;
+  const units = (/** @type {string} */ v) => { const [w, f = ""] = v.split("."); return BigInt(w + f.padEnd(18, "0").slice(0, 18)); };
+  const d = units(need) - units(got);
+  return d > 0n ? formatUnits(d, 18) : null;
 }
 
 /** Rounded down to the cent: what arrives is never overstated. @param {bigint} v @param {number} decimals */

@@ -128,9 +128,20 @@ export const STATUS = {
 };
 
 /**
+ * What a status means for the member. A short deposit says how much more to
+ * send to the same address.
+ * @param {{ status: string, need?: string | null, got?: string | null, short?: string | null } | null} st
+ */
+export function statusText(st) {
+  if (st?.status === "INCOMPLETE_DEPOSIT" && st.short) return `${st.got} of ${st.need} arrived. Send ${st.short} more to the same address, on the same network, before it expires; the extra arrives with it.`;
+  return st?.status ? STATUS[st.status] ?? st.status : "";
+}
+
+/**
  * Follows a 1Click deposit address until it finishes, the screen closes, or
- * `minutes` pass. Calls `onStatus` with each new state. Returns the last state.
- * @param {string} depositAddress @param {(status: string) => void} onStatus @param {Element} screen @param {number} [minutes]
+ * `minutes` pass. Calls `onStatus` with each new state, and the status
+ * itself. Returns the last state.
+ * @param {string} depositAddress @param {(status: string, st: any) => void} onStatus @param {Element} screen @param {number} [minutes]
  */
 export async function follow(depositAddress, onStatus, screen, minutes = 30) {
   let last = "";
@@ -138,7 +149,7 @@ export async function follow(depositAddress, onStatus, screen, minutes = 30) {
     const st = await swap("status", { depositAddress }).catch(() => null);
     if (st?.status && st.status !== last) {
       last = st.status;
-      onStatus(last);
+      onStatus(last, st);
     }
     if (["SUCCESS", "REFUNDED", "FAILED"].includes(last)) break;
     await sleep(5000);
