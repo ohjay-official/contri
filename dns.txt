@@ -1,0 +1,9 @@
+NS:
+nsc.go54.com.
+nsd.go54.com.
+A:
+216.198.79.1
+www:
+0acd4eec4b3481e3.vercel-dns-017.com.
+via 8.8.8.8:
+216.198.79.1

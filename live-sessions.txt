@@ -1,0 +1,9 @@
+ok   Android phone, Chrome (chromium)
+ok   Android phone, Chrome in desktop mode (chromium)
+ok   Computer, Chrome (Windows, Mac, Linux) (chromium)
+ok   Computer, Edge (chromium)
+ok   iPhone, Safari (webkit)
+ok   Mac, Safari (webkit)
+ok   Computer, Firefox (firefox)
+
+unlocked through a dropped tab and a browser restart, everywhere

@@ -1,0 +1,34 @@
+Vercel CLI 65.11.0
+Retrieving project…
+Deploying oh-jay-s-projects/contri
+Uploading [--------------------] (0.0B/16.5KB)
+Uploading [===================-] (16.0KB/16.5KB)
+Uploading [====================] (16.5KB/16.5KB)
+  Inspect         https://vercel.com/oh-jay-s-projects/contri/B2PwGcfoj7bSHitzuTm3vGDfEiXV
+  Production      https://contri-fkcytyxaz-oh-jay-s-projects.vercel.app
+https://contri-fkcytyxaz-oh-jay-s-projects.vercel.appBuilding…
+Building…
+Running build in Washington, D.C., USA (East) – iad1
+Build machine configuration: 2 cores, 8 GB
+Retrieving list of deployment files...
+Downloading 98 deployment files...
+Restored build cache from previous deployment (BFjjLxXJDg29DxJg72fbWKdZt5hr)
+Running "vercel build"
+Vercel CLI 65.11.0
+Installing dependencies...
+up to date in 458ms
+[2K[1A[2K[G  Production      https://contri-fkcytyxaz-oh-jay-s-projects.vercel.app
+Completing…
+▲ Aliased         https://contri.ng
+
+✓ Ready in 8s
+
+Next steps:
+- Automatically deploy changes on every push by connecting Git:
+  vercel git connect
+- Check the production response:
+  vercel curl https://contri.ng
+- View build logs:
+  vercel inspect contri-fkcytyxaz-oh-jay-s-projects.vercel.app --logs
+- Create a new deployment from the same source:
+  vercel redeploy contri-fkcytyxaz-oh-jay-s-projects.vercel.app

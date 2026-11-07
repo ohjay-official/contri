@@ -1,0 +1,94 @@
+ok   page /  (200)
+ok   CSP on /
+ok   security headers on /
+ok   page /how-it-works  (200)
+ok   CSP on /how-it-works
+ok   security headers on /how-it-works
+ok   page /privacy  (200)
+ok   CSP on /privacy
+ok   security headers on /privacy
+ok   page /terms  (200)
+ok   CSP on /terms
+ok   security headers on /terms
+ok   page /app  (200)
+ok   CSP on /app
+ok   security headers on /app
+ok   page /join  (200)
+ok   CSP on /join
+ok   security headers on /join
+ok   home links into the app
+ok   /index.html redirects to /  (308 /)
+ok   /app.html redirects to /app  (308 /app)
+ok   /privacy.html redirects to /privacy  (308 /privacy)
+ok   /terms.html redirects to /terms  (308 /terms)
+ok   /how-it-works.html redirects to /how-it-works  (308 /how-it-works)
+ok   /join/ redirects to /join  (308 /join)
+ok   /privacy/ redirects to /privacy  (308 /privacy)
+ok   www.contri.ng redirects to contri.ng  (308)
+ok   unknown pages get Contri's own 404 page  (404)
+ok   link /  (200)
+ok   link /how-it-works  (200)
+ok   link /app  (200)
+ok   link /demo  (200)
+ok   link /privacy  (200)
+ok   link /terms  (200)
+ok   the app's modules were all found  (29 modules)
+ok   manifest parses
+ok   manifest start_url /app
+ok   file /fonts/instrument-sans.woff  (200 font/woff)
+ok   file /css/contri.css  (200 text/css; charset=utf-8)
+ok   file /css/site.css  (200 text/css; charset=utf-8)
+ok   file /js/site.js  (200 application/javascript; charset=utf-8)
+ok   file /js/footer.js  (200 application/javascript; charset=utf-8)
+ok   file /js/cards.js  (200 application/javascript; charset=utf-8)
+ok   file /css/glass.css  (200 text/css; charset=utf-8)
+ok   file /js/glass.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/main.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/invite.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/support.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/api.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/cashout.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/circle.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/create.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/explore.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/fund.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/help.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/home.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/join.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/private.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/settings.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/screens/unlock.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/ui.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/demo.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/wallet.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/bytes.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/keys.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/intents.js  (200 application/javascript; charset=utf-8)
+ok   file /js/demo/mock.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/contri.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/private.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/state.js  (200 application/javascript; charset=utf-8)
+ok   file /js/app/ring.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/passkey.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/session.js  (200 application/javascript; charset=utf-8)
+ok   file /js/lib/private.js  (200 application/javascript; charset=utf-8)
+ok   file /icon-192.png  (200 image/png)
+ok   file /icon-512.png  (200 image/png)
+ok   GET /api/config  ({"network":"mainnet","contractId":"circles.contring.near","intentsId":"intents.near","tokenId":"nep141:usdt.tether-token.near","relaying":true,"sharedLimits":true,"relayer":"contring.near","feeBps":25})
+ok   relayer contring.near can pay for gas  (1.6086 NEAR; top it up below 0.25)
+ok   POST /api/rpc  (200)
+ok     view get_config
+ok     view get_circles
+ok     view get_circle
+ok     view nft_token
+ok     view current_salt
+ok     view mt_balance_of
+ok     views outside the allowlist are refused
+ok   POST /api/relay refuses an empty request  (400)
+ok   POST /api/swap refuses an unknown action  (400)
+ok   POST /api/swap status answers  (502)
+ok   GET /api/keeper  (200)
+ok   oversized requests are refused  (413)
+ok   no response sets a cookie
+
+all checks passed
