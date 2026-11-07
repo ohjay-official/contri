@@ -55,6 +55,9 @@ jobs:
           python3 -c "import json,sys; print(json.dumps(json.load(open('abi/contri_abi.json')),separators=(',',':')),end='')" > ../ci-out/contri_abi.min.json
           (command -v zstd >/dev/null || sudo apt-get install -y -qq zstd >/dev/null)
           zstd -q -f --ultra -22 ../ci-out/contri_abi.min.json -o abi/contri_abi.zst
+          # The deploy builds from the committed .zst, so it must match too, or
+          # the deployed code differs from this build and the lock refuses.
+          git diff --quiet -- abi/contri_abi.zst || echo true > ../ci-out/abi_drift
           cp abi/contri_abi.json abi/contri_abi.zst ../ci-out/
           ls -l abi | tee -a ../ci-out/abi.log
 
@@ -134,7 +137,7 @@ jobs:
       - name: Fail the job if the committed ABI is out of date
         run: |
           if [ "$(cat ci-out/abi_drift 2>/dev/null)" != "false" ]; then
-            echo "contract/abi/contri_abi.json differs from the interface. Copy contri_abi.json and contri_abi.zst from the ci-results branch."
+            echo "contract/abi/contri_abi.json or contri_abi.zst differs from the interface. Copy contri_abi.json and contri_abi.zst from the ci-results branch."
             exit 1
           fi
         working-directory: .
