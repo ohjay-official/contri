@@ -16,7 +16,7 @@ Built for NEAR HACKATHON (Nov 1-14, 2026), in the tracks `realworld`, `privacy` 
 Millions of people across Africa, Asia and Latin America save in circles like this. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. Savings circles on a blockchain have been tried before; what Contri adds:
 
 - **Nobody holds the pot, not even Contri.** The contract pays each turn by itself, in the same transaction as the round's last payment (a round every member paid ahead goes out on the keeper's next run, within minutes). A late round can be settled by anyone, so a circle always finishes.
-- **No crypto knowledge needed.** A phone passkey, no seed phrase, no NEAR account and no gas token. Members pay straight from an exchange withdrawal on BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum.
+- **No wallet needed.** Sign-in is a phone passkey: no seed phrase, no NEAR account and no gas token. Members pay with USDT or USDC withdrawn from an exchange on BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum.
 - **A missed payment has a cost, in code.** A deposit covers it; whatever it doesn't cover is held back from the defaulter's own turn and given to the members who were shorted.
 - **Turns can be traded.** Each turn is an NFT seat; a member who needs cash sooner buys an earlier one from someone happy to wait and earn for it.
 - **Private by default.** Circle names are encrypted, each circle uses its own account, and money can move through NEAR Intents' confidential private balance, so nothing on chain names a member or links their wallet.
