@@ -2,33 +2,14 @@
 
 **Àjọ without the collector.** In a rotating savings circle (àjọ, esusu, susu, chit fund), one person often holds everyone's money, and can disappear with it. Contri gives the pot to a locked contract on NEAR that pays each turn by itself, in the same transaction as the round's last payment.
 
-**Try it in 30 seconds, no wallet:** **https://contri.ng/demo**. Open *Yaba traders*, buy turn 3, pay $5, and the $25 pot comes to you.
+- **Try it now, no wallet:** https://contri.ng/demo ([steps just below](#try-it-in-2-minutes))
+- **Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng)
+- **Check it in 20 seconds:** `node app/scripts/verify.mjs` ([what it checks](#1-one-command-about-20-seconds-node-22-nothing-to-install))
+- Built for NEAR HACKATHON (Nov 1-14, 2026), in the tracks `realworld`, `privacy` and `nfts` ([what fits each, and where to check](#tracks)). [How it was built, with what, and with which AI](#built-during-near-hackathon).
 
-**Proof it's real:**
-- The contract, [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near), is on NEAR mainnet and **locked**: no keys, so nobody, Contri included, can change it or move its money outside its rules ([lock transaction](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)).
-- A circle ran with real USDT on two phones on this exact code ([its transactions](#5-on-mainnet-with-real-money)).
-- `node app/scripts/verify.mjs` checks all of this, and runs a whole circle offline, in about 20 seconds.
+## Try it in 2 minutes
 
-Built for NEAR HACKATHON (Nov 1-14, 2026), in the tracks `realworld`, `privacy` and `nfts` ([what fits each, and where to check](#tracks)). **Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng). How it was built, with what, and with which AI: [Built during NEAR HACKATHON](#built-during-near-hackathon).
-
-## What's New Here
-
-Millions of people across Africa, Asia and Latin America save in circles like this. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. Savings circles on a blockchain have been tried before; what Contri adds:
-
-- **Nobody holds the pot, not even Contri.** The contract pays each turn by itself, in the same transaction as the round's last payment (a round every member paid ahead goes out on the keeper's next run, within minutes). A late round can be settled by anyone, so a circle always finishes.
-- **No wallet needed.** Sign-in is a phone passkey: no seed phrase, no NEAR account and no gas token. Members pay with USDT or USDC withdrawn from an exchange on BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum.
-- **A missed payment has a cost, in code.** A deposit covers it; whatever it doesn't cover is held back from the defaulter's own turn and given to the members who were shorted.
-- **Turns can be traded.** Each turn is an NFT seat; a member who needs cash sooner buys an earlier one from someone happy to wait and earn for it.
-- **Private by default.** Circle names are encrypted, each circle uses its own account, and money can move through NEAR Intents' confidential private balance, so nothing on chain names a member or links their wallet.
-- **Pay once, done.** A member can pay every round ahead; each round then takes its share by itself.
-
-## How to test
-
-Five ways in, from quickest to most real. None needs a NEAR account.
-
-### 1. The demo, in your browser (recommended for judges)
-
-**https://contri.ng/demo**, on any phone or computer: the real app's screens with pretend money on a pretend chain that runs in your browser tab. No passkey, no money, no second device, and nothing is sent to a server or saved. You're a member of two sample circles, and the other members are pretend: they join a circle you start a few seconds after you start it, and pay each round right after you do. Things to try, about two minutes:
+**https://contri.ng/demo**, on any phone or computer: the real app with pretend money on a pretend chain in your browser tab. No wallet, passkey or money, and nothing is sent to a server or saved. The other members are pretend, and pay right after you do.
 
 Do each step and check that you see what it says:
 
@@ -41,7 +22,49 @@ Do each step and check that you see what it says:
 
 A bar on every screen says it's the demo. The real app is at https://contri.ng/app.
 
-### 2. One command (about 20 seconds, Node 22, nothing to install)
+## Proof it's real
+
+- The contract, [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near), is on NEAR mainnet and **locked**: no keys, so nobody, Contri included, can change it or move its money outside its rules ([lock transaction](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)).
+- A circle ran with real USDT on two phones on this exact code ([its transactions](#4-on-mainnet-with-real-money)).
+- `node app/scripts/verify.mjs` checks all of this, and runs a whole circle offline, in about 20 seconds.
+
+## What's New Here
+
+Millions of people across Africa, Asia and Latin America save in circles like this. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. Savings circles on a blockchain have been tried before; what Contri adds:
+
+- **Nobody holds the pot, not even Contri.** The contract pays each turn by itself, in the same transaction as the round's last payment (a round every member paid ahead goes out on the keeper's next run, within minutes). A late round can be settled by anyone, so a circle always finishes.
+- **No wallet needed.** Sign-in is a phone passkey: no seed phrase, no NEAR account and no gas token. Members pay with USDT or USDC withdrawn from an exchange on BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum.
+- **A missed payment has a cost, in code.** A deposit covers it; whatever it doesn't cover is held back from the defaulter's own turn and given to the members who were shorted.
+- **Turns can be traded.** Each turn is an NFT seat; a member who needs cash sooner buys an earlier one from someone happy to wait and earn for it.
+- **Private by default.** Circle names are encrypted, each circle uses its own account, and money can move through NEAR Intents' confidential private balance, so nothing on chain names a member or links their wallet.
+- **Pay once, done.** A member can pay every round ahead; each round then takes its share by itself.
+
+## Tracks
+
+Submitted to three tracks (ids from the organizers' HACKATHON.md), each backed by something you can open:
+
+| Track | What in Contri fits it | Where to check |
+| --- | --- | --- |
+| `realworld`: Real-World Money | Savings circles that millions of people already run, moved onto stablecoins. Members pay USDT or USDC from the exchange they already use on seven chains (1Click), the contract pays each pot in the same transaction as the round's last payment, and the business model is a 0.25% fee on money in and out. It ran with real USDT on two phones. | The demo ([steps](#try-it-in-2-minutes)); circle 7's transactions ([On mainnet](#4-on-mainnet-with-real-money)); [docs/FEES.md](docs/FEES.md) |
+| `privacy`: Privacy & Private AI | Private finance. One account per circle, derived from the passkey, so no key links a member's circles; invite-only circles with names encrypted on the phone; a private balance on Confidential Intents so the chain never sees the exchange or wallet behind it; no personal data, no cookies, no trackers. | [Privacy](#privacy); [docs/PRIVACY.md](docs/PRIVACY.md); https://contri.ng/privacy |
+| `nfts`: NFTs That Do Something | Each turn is a NEP-171 seat NFT that carries a right to money: whoever holds the seat receives that round's pot. A member who needs the pot sooner buys an earlier seat from one who can wait, and the contract swaps the seats and pays the seller. Each seat's picture is an SVG the contract draws from the circle's live state. | [Demo](#try-it-in-2-minutes) step 3 (buy turn 3); `nft_token` and `nft_tokens` on `circles.contring.near`; [docs/METHODS.md](docs/METHODS.md) |
+
+## What works today
+
+| Piece | State |
+| --- | --- |
+| Contract, `circles.contring.near` | On mainnet and locked (no keys); its code hash is CI's build. 98 unit tests, and sandbox end-to-end tests against the real NEAR Intents contract |
+| App and site, https://contri.ng | Live: passkey sign-in, top-ups from seven chains, circles, paying ahead, turn trading, the private balance, cash-outs, Live circles, Help |
+| Real money on mainnet | 5 November: top-up, contribution, cash-out, and the private route. 7 November: circle 7, a whole circle on two phones on the locked code |
+| Demo, https://contri.ng/demo | Works: the real app's screens on a pretend chain in the tab, with pretend members |
+| Relayer and keeper | Running: the relayer on Vercel, the keeper every 10 minutes on GitHub Actions plus a daily Vercel cron |
+| Community backing (`back:<circle>`) | In the contract and unit-tested; not in the app yet. The Sputnik DAO template hasn't been run against a live DAO |
+
+## More ways to test
+
+From quickest to most real. None needs a NEAR account.
+
+### 1. One command (about 20 seconds, Node 22, nothing to install)
 
 ```
 node app/scripts/verify.mjs
@@ -58,7 +81,7 @@ q view_access_key_list   # "keys":[]
 q view_account           # "code_hash":"8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC"
 ```
 
-### 3. The app offline, on your own machine (no money, no chain)
+### 2. The app offline, on your own machine (no money, no chain)
 
 Needs Node 22. No install step: the app and its server have no runtime dependencies.
 
@@ -72,7 +95,7 @@ The mock behaves like the real thing, in memory, and touches no chain: a top-up 
 - **As a member of two sample circles** (one running, one filling up): choose **Other ways in > Restore from a recovery code** and paste `k7Fa-K87W-HGVX-zkao-Hb7C-dVPg-kKDQ-hZ29-VLDe-BVbD-fYn` (the server prints it too). Open the running circle to see the pot, the turn order, your seat NFT and a turn for sale.
 - **As a new member:** choose **Other ways in > Keep my key on this device**, then **Start a circle**, get a deposit address, wait for it to arrive and tap **Create circle**. Open the invite link in a second browser profile to join as the second member.
 
-### 4. The tests
+### 3. The tests
 
 ```
 (cd contract && cargo test)                # 98 contract unit tests, incl. a JSON parser fuzzed against serde_json and an attacker-view audit's tests
@@ -91,7 +114,7 @@ End-to-end, against the real NEAR Intents contract built from [near/intents](htt
 
 After every deploy, `.github/workflows/web.yml` checks the live site the way visitors reach it: every page, file, redirect and API route (`scripts/site-check.mjs`), every screen in a real browser (`app/scripts/live-browser.mjs`), staying signed in through a dropped tab and a browser restart in Chromium, WebKit and Firefox with Android, iPhone and desktop profiles (`app/scripts/live-sessions.mjs`), and the 1Click and private-balance calls with an empty account (`scripts/live-check.mjs`). Results go to the `web-results` branch.
 
-### 5. On mainnet, with real money
+### 4. On mainnet, with real money
 
 **Watch without paying:** open **Live circles** at https://contri.ng/app#/explore. It shows every open, running or finished circle on the contract, read from the chain through Contri's server.
 
@@ -133,27 +156,6 @@ Every circle action is a NEP-413 intent signed on the phone and submitted by Con
 </p>
 
 The current app on a phone, with sample circles.
-
-## Tracks
-
-Submitted to three tracks (ids from the organizers' HACKATHON.md), each backed by something you can open:
-
-| Track | What in Contri fits it | Where to check |
-| --- | --- | --- |
-| `realworld`: Real-World Money | Savings circles that millions of people already run, moved onto stablecoins. Members pay USDT or USDC from the exchange they already use on seven chains (1Click), the contract pays each pot in the same transaction as the round's last payment, and the business model is a 0.25% fee on money in and out. It ran with real USDT on two phones. | The demo (steps above); circle 7's transactions ([On mainnet](#5-on-mainnet-with-real-money)); [docs/FEES.md](docs/FEES.md) |
-| `privacy`: Privacy & Private AI | Private finance. One account per circle, derived from the passkey, so no key links a member's circles; invite-only circles with names encrypted on the phone; a private balance on Confidential Intents so the chain never sees the exchange or wallet behind it; no personal data, no cookies, no trackers. | [Privacy](#privacy); [docs/PRIVACY.md](docs/PRIVACY.md); https://contri.ng/privacy |
-| `nfts`: NFTs That Do Something | Each turn is a NEP-171 seat NFT that carries a right to money: whoever holds the seat receives that round's pot. A member who needs the pot sooner buys an earlier seat from one who can wait, and the contract swaps the seats and pays the seller. Each seat's picture is an SVG the contract draws from the circle's live state. | Demo step 3 (buy turn 3); `nft_token` and `nft_tokens` on `circles.contring.near`; [docs/METHODS.md](docs/METHODS.md) |
-
-## What works today
-
-| Piece | State |
-| --- | --- |
-| Contract, `circles.contring.near` | On mainnet and locked (no keys); its code hash is CI's build. 98 unit tests, and sandbox end-to-end tests against the real NEAR Intents contract |
-| App and site, https://contri.ng | Live: passkey sign-in, top-ups from seven chains, circles, paying ahead, turn trading, the private balance, cash-outs, Live circles, Help |
-| Real money on mainnet | 5 November: top-up, contribution, cash-out, and the private route. 7 November: circle 7, a whole circle on two phones on the locked code |
-| Demo, https://contri.ng/demo | Works: the real app's screens on a pretend chain in the tab, with pretend members |
-| Relayer and keeper | Running: the relayer on Vercel, the keeper every 10 minutes on GitHub Actions plus a daily Vercel cron |
-| Community backing (`back:<circle>`) | In the contract and unit-tested; not in the app yet. The Sputnik DAO template hasn't been run against a live DAO |
 
 ## What it does
 
