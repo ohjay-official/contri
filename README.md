@@ -236,6 +236,14 @@ node dev/server.js
 
 **A new project, all of it written in the hackathon window.** NEAR HACKATHON was announced on 19 October 2026 (HACKATHON.md Q-001). Contri's first commit, `ce44248`, is from 31 October 2026 at 23:00 UTC, midnight on 1 November in Lagos, and the code follows from there. There is no earlier code, baseline, template or boilerplate (Q-002, Q-004, Q-005). Check it with `git log --reverse --format='%h %ad %s' --date=iso | head -3`.
 
+**What was built each day** (UTC dates, from the commit history; `git log --reverse` lists every commit):
+- **Oct 31** (midnight 1 November in Lagos): the plan, demo script and architecture; probes of 1Click's routes to and from Tron, BNB Chain, Solana and NEAR; the contract with unit tests, a CI build and measured fees.
+- **Nov 1:** the contract under NEAR's 100 KB limit (a hand-written JSON reader, fuzzed against `serde_json`); invite-only circles with encrypted names; community backing, trust deposits, refills and shortfalls; random draws, leaving, fill deadlines and live seat images; paid creation to close a spam hole; end-to-end tests against the real NEAR Intents contract on a local sandbox.
+- **Nov 4:** the app core (passkey-derived keys, NEP-413 signing with versioned nonces, invites, relayer, keeper); the app's screens and the site's pages; a Confidential Intents probe; seat NFTs on the circle screen; Live circles; an installable app; a browser end-to-end test where two members with passkeys run a whole circle.
+- **Nov 5:** live on Vercel, then at contri.ng; the contract deployed to mainnet as `circles.contring.near`; the private balance through Confidential Intents; the first real-money tests (top-up, contribution, cash-out, and the private route); FAQ, recovery codes and Help; the first security review, its fixes deployed; one warm dark look across the site and the app.
+- **Nov 6:** phone fixes; the second review (a different model) and its fixes on mainnet; shared rate limits in Redis; every claim on the site checked against the code; the eight-auditor review.
+- **Nov 7:** the eight auditors' fixes (arrears held back from a defaulter's own turn); paying ahead and the 0.25% fee, re-reviewed; a redeploy of CI's exact build; circle 7 with real money on two phones; the lock; the one-command check; the demo at /demo; the 30-second story; invites through the phone's share sheet; a Cookies section in the privacy policy; this README's pass for the judges.
+
 **AI code (Q-005).** The code, tests and docs were written with Claude (Claude Code), directed by the owner, who made the product decisions and did every wallet step and real-money test.
 
 **Libraries and services (Q-005)**, at the versions the lockfiles pin:
