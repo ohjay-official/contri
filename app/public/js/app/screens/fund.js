@@ -204,22 +204,31 @@ export async function fundScreen(index) {
   const privateBox = h("div", { class: "stack", hidden: true });
   const showPrivate = (/** @type {bigint} */ held) => {
     const short = purpose ? purpose.need - balance : 0n;
+    /** A button that moves `move` from the private balance into this circle account. @param {bigint} move @param {string} cls @param {string} label */
+    const mover = (move, cls, label) => {
+      const btn = /** @type {HTMLButtonElement} */ (h("button", { class: cls }, label));
+      btn.addEventListener("click", () =>
+        busy(btn, "Moving", async () => {
+          const q = await moveOut({ to: s.accountId }, move);
+          notice("Moving from your private balance");
+          progress.textContent = `Moving ${usd(move)} from your private balance. It takes about ${q.seconds} seconds.`;
+          privateBox.hidden = true;
+          const screen = privateBox.closest("section");
+          if (screen) follow(q.depositAddress, (st) => st !== "SUCCESS" && (progress.textContent = STATUS[st] ?? progress.textContent), screen);
+        }),
+      );
+      return btn;
+    };
     const move = short > 0n && short < held ? short : held;
-    const moveBtn = /** @type {HTMLButtonElement} */ (h("button", { class: "primary" }, `Move ${usd(move)} here`));
-    moveBtn.addEventListener("click", () =>
-      busy(moveBtn, "Moving", async () => {
-        const q = await moveOut({ to: s.accountId }, move);
-        notice("Moving from your private balance");
-        progress.textContent = `Moving ${usd(move)} from your private balance. It takes about ${q.seconds} seconds.`;
-        privateBox.hidden = true;
-        const screen = privateBox.closest("section");
-        if (screen) follow(q.depositAddress, (st) => st !== "SUCCESS" && (progress.textContent = STATUS[st] ?? progress.textContent), screen);
-      }),
-    );
+    // Enough for every round left, to pay them all at once.
+    const all = purpose?.ahead ? purpose.whole - balance : 0n;
     privateBox.replaceChildren(
       h("h2", null, "From your private balance"),
       h("p", { class: "balance-line" }, "In your private balance: ", h("strong", { class: "amount" }, usd(held))),
-      h("div", { class: "actions" }, moveBtn),
+      h("div", { class: "actions" },
+        mover(move, "primary", `Move ${usd(move)} here`),
+        all > move && all <= held ? mover(all, "secondary", `Move ${usd(all)} here, for every round`) : null,
+      ),
     );
     privateBox.hidden = held <= 0n;
   };
