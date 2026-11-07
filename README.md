@@ -3,13 +3,13 @@
 **Àjọ without the collector.** In a rotating savings circle (àjọ, esusu, susu, chit fund), one person often holds everyone's money, and can disappear with it. Contri gives the pot to a locked contract on NEAR that pays each turn by itself, in the same transaction as the round's last payment.
 
 - **Try it now, no wallet:** https://contri.ng/demo ([steps just below](#try-it-in-30-seconds))
-- **Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng)
+- **Live:** https://contri.ng, and the app at https://contri.ng/app. **X:** [@contri_ng](https://x.com/contri_ng)
 - **Check it in 20 seconds:** `node app/scripts/verify.mjs` ([what it checks](#1-one-command-about-20-seconds-node-22-nothing-to-install))
 - Built for NEAR HACKATHON (Nov 1-14, 2026), in the tracks `realworld`, `privacy` and `nfts` ([what fits each, and where to check](#tracks)). [How it was built, with what, and with which AI](#built-during-near-hackathon).
 
 ## Try it in 30 seconds
 
-**https://contri.ng/demo**, on any phone or computer: the real app with pretend money on a pretend chain in your browser tab. No wallet, passkey or money, and nothing is sent to a server or saved. The other members are pretend, and pay right after you do.
+**https://contri.ng/demo**, on any phone or computer: the real app with pretend money on a pretend chain in your browser tab. No wallet, passkey or money, and nothing is sent to a server. The other members are pretend, and pay right after you do.
 
 Do each step and check that you see what it says:
 
@@ -31,20 +31,20 @@ A bar on every screen says it's the demo. The real app is at https://contri.ng/a
 - A circle ran with real USDT on two phones on this exact code ([its transactions](#4-on-mainnet-with-real-money)).
 - `node app/scripts/verify.mjs` checks all of this, and runs a whole circle offline, in about 20 seconds.
 
-## What's New Here
+## What's new here
 
 Millions of people across Africa, Asia and Latin America save in circles like this. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. Savings circles on a blockchain have been tried before; what Contri adds:
 
 - **Nobody holds the pot, not even Contri.** The contract pays each turn by itself, in the same transaction as the round's last payment (a round every member paid ahead goes out on the keeper's next run, within minutes). A late round can be settled by anyone, so a circle always finishes.
 - **No wallet needed.** Sign-in is a phone passkey: no seed phrase, no NEAR account and no gas token. Members pay with USDT or USDC withdrawn from an exchange on BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum.
-- **A missed payment has a cost, in code.** A deposit covers it; whatever it doesn't cover is held back from the defaulter's own turn and given to the members who were shorted.
+- **A missed payment has a cost, in code.** A deposit covers it; whatever it doesn't cover is held back from the defaulter's own turn, if it is still to come, and given to the members who were shorted.
 - **Turns can be traded.** Each turn is an NFT seat; a member who needs cash sooner buys an earlier one from someone happy to wait and earn for it.
-- **Private by default.** Circle names are encrypted, each circle uses its own account, and money can move through NEAR Intents' confidential private balance, so nothing on chain names a member or links their wallet.
+- **Private by default.** Circle names are encrypted, each circle uses its own account, and money can move through NEAR Intents' confidential private balance, so nothing on chain names a member, and no address on chain links their wallet to their circles.
 - **Pay once, done.** A member can pay every round ahead; each round then takes its share by itself.
 
 ## Tracks
 
-Submitted to three tracks (ids from the organizers' HACKATHON.md), each backed by something you can open:
+Submitted to three tracks (ids from the organizers' [HACKATHON.md](https://nearhackathon.com/HACKATHON.md)), each backed by something you can open:
 
 | Track | What in Contri fits it | Where to check |
 | --- | --- | --- |
@@ -115,7 +115,7 @@ End-to-end, against the real NEAR Intents contract built from [near/intents](htt
 - `the_deploy_script_creates_upgrades_and_locks_the_contract`: the mainnet deploy script creates the contract account, upgrades it, and locks it (deletes every key, then checks NEAR Intents holds none for it).
 - `the_payout_callback_fits_its_gas_floor_in_the_biggest_circle`: a 20-member circle's last round, the costliest payout callback, measured at 5.5 Tgas against its 30 Tgas floor.
 
-After every deploy, `.github/workflows/web.yml` checks the live site the way visitors reach it: every page, file, redirect and API route (`scripts/site-check.mjs`), every screen in a real browser (`app/scripts/live-browser.mjs`), staying signed in through a dropped tab and a browser restart in Chromium, WebKit and Firefox with Android, iPhone and desktop profiles (`app/scripts/live-sessions.mjs`), and the 1Click and private-balance calls with an empty account (`scripts/live-check.mjs`). Results go to the `web-results` branch.
+After every deploy, `.github/workflows/web.yml` checks the live site the way visitors reach it: every page, file, redirect and API route (`scripts/site-check.mjs`), every screen in a real browser (`app/scripts/live-browser.mjs`), staying signed in through a dropped tab and a browser restart in Chromium, WebKit and Firefox with Android, iPhone and desktop profiles (`app/scripts/live-sessions.mjs`), the 1Click and private-balance calls with an empty account (`scripts/live-check.mjs`), and that no response sets a cookie. Results go to the `web-results` branch.
 
 ### 4. On mainnet, with real money
 
@@ -228,11 +228,13 @@ node dev/server.js
 
 | Path | What |
 | --- | --- |
-| `contract/` | The Rust contract (near-sdk 5, about 100 KB), its tests, ABI, and sandbox end-to-end tests |
+| `contract/` | The Rust contract (near-sdk 5, 107 KB of Wasm), its tests, ABI, and sandbox end-to-end tests |
 | `app/public/` | The website and app: plain ES modules, no runtime dependencies, no build step |
 | `app/public/js/lib/` | Keys, NEP-413 signing, invites, NEAR transactions; shared by the app and the server |
 | `app/api/`, `app/server/` | Relayer, read proxy, 1Click top-up and cash-out, the private balance, keeper (Vercel functions) |
-| `app/scripts/` | Mainnet deploy and lock |
+| `app/scripts/` | Mainnet deploy and lock, the one-command check (`verify.mjs`), live browser and session checks |
+| `scripts/` | Live site checks, 1Click and Confidential Intents probes, ABI tools |
+| `integrations/trezu/` | A Sputnik DAO proposal template for backing a circle |
 | `docs/` | [Architecture](docs/ARCHITECTURE.md), [contract methods](docs/METHODS.md), [privacy](docs/PRIVACY.md), [security](docs/SECURITY.md), [fees and gas](docs/FEES.md) |
 
 [DEMO.md](DEMO.md) has the demo script written before the build.
@@ -243,7 +245,7 @@ node dev/server.js
 
 **What was built each day** (UTC dates, from the commit history; `git log --reverse` lists every commit):
 - **Oct 31** (midnight 1 November in Lagos): the plan, demo script and architecture; probes of 1Click's routes to and from Tron, BNB Chain, Solana and NEAR; the contract with unit tests, a CI build and measured fees.
-- **Nov 1:** the contract under NEAR's 100 KB limit (a hand-written JSON reader, fuzzed against `serde_json`); invite-only circles with encrypted names; community backing, trust deposits, refills and shortfalls; random draws, leaving, fill deadlines and live seat images; paid creation to close a spam hole; end-to-end tests against the real NEAR Intents contract on a local sandbox.
+- **Nov 1:** the contract shrunk under 100 KB, since NEAR locks 1 NEAR per 100 KB of stored code (a hand-written JSON reader, fuzzed against `serde_json`); invite-only circles with encrypted names; community backing, trust deposits, refills and shortfalls; random draws, leaving, fill deadlines and live seat images; paid creation to close a spam hole; end-to-end tests against the real NEAR Intents contract on a local sandbox.
 - **Nov 4:** the app core (passkey-derived keys, NEP-413 signing with versioned nonces, invites, relayer, keeper); the app's screens and the site's pages; a Confidential Intents probe; seat NFTs on the circle screen; Live circles; an installable app; a browser end-to-end test where two members with passkeys run a whole circle.
 - **Nov 5:** live on Vercel, then at contri.ng; the contract deployed to mainnet as `circles.contring.near`; the private balance through Confidential Intents; the first real-money tests (top-up, contribution, cash-out, and the private route); FAQ, recovery codes and Help; the first security review, its fixes deployed; one warm dark look across the site and the app.
 - **Nov 6:** phone fixes; the second review (a different model) and its fixes on mainnet; shared rate limits in Redis; every claim on the site checked against the code; the eight-auditor review.
