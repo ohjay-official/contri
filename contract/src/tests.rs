@@ -445,6 +445,10 @@ fn messages_parse_strictly() {
         Some(TransferMsg::Contribute { circle: 3, round: 2 })
     ));
     assert!(matches!(parse_transfer("buy_seat:1:0"), Some(TransferMsg::BuySeat { circle: 1, seat: 0 })));
+    assert!(matches!(parse_transfer("ahead:1:4"), Some(TransferMsg::Ahead { circle: 1, rounds: 4 })));
+    assert!(parse_transfer("ahead:1").is_none());
+    assert!(parse_transfer("ahead:1:x").is_none());
+    assert!(parse_transfer("ahead:1:2:3").is_none());
     assert!(parse_transfer("join:3:9").is_none());
     assert!(parse_transfer("contribute:3").is_none());
     assert!(parse_transfer("join:x").is_none());
@@ -1987,4 +1991,113 @@ fn an_organizer_who_leaves_their_empty_circle_cancels_it() {
     assert_eq!(transfer(&mut c, BAYO, m, "join:1", 11), 0);
     auth(&mut c, BAYO, "leave:1", 12);
     assert_eq!(c.circle_of(1).unwrap().status, CircleStatus::Open);
+}
+
+fn pay_ahead(c: &mut Contri, who: &str, circle: u64, rounds: u32, secs: u64) -> u128 {
+    transfer(c, who, CONTRIBUTION * rounds as u128, &format!("ahead:{circle}:{rounds}"), secs)
+}
+
+#[test]
+fn rounds_paid_ahead_pay_each_new_round_by_themselves() {
+    let mut c = full_circle_of_three();
+    // Ada pays all three rounds at once: this one now, two ahead.
+    assert_eq!(pay_ahead(&mut c, ADA, 0, 3, 100), 0);
+    let circle = c.circle_of(0).unwrap();
+    assert!(circle.members[0].paid_this_round);
+    assert_eq!(circle.members[0].ahead, 2);
+    assert_eq!(circle.pot, U128(CONTRIBUTION));
+    let all = events();
+    assert_eq!(event(&all, "contri", "paid_ahead")["data"][0]["rounds"], 2);
+
+    for round in 0..3u32 {
+        let secs = 100 + round as u64 * DAY;
+        if round > 0 {
+            // Ada's round is already paid; she does nothing.
+            let circle = c.circle_of(0).unwrap();
+            assert!(circle.members[0].paid_this_round, "round {round}");
+            assert_eq!(circle.members[0].ahead, 2 - round);
+            assert_eq!(circle.pot, U128(CONTRIBUTION));
+            assert_eq!(contribute(&mut c, ADA, 0, round, secs), CONTRIBUTION, "no double payment");
+        }
+        assert_eq!(contribute(&mut c, BAYO, 0, round, secs), 0);
+        assert_eq!(contribute(&mut c, CHIOMA, 0, round, secs), 0);
+        assert!(c.circle_of(0).unwrap().paying);
+        set("contri.near", secs + 1);
+        assert!(c.finalize_payout(0, round, U128(3 * CONTRIBUTION), true));
+    }
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.status, CircleStatus::Finished);
+    assert!(circle.payouts.iter().all(|p| p.amount == U128(3 * CONTRIBUTION) && p.shortfall == U128(0)));
+    assert_eq!(circle.members[0].ahead, 0);
+    assert_eq!(circle.members[0].missed, 0);
+    assert_eq!(c.record_of(&acc(ADA)).completed, 1);
+    // Deposits come back and the circle can close: nothing paid ahead is left in it.
+    set("anyone.near", 100 + 3 * DAY);
+    assert_eq!(c.internal_release(0), 3);
+    c.internal_close(0);
+    assert!(c.circle_of(0).is_none());
+}
+
+#[test]
+fn paying_ahead_is_refused_past_the_last_round_or_for_the_wrong_amount() {
+    let mut c = full_circle_of_three();
+    assert_eq!(pay_ahead(&mut c, ADA, 0, 4, 100), 4 * CONTRIBUTION, "only three rounds");
+    assert_eq!(pay_ahead(&mut c, ADA, 0, 0, 100), 0, "nothing sent, nothing to refund");
+    assert_eq!(transfer(&mut c, ADA, 2 * CONTRIBUTION, "ahead:0:3", 100), 2 * CONTRIBUTION, "short");
+    assert_eq!(transfer(&mut c, ADA, 4 * CONTRIBUTION, "ahead:0:3", 100), 4 * CONTRIBUTION, "too much");
+    assert_eq!(pay_ahead(&mut c, "stranger.near", 0, 1, 100), CONTRIBUTION);
+    assert_eq!(pay_ahead(&mut c, ADA, 9, 1, 100), CONTRIBUTION);
+    // Paid this round already: two later rounds are left.
+    assert_eq!(contribute(&mut c, ADA, 0, 0, 100), 0);
+    assert_eq!(pay_ahead(&mut c, ADA, 0, 3, 100), 3 * CONTRIBUTION);
+    assert_eq!(pay_ahead(&mut c, ADA, 0, 2, 100), 0);
+    assert_eq!(pay_ahead(&mut c, ADA, 0, 1, 100), CONTRIBUTION, "every round is paid");
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.members[0].ahead, 2);
+    assert_eq!(circle.pot, U128(CONTRIBUTION));
+    // Not before the circle starts.
+    let mut c = setup();
+    let id = create(&mut c, 3);
+    join(&mut c, ADA, id);
+    assert_eq!(pay_ahead(&mut c, ADA, id, 1, 20), CONTRIBUTION);
+}
+
+#[test]
+fn when_everyone_paid_ahead_the_next_round_is_ready_to_pay_out() {
+    let mut c = full_circle_of_three();
+    for who in [ADA, BAYO, CHIOMA] {
+        assert_eq!(pay_ahead(&mut c, who, 0, 2, 100), 0);
+    }
+    assert!(c.circle_of(0).unwrap().paying, "the last one started round 0's payout");
+    set("contri.near", 101);
+    assert!(c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true));
+    let circle = c.circle_of(0).unwrap();
+    assert!(circle.all_paid());
+    assert_eq!(circle.pot, U128(3 * CONTRIBUTION));
+    // Anyone (the keeper) starts it; round 2 is then unpaid by everyone.
+    set("anyone.near", 102);
+    c.internal_pay_out(0);
+    assert!(c.circle_of(0).unwrap().paying);
+    set("contri.near", 103);
+    assert!(c.finalize_payout(0, 1, U128(3 * CONTRIBUTION), true));
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.round, 2);
+    assert!(circle.members.iter().all(|m| !m.paid_this_round && m.ahead == 0));
+}
+
+#[test]
+fn a_late_round_settles_without_charging_a_member_who_paid_ahead() {
+    let mut c = full_circle_of_three();
+    assert_eq!(pay_ahead(&mut c, CHIOMA, 0, 2, 100), 0);
+    contribute(&mut c, ADA, 0, 0, 100);
+    contribute(&mut c, BAYO, 0, 0, 100);
+    set("contri.near", 101);
+    c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true);
+    // Round 1: only Chioma's prepaid share comes in; the round runs late.
+    set("anyone.near", 10 + 2 * DAY + 1);
+    c.internal_settle(0);
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.members[2].missed, 0);
+    assert_eq!(circle.members[2].deposit, U128(CONTRIBUTION));
+    assert_eq!(circle.members[0].missed, 1);
 }

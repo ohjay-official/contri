@@ -14,7 +14,7 @@ const GAS = { create: "30000000000000", join: "50000000000000", contribute: "100
 /**
  * @typedef {object} Member
  * @property {string} account_id @property {string} deposit @property {boolean} paid_this_round
- * @property {boolean} defaulted @property {number} missed
+ * @property {boolean} defaulted @property {number} missed @property {number} [ahead] later rounds already paid
  *
  * @typedef {object} Circle
  * @property {number} id @property {string} name @property {string} organizer @property {string} contribution
@@ -46,6 +46,11 @@ export function actions(contract, token) {
     join: (circle, deposit, inviteSig) => pay(deposit, inviteSig ? `join:${circle}:${inviteSig}` : `join:${circle}`, GAS.join),
     /** @param {number} circle @param {number} round @param {bigint | string} amount */
     contribute: (circle, round, amount) => pay(amount, `contribute:${circle}:${round}`, GAS.contribute),
+    /**
+     * Pays `rounds` contributions at once: this round's, if unpaid, then later rounds.
+     * @param {number} circle @param {number} rounds @param {bigint | string} amount
+     */
+    payAhead: (circle, rounds, amount) => pay(amount, `ahead:${circle}:${rounds}`, GAS.contribute),
     /** @param {number} circle @param {number} seat @param {bigint | string} price */
     buySeat: (circle, seat, price) => pay(price, `buy_seat:${circle}:${seat}`, GAS.seat),
     /** @param {number} circle @param {bigint | string} amount */

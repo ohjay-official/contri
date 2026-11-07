@@ -41,6 +41,8 @@ pub struct Member {
     pub defaulted: bool,
     /// Payments missed in this circle.
     pub missed: u32,
+    /// Later rounds this member has already paid for.
+    pub ahead: u32,
 }
 
 #[near(serializers = [json])]
@@ -181,7 +183,7 @@ impl Contri {
 
     /// NEP-245 receiver, called by NEAR Intents (a signed `Transfer` or an
     /// account's `mt_transfer_call`). `msg`: `create:...` (with the organizer's
-    /// deposit), `join:<c>[:<invite sig>]`, `contribute:<c>:<round>`,
+    /// deposit), `join:<c>[:<invite sig>]`, `contribute:<c>:<round>`, `ahead:<c>:<rounds>`,
     /// `buy_seat:<c>:<seat>`, `refill:<c>`, `back:<c>`. Returns refunds; bad
     /// input is refunded in full.
     pub fn mt_on_transfer(

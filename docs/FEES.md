@@ -4,6 +4,10 @@ Dry-run quotes from the 1Click API on 1 November 2026, Lagos time (unauthenticat
 
 The circle asset is USDT on NEAR inside NEAR Intents: `nep141:usdt.tether-token.near` (6 decimals).
 
+## Contri's fee
+
+Contri adds a 0.25% fee to top-ups from another chain and cash-outs to one, and to nothing else: contributions, payouts, deposits, turn trades and moves between a member's private balance and their circle accounts carry no Contri fee. The fee is a 1Click `appFees` entry the server adds to those quotes (`CONTRI_FEE_BPS`, default 25, paid to `CONTRI_FEE_ACCOUNT`, default the relayer). 1Click takes it from the amount sent, before the swap; with Contri's 1Click key, 1Click keeps half. The app shows it before every top-up and cash-out, and the amounts the app asks members to send include it. The fee is not in the contract, so it can change after the lock; the measurements below were taken before it existed.
+
 ## Top up (member wallet or exchange -> member's Intents balance)
 
 | From | Amount in | Lands in Intents | Time | Notes |

@@ -75,6 +75,17 @@ export const deadline = (minutes) => new Date(Date.now() + minutes * 60_000).toI
 export const confidential = (c) => (c.oneClickKey ? { confidentiality: "basic" } : {});
 
 /**
+ * Contri's fee, for top-ups and cash-outs only: 1Click takes it from what is
+ * sent, before the swap, and pays it to `feeAccount`. With a 1Click key, 1Click
+ * keeps half of it.
+ * @param {Config} c
+ */
+export const fee = (c) => (c.feeBps > 0 && c.feeAccount ? { appFees: [{ recipient: c.feeAccount, fee: c.feeBps }] } : {});
+
+/** Contri's fee as members read it ("0.25%"), or null when there is none. @param {Config} c */
+export const feeShown = (c) => (fee(c).appFees ? `${(c.feeBps / 100).toFixed(2).replace(/0$/, "")}%` : null);
+
+/**
  * A deposit address that turns about `amount` (token units) sent on `network`
  * into USDT in `account`'s NEAR Intents balance. FLEX_INPUT: sending a bit more
  * or less still works, and anything extra stays in the member's balance.
@@ -100,6 +111,7 @@ export async function topUp(body, c) {
     deadline: deadline(24 * 60),
     referral: "contri",
     ...confidential(c),
+    ...fee(c),
   });
   return {
     network: body.network,
@@ -110,6 +122,7 @@ export async function topUp(body, c) {
     send: formatUnits(BigInt(q.amountIn), n.decimals),
     minSend: formatUnits(BigInt(q.minAmountIn), n.decimals),
     receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS),
+    contriFee: feeShown(c),
     deadline: q.deadline,
     seconds: q.timeEstimate,
   };
@@ -140,6 +153,7 @@ export async function cashOut(body, c) {
     deadline: deadline(30),
     referral: "contri",
     ...confidential(c),
+    ...fee(c),
   });
   return {
     network: body.network,
@@ -150,6 +164,7 @@ export async function cashOut(body, c) {
     ticket: q.depositAddress ? await issueTicket(c.relayerKey, q.depositAddress, body.account, amount) : null,
     receive: formatDown(BigInt(q.amountOut), n.decimals),
     fee: q.withdrawFee ? formatUnits(BigInt(q.withdrawFee), n.decimals) : "0",
+    contriFee: feeShown(c),
     seconds: q.timeEstimate,
   };
 }
@@ -187,14 +202,14 @@ export function formatDown(v, decimals) {
 }
 
 /**
- * What to ask a member to send for `want` (token units) to arrive: 0.5% more,
- * so swap and bridge costs don't leave them short, rounded up to whole cents
+ * What to ask a member to send for `want` (token units) to arrive: 0.75% more,
+ * so Contri's 0.25% fee and swap and bridge costs don't leave them short, rounded up to whole cents
  * so the amount is easy to type, in the sending network's decimals.
  * @param {bigint} want @param {number} decimals
  */
 export function toSend(want, decimals) {
   const CENT = 10n ** BigInt(TOKEN_DECIMALS - 2);
-  const cents = ((want * 1005n) / 1000n + CENT - 1n) / CENT;
+  const cents = ((want * 10075n) / 10000n + CENT - 1n) / CENT;
   return cents * CENT * 10n ** BigInt(decimals - TOKEN_DECIMALS);
 }
 

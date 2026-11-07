@@ -1,0 +1,1 @@
+{"prerender": [{"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/api/*"}}, {"not": {"href_matches": "/app*"}}, {"not": {"href_matches": "/join*"}}]}, "eagerness": "moderate"}]}

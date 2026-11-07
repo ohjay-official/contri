@@ -17,7 +17,7 @@ const DEPOSIT = "d21a25d61d8741f8dcd9c7ec172a93e413df8976c64869e806dd71742e453fa
 /** @type {import("../server/config.js").Config} */
 const c = {
   network: "mainnet", rpcUrl: "http://127.0.0.1:1", contractId: "circles.contring.near", intentsId: "intents.near", tokenId: TOKEN,
-  relayerId: "contring.near", relayerKey: "", oneClickUrl: "https://1click.test", oneClickKey: "partner-key",
+  relayerId: "contring.near", relayerKey: "", oneClickUrl: "https://1click.test", oneClickKey: "partner-key", feeBps: 25, feeAccount: "contring.near",
 };
 const secret = new Uint8Array(32).fill(9);
 const vault = await vaultSigner(secret, c.contractId);
@@ -112,7 +112,9 @@ test("adding privately asks 1Click for a deposit that lands on the private ledge
   assert.equal(body.recipientType, "CONFIDENTIAL_INTENTS");
   assert.equal(body.refundType, "CONFIDENTIAL_INTENTS");
   assert.equal(body.confidentiality, "basic");
-  assert.equal(body.amount, "5030000000000000000", "asks 0.5% over, rounded up to the cent, in BSC's 18 decimals");
+  assert.equal(body.amount, "5040000000000000000", "asks 0.75% over (fees, and Contri's 0.25%), rounded up to the cent, in BSC's 18 decimals");
+  assert.deepEqual(body.appFees, [{ recipient: "contring.near", fee: 25 }]);
+  assert.equal(q.contriFee, "0.25%");
   assert.equal(q.send, "5.03");
   assert.equal(q.receive, "5.02");
   await assert.rejects(privateTopUp({ network: "nope", vault: vault.accountId, amount: "5000000" }, c), /unsupported network/);

@@ -43,7 +43,7 @@ const RELAYS_PER_MINUTE = 60;
 const ACCOUNT = /^(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
 const N = "\\d{1,20}";
 /** What Contri's `mt_on_transfer` reads (the contract's `parse_transfer`). */
-const TRANSFER_MSG = new RegExp(`^(create:${N}:${N}:${N}:(join|random):(-|[0-9a-fA-F]{64}):[\\s\\S]{1,256}|join:${N}(:[0-9a-fA-F]{128})?|contribute:${N}:${N}|buy_seat:${N}:${N}|back:${N}|refill:${N})$`);
+const TRANSFER_MSG = new RegExp(`^(create:${N}:${N}:${N}:(join|random):(-|[0-9a-fA-F]{64}):[\\s\\S]{1,256}|join:${N}(:[0-9a-fA-F]{128})?|contribute:${N}:${N}|ahead:${N}:${N}|buy_seat:${N}:${N}|back:${N}|refill:${N})$`);
 /** What Contri's `on_auth` reads (the contract's `parse_auth`). */
 const AUTH_MSG = new RegExp(`^(claim_credit|list_seat:${N}:${N}:${N}|unlist_seat:${N}:${N}|cancel:${N}|leave:${N})$`);
 
@@ -290,6 +290,17 @@ export function paymentProblem(msg, amount, signer, circle) {
       if (circle.members[seat].paid_this_round) return "You've already paid this round";
       if (amount !== contribution) return "The payment has to be exactly one contribution";
       return null;
+    case "ahead": {
+      if (!running) return "This circle isn't running";
+      if (circle.paying) return "A payout is going out right now; try again in a minute";
+      if (seat < 0) return "You're not in this circle";
+      const m = circle.members[seat];
+      const unpaid = circle.size - circle.round - (m.paid_this_round ? 1 : 0) - (m.ahead ?? 0);
+      if (!(Number(arg) >= 1)) return "Choose at least one round";
+      if (Number(arg) > unpaid) return unpaid ? `Only ${unpaid} round${unpaid === 1 ? " is" : "s are"} left to pay` : "You've paid every round";
+      if (amount !== contribution * BigInt(arg)) return "The payment has to be the contribution times the rounds";
+      return null;
+    }
     case "buy_seat": {
       const s = Number(arg);
       const price = circle.listings[s];

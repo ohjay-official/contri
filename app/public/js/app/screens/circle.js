@@ -61,7 +61,8 @@ export async function circleScreen(id, openShare = false) {
 
   // ---- What to do now ----
   const primary = [];
-  if (me && c.status === "Active" && dueFor(c, me) === "pay") {
+  const due = me && c.status === "Active" ? dueFor(c, me) : "none";
+  if (me && c.status === "Active" && due === "pay") {
     if (balance >= BigInt(c.contribution)) {
       const pay = h("button", { class: "primary" }, `Pay ${usd(c.contribution)} for round ${c.round + 1}`);
       const round = c.round;
@@ -69,6 +70,19 @@ export async function circleScreen(id, openShare = false) {
       primary.push(pay);
     } else {
       primary.push(h("a", { class: "button primary", href: `#/add/${slot?.index}` }, `Add money to pay ${usd(c.contribution)}`));
+    }
+  }
+  // Paying ahead: every round left at once, so each new round takes its share by itself.
+  if (me && mySeat >= 0 && c.status === "Active" && !c.paying && (due === "pay" || due === "paid")) {
+    const m = c.members[mySeat];
+    const ahead = m.ahead ?? 0;
+    const left = c.size - c.round - (m.paid_this_round ? 1 : 0) - ahead;
+    if (ahead > 0) primary.push(h("p", { class: "hint" }, `You've paid ${ahead} later round${ahead === 1 ? "" : "s"} ahead. Each new round takes its share by itself.`));
+    const all = BigInt(c.contribution) * BigInt(left);
+    if (left > (due === "pay" ? 1 : 0) && balance >= all) {
+      const btn = h("button", { class: "secondary" }, `Pay all ${left} rounds left now: ${usd(all)}`);
+      btn.addEventListener("click", () => busy(btn, "Paying", () => act(a.payAhead(id, left, all), "Every round is paid")));
+      primary.push(btn);
     }
   }
   // Reminders: the remaining round deadlines as a calendar file. Made on this phone and sent nowhere by the

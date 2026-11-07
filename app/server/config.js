@@ -27,6 +27,11 @@ export function config() {
     relayerKey: env("RELAYER_KEY", ""),
     oneClickUrl: env("ONECLICK_URL", "https://1click.chaindefuser.com"),
     oneClickKey: env("ONECLICK_API_KEY", ""),
+    // Contri's fee on top-ups and cash-outs, in hundredths of a percent (25 is
+    // 0.25%), paid to `feeAccount` and shared with 1Click. Moves between a
+    // member's own balances and everything inside a circle carry no fee.
+    feeBps: Math.max(0, Math.min(100, Math.floor(Number(env("CONTRI_FEE_BPS", "25")) || 0))),
+    feeAccount: env("CONTRI_FEE_ACCOUNT", relayerId),
   };
 }
 
@@ -43,4 +48,6 @@ export const publicConfig = (c) => ({
   sharedLimits: sharedLimits(),
   // Public on chain anyway; lets anyone check it can still pay for gas.
   relayer: c.relayerId || null,
+  // Shown before every top-up and cash-out.
+  feeBps: c.feeAccount ? c.feeBps : 0,
 });

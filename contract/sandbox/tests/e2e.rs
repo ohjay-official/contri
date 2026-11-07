@@ -259,20 +259,25 @@ async fn a_whole_circle_through_near_intents() -> Result<()> {
         "Chioma received the pot"
     );
 
-    // Round 1: Chioma misses. After the deadline anyone settles, her deposit
-    // covers it, and Bayo gets a full pot.
+    // Round 1: Bayo pays this round and the last one at once. Chioma misses.
+    // After the deadline anyone settles, her deposit covers it, and Bayo gets
+    // a full pot.
     let bayo_before = env.balance(bayo.id().as_str()).await?;
     env.pay(&ada, C, "contribute:0:1").await?;
-    env.pay(&bayo, C, "contribute:0:1").await?;
+    let used = env.pay(&bayo, 2 * C, "ahead:0:2").await?;
+    ensure!(used == vec![(2 * C).to_string()], "both rounds kept: {used:?}");
+    ensure!(env.circle(0).await?["members"][1]["ahead"] == 1, "one round paid ahead");
     env.pass_deadline(0).await?;
     env.call(&env.root, "settle_round", json!({"circle_id": 0})).await?;
     let circle = env.circle(0).await?;
     ensure!(circle["round"] == 2, "round 1 settled: {circle}");
     ensure!(circle["members"][0]["defaulted"] == true);
-    ensure!(env.balance(bayo.id().as_str()).await? == bayo_before - C + 3 * C, "Bayo got a full pot");
+    ensure!(env.balance(bayo.id().as_str()).await? == bayo_before - 2 * C + 3 * C, "Bayo got a full pot");
+    // Bayo's round 2 is already paid.
+    ensure!(circle["members"][1]["paid_this_round"] == true && circle["members"][1]["ahead"] == 0, "{circle}");
 
-    // Round 2: everyone pays; Ada (now last) is paid and the circle finishes.
-    for m in [&ada, &bayo, &chioma] {
+    // Round 2: the other two pay; Ada (now last) is paid and the circle finishes.
+    for m in [&ada, &chioma] {
         env.pay(m, C, "contribute:0:2").await?;
     }
     ensure!(env.circle(0).await?["status"] == "Finished");

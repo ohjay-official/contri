@@ -26,7 +26,7 @@ import { fromBase58, fromBase64, toHex } from "../public/js/lib/bytes.js";
 import { nep413Hash } from "../public/js/lib/intents.js";
 import { verify } from "../public/js/lib/keys.js";
 import { checkPrivateMove } from "../public/js/lib/private.js";
-import { deadline, formatDown, formatUnits, IMPLICIT_OR_NAMED, net, quote, TOKEN_DECIMALS, toSend, units } from "./oneclick.js";
+import { deadline, fee, feeShown, formatDown, formatUnits, IMPLICIT_OR_NAMED, net, quote, TOKEN_DECIMALS, toSend, units } from "./oneclick.js";
 import { RelayError } from "./relay.js";
 import { issueTicket } from "./ticket.js";
 
@@ -121,6 +121,7 @@ export async function privateTopUp(body, c) {
     confidentiality: "basic",
     deadline: deadline(24 * 60),
     referral: "contri",
+    ...fee(c),
   });
   return {
     network: body.network,
@@ -130,6 +131,7 @@ export async function privateTopUp(body, c) {
     depositMemo: q.depositMemo ?? null,
     send: formatUnits(BigInt(q.amountIn), n.decimals),
     receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS),
+    contriFee: feeShown(c),
     deadline: q.deadline,
     seconds: q.timeEstimate,
   };
@@ -153,7 +155,8 @@ export async function privateMove(body, c) {
   } else {
     const n = net(body.network);
     if (!n.address.test(String(body.address))) throw new RelayError(`that isn't a ${n.label} address`);
-    destination = { destinationAsset: n.asset, recipient: String(body.address), recipientType: "DESTINATION_CHAIN" };
+    // Leaving for another chain is a cash-out, which carries Contri's fee.
+    destination = { destinationAsset: n.asset, recipient: String(body.address), recipientType: "DESTINATION_CHAIN", ...fee(c) };
     decimals = n.decimals;
   }
   const q = await quote(c, {
@@ -172,6 +175,7 @@ export async function privateMove(body, c) {
   const estimate = {
     receive: formatDown(BigInt(q.amountOut), decimals),
     fee: q.withdrawFee ? formatUnits(BigInt(q.withdrawFee), decimals) : "0",
+    contriFee: body.to ? null : feeShown(c),
     seconds: q.timeEstimate,
   };
   if (dry) return estimate;

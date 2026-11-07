@@ -4,6 +4,15 @@
 
 Contri runs a rotating savings circle (àjọ, esusu, adashe, susu, tanda, chit fund) where a NEAR smart contract holds the pot instead of a person. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. A member who needs cash early can buy an earlier turn from someone willing to wait.
 
+Millions of people across Africa, Asia and Latin America save in circles like this. In many, one person collects and holds the pot, and can disappear with it. Savings circles on a blockchain have been tried before; what Contri adds:
+
+- **Nobody holds the pot, not even Contri.** The contract pays each turn the moment the last member pays, inside the same transaction. A late round can be settled by anyone, so a circle always finishes.
+- **No crypto knowledge needed.** A phone passkey, no seed phrase, no NEAR account and no gas token. Members pay straight from an exchange withdrawal on BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum.
+- **A missed payment has a cost, in code.** A deposit covers it; whatever it doesn't cover is held back from the defaulter's own turn and given to the members who were shorted.
+- **Turns can be traded.** Each turn is an NFT seat; a member who needs cash sooner buys an earlier one from someone happy to wait and earn for it.
+- **Private by default.** Circle names are encrypted, each circle uses its own account, and money can move through NEAR Intents' confidential private balance, so nothing on chain names a member or links their wallet.
+- **Pay once, done.** A member can pay every round ahead; each round then takes its share by itself.
+
 Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: Real-World Money, Privacy & Private AI, NFTs That Do Something, Open Innovation.
 
 ## How to test
@@ -94,7 +103,7 @@ The current app on a phone, with sample circles.
 1. An organizer creates a circle: amount per round, number of members, how often, and whether turns go in join order or are drawn at random.
 2. Members join with the invite link and sign in with a passkey. No seed phrase, no NEAR account, no gas token.
 3. Each member puts down one contribution as a deposit. It covers one payment they miss and comes back when the circle ends. A missed payment their deposit doesn't cover, they owe: it is held back from their own turn's pot and goes to the members whose pots were short. A member who takes an early pot and then stops paying is covered by their deposit, then by any backing; after that, later pots are short. Contri can't make anyone pay, so circles are for people who trust each other.
-4. Each round, members top up from BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum through NEAR Intents' 1Click, and pay.
+4. Each round, members top up from BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum through NEAR Intents' 1Click, and pay. A member can also pay every round left at once: each new round then takes their share by itself, so nobody has to remember to pay.
 5. When the last member pays, the contract pays the pot to that round's member. If the deadline passes first, anyone can settle the round from the late members' deposits.
 6. Turns are seat NFTs. A member can list their turn and another member with a later turn can buy it; the contract swaps the seats and pays the seller.
 7. When the circle ends, deposits go back and each member's record (completed, defaulted, missed payments) is kept on chain.
@@ -122,7 +131,8 @@ Who can do what, every finding and its fix, and what's still open: [docs/SECURIT
 
 ## Sustainability
 
-- **Contri takes no fee, and costs little to run.** Storage is paid in NEAR the contract holds (under 0.005 NEAR per member while a circle runs, freed when it closes), and the relayer pays about 0.001 to 0.002 NEAR of gas per payment. A small fee per payout, or a sponsor for the relayer's gas, covers that at any scale.
+- **Circles are free; money in and out pays 0.25%.** Contributions, payouts, deposits and turn trades carry no fee. Top-ups from another chain and cash-outs to one carry a 0.25% fee, which 1Click takes from what is sent and shares between Contri and itself (`appFees`, set on the server, shown before every confirm, never on moves between a member's own balances). A member of a $5, five-person circle moves about $30 in and $30 out, so Contri's share is about 7 cents; the gas Contri pays for that member's payments is about 0.01 to 0.02 NEAR.
+- **Costs little to run.** Storage is paid in NEAR the contract holds (under 0.005 NEAR per member while a circle runs, freed when it closes), and the relayer pays about 0.001 to 0.002 NEAR of gas per payment. The fee lands in the relayer's NEAR Intents balance, which is what pays for that gas.
 - **Little to maintain.** Once locked, the contract can't be upgraded, so it can't be broken by an update either. The app and server are plain JavaScript with no runtime dependencies or build step.
 - **It runs without Contri.** The contract's methods and the app's signing code are public; anyone can run the relayer and keeper, or call the contract from any NEAR account. See [Run your own Contri](#run-your-own-contri).
 

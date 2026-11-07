@@ -24,7 +24,6 @@
   <link rel="preload" href="/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
   <script type="module" src="/js/site.js"></script>
   <script type="module" src="/js/footer.js"></script>
-  <script type="speculationrules">{"prerender": [{"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/api/*"}}]}, "eagerness": "moderate"}]}</script>
 </head>
 <body class="site-page">
   <!-- 1. Hero: the ring, and the names the same savings circle goes by -->
@@ -51,7 +50,7 @@
           <span class="visually-hidden">Àjọ, esusu, adashe, isusu: save together, without the collector.</span>
           <span class="typed" aria-hidden="true" data-words="Àjọ|Esusu|Adashe|Isusu">Àjọ</span><span class="caret" aria-hidden="true"></span>
         </h1>
-        <p class="vortex-sub">The Better Way To Save Together. Contri helps you and the people you trust<br class="wide-only"> save in turns, with a contract holding every pot.</p>
+        <p class="vortex-sub">The Better Way To Save Together. Contri helps you and the people you trust save in turns, with a contract holding every pot.</p>
         <a class="button light" href="/app#/new">Start a circle</a>
       </div>
     </div>
@@ -187,13 +186,13 @@
       <div class="faq-wrap">
         <div class="cta-card glow-card" data-fade>
           <h2>It's Time To<br>Start Saving.</h2>
-          <p>Start a circle in two minutes. Contri takes no fee.</p>
+          <p>Start a circle in two minutes. Circles are free.</p>
           <a class="button dark-button" href="/app#/new">Start a circle</a>
         </div>
         <div class="faq-list">
           <h2 id="faq" class="faq-title">Frequently Asked Questions</h2>
           <details name="faq" open><summary>Who holds the money?</summary><p>No person. Contributions go to a contract on NEAR, a program whose rules anyone can read. It only pays a pot to the member whose turn it is, and only returns deposits to the members who made them. Until we lock the contract, the key we deployed it with, which our server also uses, can still change its code or move the money it holds. Locking deletes that key, and anyone can check the contract's keys on a NEAR explorer.</p></details>
-          <details name="faq"><summary>What does it cost?</summary><p>Contri takes no fee. Moving money in and out goes through NEAR Intents' 1Click, whose fees are usually a few cents on BNB Chain or Solana. The app shows what arrives before you send. Contri pays the NEAR transaction fees for every payment you make in a circle.</p></details>
+          <details name="faq"><summary>What does it cost?</summary><p>Circles are free: paying in, payouts, deposits and trading turns cost nothing, and Contri pays the NEAR transaction fees for every payment you make in a circle. Moving money in from another network or out to one costs 0.25%, Contri's fee, plus the network's own fee, usually a few cents on BNB Chain or Solana. The app shows what arrives before you send.</p></details>
           <details name="faq"><summary>What if Contri disappears?</summary><p>The contract keeps running without us, and anyone can settle a round once its deadline has passed. Your money is held in NEAR Intents under keys made from your passkey. Passkeys only work on contri.ng, so if the site goes away or changes hands, don't use your passkey there: the recovery code from Your key, in the open-source app run with a NEAR account to pay network fees, is how you reach your money. Write it down.</p></details>
           <details name="faq"><summary>What if I lose my phone?</summary><p>Sign in on a new phone with the same passkey. Passkeys are synced by Google Password Manager and iCloud Keychain, and every circle account comes back from it. If your passkey is ever deleted, the recovery code from Your key brings everything back, if you wrote it down.</p></details>
           <details name="faq"><summary>What if someone takes the pot early and stops paying?</summary><p>Their deposit covers their first missed round, then any backing the circle has covers the rest. Past that, the members paid after them get a smaller pot. A member who still owes when their own turn comes has it held back from their pot and passed to the members who were paid short, so skipping payments doesn't pay off later in the circle. An early receiver who stops paying can still leave others short, and Contri can't make anyone pay, so save with people you trust and give the early turns to the people you trust most.</p></details>
@@ -218,21 +217,21 @@
         <p class="scene-copy">© 2026 Contri. All rights reserved.</p>
       </div>
       <nav class="scene-col rise-in" aria-label="Product">
-        <h4>Product</h4>
+        <h3>Product</h3>
         <a href="/how-it-works">How it works</a>
         <a href="/app#/explore">Live circles</a>
         <a href="/#faq">FAQ</a>
         <a href="/app">Open Contri</a>
       </nav>
       <nav class="scene-col rise-in" aria-label="About">
-        <h4>About</h4>
+        <h3>About</h3>
         <a href="/privacy">Privacy Policy</a>
         <a href="/terms">Terms</a>
         <a href="https://nearblocks.io/address/circles.contring.near" rel="noopener noreferrer">The contract</a>
         <a href="https://github.com/ohjay-official/contri">Source code</a>
       </nav>
       <nav class="scene-col rise-in" aria-label="Social Media">
-        <h4>Social Media</h4>
+        <h3>Social Media</h3>
         <a href="https://x.com/contri_ng" rel="noopener noreferrer">X (@contri_ng)</a>
         <a href="https://github.com/ohjay-official" rel="noopener noreferrer">GitHub</a>
       </nav>

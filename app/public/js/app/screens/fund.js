@@ -12,7 +12,7 @@ import { actions, dueFor, findEvent, formatAmount, parseAmount, seatOf } from ".
 import { decryptName, encryptName, inviteSigner, signJoin } from "../../lib/invite.js";
 import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { follow, moveOut, privateBalance, STATUS } from "../private.js";
-import { nameOf, usd } from "../state.js";
+import { circleOfSlot, nameOf, usd } from "../state.js";
 import { busy, copy, field, h, notice, show, sleep } from "../ui.js";
 import { balanceOf, confirmRecentPasskey, decodeSecret, local, logMove, remember, signer } from "../wallet.js";
 
@@ -41,13 +41,13 @@ export function networkPicker() {
 
 /**
  * Where and how much to send, for a 1Click deposit address.
- * @param {{ depositAddress: string, depositMemo: string | null, send: string, symbol: string, label: string, seconds: number, deadline: string, receive?: string }} q
+ * @param {{ depositAddress: string, depositMemo: string | null, send: string, symbol: string, label: string, seconds: number, deadline: string, receive?: string, contriFee?: string | null }} q
  * @param {string} extra what happens to more or less than asked
  */
 export function depositDetails(q, extra) {
   return [
     h("p", null, `Send `, h("strong", null, `${q.send} ${q.symbol}`), ` on `, h("strong", null, q.label), ` to:`),
-    q.receive ? h("p", { class: "hint" }, `About $${q.receive} arrives after fees.`) : null,
+    q.receive ? h("p", { class: "hint" }, `About $${q.receive} arrives after fees${q.contriFee ? `, including Contri's ${q.contriFee} fee on top-ups` : ""}.`) : null,
     h("p", { class: "code-block", translate: "no" }, q.depositAddress),
     h("div", { class: "actions row" }, h("button", { class: "secondary", onclick: () => copy(q.depositAddress, "Address copied") }, "Copy address")),
     q.depositMemo ? h("p", null, "Memo, required: ", h("strong", { class: "code" }, q.depositMemo)) : null,
@@ -59,12 +59,13 @@ export function depositDetails(q, extra) {
 export async function fundScreen(index) {
   const [cfg, known, s] = await Promise.all([getConfig(), local(), signer(index)]);
   const l = known[index] ?? {};
+  const circle = l.circle ?? circleOfSlot(index);
   // The circle's name, read with its invite key: this screen can open straight after a reload.
   const circleName = async (/** @type {number} */ id, /** @type {{ name: string }} */ c) => (l.secret && (await decryptName(decodeSecret(l.secret), c.name))) || nameOf(id);
   const a = actions(cfg.contractId, cfg.tokenId);
 
   // What the money is for.
-  /** @type {{ title: string, need: bigint, whole: bigint, button: string, run: () => Promise<string> } | null} */
+  /** @type {{ title: string, need: bigint, whole: bigint, button: string, run: () => Promise<string>, ahead?: { button: string, run: () => Promise<string> } | null } | null} */
   let purpose = null;
   if (l.pending?.kind === "create") {
     const p = l.pending;
@@ -109,16 +110,28 @@ export async function fundScreen(index) {
         return `#/c/${id}`;
       },
     };
-  } else if (l.circle !== undefined) {
-    const id = l.circle;
+  } else if (circle !== undefined) {
+    const id = circle;
     const c = await getCircle(id);
     if (c && dueFor(c, s.accountId) === "pay" && seatOf(c, s.accountId) >= 0) {
       const round = c.round;
+      // Every round this member still has to pay, this one included.
+      const left = c.size - round - (c.members[seatOf(c, s.accountId)].ahead ?? 0);
+      const whole = BigInt(c.contribution) * BigInt(left);
       purpose = {
         title: `Pay round ${round + 1} of ${await circleName(id, c)}`,
         need: BigInt(c.contribution),
-        whole: BigInt(c.contribution) * BigInt(c.size - round),
+        whole,
         button: `Pay ${usd(c.contribution)}`,
+        // With enough here for every round left, they can all be paid now.
+        ahead: left > 1 ? {
+          button: `Pay all ${left} rounds now: ${usd(whole)}`,
+          run: async () => {
+            const r = await relay([await sign(s, a.payAhead(id, left, whole))]);
+            if (!findEvent(r.events, "paid_ahead")) throw new Error(`${r.notes[0] ?? "It wasn't recorded"}. Your money is back in this circle's account.`);
+            return `#/c/${id}`;
+          },
+        } : null,
         run: async () => {
           const r = await relay([await sign(s, a.contribute(id, round, c.contribution))]);
           // A payment the contract refunded (the round moved on, a payout in flight) isn't paid.
@@ -140,6 +153,14 @@ export async function fundScreen(index) {
       location.hash = next;
     }),
   );
+  const aheadBtn = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary", hidden: true }, purpose?.ahead?.button ?? ""));
+  aheadBtn.addEventListener("click", () =>
+    busy(aheadBtn, "Signing and sending", async () => {
+      const next = await purpose?.ahead?.run();
+      notice("Every round is paid. Each new round now takes its share by itself.");
+      if (next) location.hash = next;
+    }),
+  );
 
   const depositBox = h("div", { class: "deposit" });
   const networks = networkPicker();
@@ -158,6 +179,7 @@ export async function fundScreen(index) {
     balanceEl.textContent = usd(balance);
     const need = purpose ? purpose.need - balance : 0n;
     actionBtn.disabled = Boolean(purpose) && need > 0n;
+    aheadBtn.hidden = !purpose?.ahead || balance < purpose.whole;
     if (purpose && need <= 0n) progress.textContent = "Your money is here";
   };
 
@@ -236,11 +258,11 @@ export async function fundScreen(index) {
 
   show(
     h("section", { class: "stack narrow" },
-      h("a", { class: "back", href: l.circle !== undefined ? `#/c/${l.circle}` : "#/" }, l.circle !== undefined ? nameOf(l.circle) : "Your circles"),
+      h("a", { class: "back", href: circle !== undefined ? `#/c/${circle}` : "#/" }, circle !== undefined ? nameOf(circle) : "Your circles"),
       h("h1", null, purpose?.title ?? "Add money"),
       h("p", { class: "balance-line" }, "In this circle's account: ", balanceEl, purpose ? ` of ${usd(purpose.need)} needed` : null),
       progress,
-      h("div", { class: "actions" }, actionBtn),
+      h("div", { class: "actions" }, actionBtn, aheadBtn),
       privateBox,
       h("h2", null, "Add money"),
       routes,

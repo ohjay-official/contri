@@ -161,7 +161,7 @@ jobs:
       # Chrome (and its desktop mode), iPhone Safari, and Chrome, Edge, Firefox
       # and Safari on computers, each in its real engine.
       - name: Check staying unlocked on every browser
-        if: steps.decide.outputs.go == 'true'
+        if: always() && steps.decide.outputs.go == 'true'
         working-directory: app
         timeout-minutes: 8
         run: |

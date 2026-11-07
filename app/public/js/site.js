@@ -59,9 +59,11 @@ function hero(frame) {
 
   const STRANDS = 196;
   const SAMPLES = 41;
-  // Phones (lite): a lower-resolution glow upscaled instead of a blur filter, a
-  // lower pixel ratio and 30 frames a second, so the ring doesn't hold up taps.
-  let W = 0, H = 0, u = 1, shift = 0, dpr = 1, gs = 0.32, lite = false;
+  // The glow is drawn small and scaled up, which softens it like a blur filter
+  // at a fraction of the cost. Phones (lite) also get a lower pixel ratio and
+  // 30 frames a second, so the ring doesn't hold up taps.
+  let W = 0, H = 0, u = 1, shift = 0, dpr = 1, lite = false;
+  const gs = 0.12;
   // Pointer, eased: the ring leans a little toward it.
   let px = 0, py = 0, tx = 0, ty = 0;
 
@@ -76,7 +78,6 @@ function hero(frame) {
     frame.style.setProperty("--shift", `${shift}px`);
     lite = phone;
     dpr = Math.min(lite ? 1.5 : 2, devicePixelRatio || 1);
-    gs = lite ? 0.12 : 0.32;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     glow.width = Math.max(1, Math.round(W * dpr * gs));
@@ -209,9 +210,8 @@ function hero(frame) {
     gctx.ellipse(cx, cy, ri, ri * sy, 0, 0, Math.PI * 2);
     gctx.stroke();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if ("filter" in ctx && !lite) ctx.filter = `blur(${8 * u * dpr}px)`;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(glow, 0, 0, canvas.width, canvas.height);
-    if ("filter" in ctx && !lite) ctx.filter = "none";
     ctx.globalCompositeOperation = "source-over";
   };
 

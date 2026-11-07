@@ -100,23 +100,31 @@ await screen(m, "app-home", async () => {
   await page.waitForSelector(".loading", { state: "detached", timeout: 30_000 });
   await page.waitForFunction(() => /In your private balance: \$/.test(document.body.innerText), null, { timeout: 30_000 });
 });
+// The newest circle on the contract, if there is one. An upgrade that changes
+// the stored layout closes every finished circle first, so there may be none.
+/** @type {number | null} */
+let newest = null;
 await screen(m, "app-explore", async () => {
   await page.goto(base + "/app#/explore");
   await page.waitForSelector("h1");
   await page.waitForFunction(() => !document.querySelector(".loading"), null, { timeout: 30_000 });
-  await page.waitForSelector("text=/Circle \\d+/", { timeout: 30_000 });
+  await page.waitForSelector(".explore-list .empty, .explore-card", { timeout: 30_000 });
+  const first = await page.locator(".explore-card h2").first().textContent({ timeout: 500 }).catch(() => null);
+  newest = first ? Number(first.replace(/\D/g, "")) : null;
 });
 await screen(m, "app-circle", async () => {
-  await page.goto(base + "/app#/c/0");
-  await page.waitForSelector(".ring", { timeout: 30_000 });
+  await page.goto(base + "/app#/c/" + (newest ?? 0));
+  if (newest !== null) await page.waitForSelector(".ring", { timeout: 30_000 });
+  else await page.waitForSelector("h1:has-text('Circle not found')", { timeout: 30_000 });
 });
-const invite = process.env.INVITE || "0.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+const invite = process.env.INVITE || `${newest ?? 0}.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`;
 await screen(m, "app-invite", async () => {
   await page.goto(base + "/join#" + invite);
-  await page.waitForSelector("text=You're invited to a savings circle", { timeout: 30_000 });
+  const said = newest !== null ? "text=You're invited to a savings circle" : "h1:has-text(\"This invite doesn't work\")";
+  await page.waitForSelector(said, { timeout: 30_000 });
   if (page.url().includes(invite.split(".")[1])) throw new Error("the invite secret stayed in the address bar");
   await page.reload();
-  await page.waitForSelector("text=You're invited to a savings circle", { timeout: 30_000 });
+  await page.waitForSelector(said, { timeout: 30_000 });
 });
 await screen(m, "app-invite-broken", async () => {
   await page.goto(base + "/join#nonsense");

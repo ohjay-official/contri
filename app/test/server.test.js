@@ -6,7 +6,8 @@ import { authCall, signIntents, transfer } from "../public/js/lib/intents.js";
 import { signerFromSeed } from "../public/js/lib/keys.js";
 import { toBase58 } from "../public/js/lib/bytes.js";
 import { keep, needs } from "../server/keeper.js";
-import { formatUnits, toSend } from "../server/oneclick.js";
+import { cashOut, formatUnits, toSend, topUp } from "../server/oneclick.js";
+import { privateHome, privateMove, privateTopUp } from "../server/confidential.js";
 import { allow, useOnce } from "../server/limit.js";
 import { authProblem, checkPayload, memberNote, paymentProblem, relay } from "../server/relay.js";
 import { issueTicket, ticketed } from "../server/ticket.js";
@@ -16,7 +17,7 @@ const TOKEN = "nep141:usdt.tether-token.near";
 /** @type {import("../server/config.js").Config} */
 const c = {
   network: "sandbox", rpcUrl: "http://127.0.0.1:1", contractId: "contri.near", intentsId: "intents.near", tokenId: TOKEN,
-  relayerId: "relayer.near", relayerKey: "", oneClickUrl: "", oneClickKey: "",
+  relayerId: "relayer.near", relayerKey: "", oneClickUrl: "", oneClickKey: "", feeBps: 25, feeAccount: "relayer.near",
 };
 const member = await signerFromSeed(new Uint8Array(32).fill(3));
 const a = actions(c.contractId, TOKEN);
@@ -28,6 +29,7 @@ test("the relayer accepts what members sign", async () => {
   for (const intents of [
     a.join(0, 5_000_000n, null),
     a.contribute(0, 1, 5_000_000n),
+    a.payAhead(0, 2, 10_000_000n),
     a.create({ contribution: 5_000_000n, size: 3, periodSecs: 60, random: false, inviteKeyHex: null, name: "v1.x" }),
     a.leave(0),
     a.listSeat(0, 1, 1n),
@@ -69,7 +71,7 @@ test("the relayer pays only for Contri's token and messages Contri reads", async
   await refused(await sign([transfer("contri.near", TOKEN, 5_000_000n, { msg: "join:0:zz" })]), /wouldn't understand/);
   await refused(await sign([authCall("contri.near", "x")]), /wouldn't understand/);
   await refused(await sign([authCall("contri.near", "leave:0:1")]), /wouldn't understand/);
-  for (const msg of ["back:0", "refill:3", "buy_seat:1:2", "contribute:0:4", `join:0:${"ab".repeat(64)}`, `create:1000000:2:60:random:${"0".repeat(64)}:v1.a:b`]) {
+  for (const msg of ["back:0", "refill:3", "buy_seat:1:2", "contribute:0:4", "ahead:0:3", `join:0:${"ab".repeat(64)}`, `create:1000000:2:60:random:${"0".repeat(64)}:v1.a:b`]) {
     assert.equal(await checkPayload(await sign([transfer("contri.near", TOKEN, 1_000_000n, { msg })]), c), member.accountId, msg);
   }
   for (const msg of ["claim_credit", "cancel:0", "unlist_seat:0:1", "list_seat:0:1:5"]) {
@@ -146,9 +148,35 @@ test("token amounts for people round up to the cent", () => {
 });
 
 test("members are asked to send whole cents, a little over what has to arrive", () => {
-  assert.equal(toSend(3_000_000n, 18), 3_020_000_000_000_000_000n, "$3 arrives from 3.02 USDT on BNB Chain");
+  assert.equal(toSend(3_000_000n, 18), 3_030_000_000_000_000_000n, "$3 arrives from 3.03 USDT on BNB Chain");
   assert.equal(toSend(1_000_000n, 6), 1_010_000n);
-  assert.equal(toSend(5_000_000n, 6), 5_030_000n);
+  assert.equal(toSend(5_000_000n, 6), 5_040_000n);
+});
+
+test("Contri's fee is on top-ups and cash-outs only, never on moves between a member's own balances", async () => {
+  /** @type {Record<string, any>} */
+  const asked = {};
+  let last = "";
+  const real = globalThis.fetch;
+  globalThis.fetch = /** @type {any} */ (async (/** @type {string} */ _url, /** @type {any} */ init) => {
+    asked[last] = JSON.parse(init.body);
+    return new Response(JSON.stringify({ quote: { depositAddress: "a".repeat(64), amountIn: "1000000", minAmountIn: "1000000", amountOut: "997500", timeEstimate: 10 } }));
+  });
+  const vault = "b".repeat(64), circleAccount = "c".repeat(64), cfg = { ...c, relayerKey: "x" };
+  const tron = "T" + "1".repeat(33);
+  try {
+    last = "top-up"; await topUp({ network: "tron", amount: "1000000", account: circleAccount }, cfg);
+    last = "cash-out"; await cashOut({ network: "tron", amount: "1000000", address: tron, account: circleAccount, dry: true }, cfg);
+    last = "private top-up"; await privateTopUp({ network: "tron", amount: "1000000", vault }, cfg);
+    last = "private cash-out"; await privateMove({ network: "tron", amount: "1000000", address: tron, vault, dry: true }, cfg);
+    last = "private to a circle"; await privateMove({ to: circleAccount, amount: "1000000", vault, dry: true }, cfg);
+    last = "circle to private"; await privateHome({ from: circleAccount, vault, amount: "1000000" }, cfg);
+    last = "no fee set"; await topUp({ network: "tron", amount: "1000000", account: circleAccount }, { ...cfg, feeBps: 0 });
+  } finally {
+    globalThis.fetch = real;
+  }
+  for (const k of ["top-up", "cash-out", "private top-up", "private cash-out"]) assert.deepEqual(asked[k].appFees, [{ recipient: "relayer.near", fee: 25 }], k);
+  for (const k of ["private to a circle", "circle to private", "no fee set"]) assert.equal(asked[k].appFees, undefined, k);
 });
 
 test("a busy RPC node falls over to the next one", async () => {
@@ -229,6 +257,17 @@ test("the relayer refuses payments the contract would refund, before paying gas"
   assert.match(String(paymentProblem("contribute:0:1", 5_000_000n, "o", running)), /already paid/);
   assert.match(String(paymentProblem("contribute:0:1", 5_000_000n, "x", running)), /not in this circle/);
   assert.match(String(paymentProblem("contribute:0:1", 5_000_000n, me, { ...running, paying: true })), /payout is going out/);
+  // Round 1 of 3: two rounds are left for someone who hasn't paid this one, one for someone who has.
+  assert.equal(paymentProblem("ahead:0:2", 10_000_000n, me, running), null);
+  assert.match(String(paymentProblem("ahead:0:3", 15_000_000n, me, running)), /Only 2 rounds are left/);
+  assert.match(String(paymentProblem("ahead:0:2", 5_000_000n, me, running)), /times the rounds/);
+  assert.match(String(paymentProblem("ahead:0:0", 0n, me, running)), /at least one round/);
+  assert.equal(paymentProblem("ahead:0:1", 5_000_000n, "o", running), null);
+  assert.match(String(paymentProblem("ahead:0:2", 10_000_000n, "o", running)), /Only 1 round is left/);
+  const paidUp = { ...running, members: running.members.map((/** @type {any} */ m) => (m.account_id === "o" ? { ...m, ahead: 1 } : m)) };
+  assert.match(String(paymentProblem("ahead:0:1", 5_000_000n, "o", paidUp)), /paid every round/);
+  assert.match(String(paymentProblem("ahead:0:1", 5_000_000n, "x", running)), /not in this circle/);
+  assert.match(String(paymentProblem("ahead:0:1", 5_000_000n, me, open)), /isn't running/);
   assert.equal(paymentProblem("buy_seat:0:1", 2_000_000n, me, running), null);
   assert.match(String(paymentProblem("buy_seat:0:1", 3_000_000n, me, running)), /price/);
   assert.match(String(paymentProblem("buy_seat:0:2", 2_000_000n, "b", running)), /isn't for sale/);

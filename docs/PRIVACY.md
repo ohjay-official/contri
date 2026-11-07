@@ -24,7 +24,7 @@ Amounts and timing are the limit everywhere: a $3.02 withdrawal from an exchange
 
 | Who | What they learn |
 | --- | --- |
-| A stranger with a block explorer | That some accounts run a circle with a given amount and schedule. Not who they are, what the circle is called, or which wallet paid in (beyond what amounts and timing suggest). |
+| A stranger with a block explorer | That some accounts run a circle with a given amount and schedule. Not who they are, what the circle is called, or which wallet paid in (beyond what amounts and timing suggest). Contri's 0.25% fee on each top-up and cash-out is paid to Contri's own public NEAR Intents account, so its size and timing can show that a deposit or withdrawal on another chain went through Contri, though not which circle account or private account it went to or came from. |
 | Someone who knows one of your circle accounts | Your activity in that one circle. Your other circles use accounts no key or address connects to it, though matching amounts and times can hint at them. |
 | Your exchange | That you withdrew USDT to a 1Click deposit address. Because Contri uses the confidential route, it can't look up which circle account that paid. |
 | 1Click | Both ends of each move it routes: a top-up's deposit and the circle account or private account it pays; a payment from the private balance, your private account and that circle account. Because every private move names your one private account, 1Click can tell which circle accounts belong to the same member, and it sees that the swaps come from Contri (`referral: contri`). It doesn't know who you are. |

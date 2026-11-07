@@ -42,6 +42,9 @@ export async function refresh() {
 /** The slot that sits in (or organizes) a circle. @param {number} id */
 export const slotFor = (id) => state.slots?.find((s) => s.circles.includes(id)) ?? null;
 
+/** The circle a circle account is in, as found on chain (after a restore this phone may not have noted it). @param {number} index */
+export const circleOfSlot = (index) => state.slots?.find((s) => s.index === index)?.circles[0];
+
 /** @param {number} id */
 export const nameOf = (id) => state.names.get(id) ?? `Circle ${id}`;
 

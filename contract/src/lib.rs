@@ -74,7 +74,7 @@ pub const CREATE_FEE: NearToken = NearToken::from_millinear(10);
 pub const MIN_CONTRIBUTION: u128 = 1_000_000;
 // Storage sizes in bytes, for 64-character accounts (the longest). A stored
 // key-value pair costs 40 bytes on top of its key and value.
-const MEMBER_BYTES: u64 = 122;
+const MEMBER_BYTES: u64 = 126;
 const BACKER_BYTES: u64 = 100;
 const LISTING_BYTES: u64 = 16;
 const PAYOUT_BYTES: u64 = 112;
@@ -121,6 +121,9 @@ pub struct Member {
     pub owed: U128,
     /// The part of `owed` that backing covered, which is repaid to backing first.
     pub backed: U128,
+    /// Later rounds already paid for (`ahead:<c>:<rounds>`). Each new round
+    /// takes one, so the member is paid up without doing anything.
+    pub ahead: u32,
 }
 
 #[near(serializers = [borsh])]
@@ -226,8 +229,8 @@ impl Circle {
     pub fn to_json(&self) -> String {
         let members = join(self.members.iter().map(|m| {
             format!(
-                r#"{{"account_id":"{}","deposit":"{}","paid_this_round":{},"defaulted":{},"missed":{}}}"#,
-                m.account_id, m.deposit.0, m.paid_this_round, m.defaulted, m.missed
+                r#"{{"account_id":"{}","deposit":"{}","paid_this_round":{},"defaulted":{},"missed":{},"ahead":{}}}"#,
+                m.account_id, m.deposit.0, m.paid_this_round, m.defaulted, m.missed, m.ahead
             )
         }));
         let listings = join(self.listings.iter().map(|l| opt_amount(*l)));
@@ -341,6 +344,9 @@ pub enum TransferMsg {
     Back { circle: u64 },
     /// `refill:<circle>`: top up your own deposit, up to every round but your own.
     Refill { circle: u64 },
+    /// `ahead:<circle>:<rounds>`: pay `rounds` contributions at once: this
+    /// round's, if it is unpaid, then the rounds after it, up to the last.
+    Ahead { circle: u64, rounds: u32 },
 }
 
 /// `msg` of a member's `AuthCall` intent to this contract.
@@ -384,6 +390,7 @@ pub fn parse_transfer(msg: &str) -> Option<TransferMsg> {
         "buy_seat" => TransferMsg::BuySeat { circle, seat: p.next()?.parse().ok()? },
         "back" => TransferMsg::Back { circle },
         "refill" => TransferMsg::Refill { circle },
+        "ahead" => TransferMsg::Ahead { circle, rounds: p.next()?.parse().ok()? },
         _ => return None,
     };
     p.next().is_none().then_some(m)
@@ -969,6 +976,7 @@ impl Contri {
             TransferMsg::BuySeat { circle, seat } => self.internal_buy_seat(sender, circle, seat, amount),
             TransferMsg::Back { circle } => self.internal_back(sender, circle, amount),
             TransferMsg::Refill { circle } => self.internal_refill(sender, circle, amount),
+            TransferMsg::Ahead { circle, rounds } => self.internal_pay_ahead(sender, circle, rounds, amount),
         }
     }
 
@@ -1095,6 +1103,7 @@ impl Contri {
             missed: 0,
             owed: U128(0),
             backed: U128(0),
+            ahead: 0,
         });
         let seat = c.members.len() - 1;
         emit(
@@ -1144,6 +1153,51 @@ impl Contri {
         emit(
             "contributed",
             format!(r#"{{"circle":{circle_id},"round":{round},"member":"{who}","amount":"{amount}"}}"#),
+        );
+        let gas_left = env::prepaid_gas().saturating_sub(env::used_gas());
+        if c.all_paid() && gas_left.as_gas() >= GAS_FOR_PAYOUT.as_gas() {
+            self.start_payout(c);
+        } else {
+            save_circle(&c);
+        }
+        Ok(())
+    }
+
+    /// Pays `rounds` contributions at once: this round's first, if it is
+    /// unpaid, and the rest as rounds paid ahead, which each new round uses.
+    fn internal_pay_ahead(&mut self, who: &AccountId, circle_id: u64, rounds: u32, amount: u128) -> Result<(), String> {
+        let mut c = find_circle(circle_id)?;
+        if c.status != CircleStatus::Active {
+            return Err("circle is not active".into());
+        }
+        if c.paying {
+            return Err("payout in progress, try again shortly".into());
+        }
+        let seat = c.seat_of(who).ok_or("not a member of this circle")?;
+        let contribution = c.contribution.0;
+        if rounds == 0 || Some(amount) != contribution.checked_mul(rounds as u128) {
+            return Err("amount must be the contribution times the rounds".into());
+        }
+        let m = &c.members[seat];
+        let unpaid = (c.size - c.round).saturating_sub(u32::from(m.paid_this_round) + m.ahead);
+        if rounds > unpaid {
+            return Err(format!("only {unpaid} rounds are left to pay"));
+        }
+        let round = c.round;
+        let mut later = rounds;
+        if !c.members[seat].paid_this_round {
+            c.members[seat].paid_this_round = true;
+            c.pot = U128(c.pot.0 + contribution);
+            later -= 1;
+            emit(
+                "contributed",
+                format!(r#"{{"circle":{circle_id},"round":{round},"member":"{who}","amount":"{contribution}"}}"#),
+            );
+        }
+        c.members[seat].ahead += later;
+        emit(
+            "paid_ahead",
+            format!(r#"{{"circle":{circle_id},"member":"{who}","rounds":{later},"ahead":{}}}"#, c.members[seat].ahead),
         );
         let gas_left = env::prepaid_gas().saturating_sub(env::used_gas());
         if c.all_paid() && gas_left.as_gas() >= GAS_FOR_PAYOUT.as_gas() {
@@ -1352,7 +1406,7 @@ impl Contri {
         let settled = !c.paying
             && c.backing.0 == 0
             && c.recovered.0 == 0
-            && c.members.iter().all(|m| m.deposit.0 == 0)
+            && c.members.iter().all(|m| m.deposit.0 == 0 && m.ahead == 0)
             && c.backers.iter().all(|b| b.due.0 == 0);
         require!(settled, "release the deposits first");
         env::storage_remove(&key(b'c', &circle_id.to_le_bytes()));
@@ -1478,7 +1532,22 @@ impl Contri {
             slots(circle_id, -1);
         }
         c.round += 1;
-        if c.round >= c.size {
+        if c.round < c.size {
+            // Rounds paid ahead pay the new round straight away.
+            let (contribution, round) = (c.contribution.0, c.round);
+            for m in c.members.iter_mut().filter(|m| m.ahead > 0) {
+                m.ahead -= 1;
+                m.paid_this_round = true;
+                c.pot = U128(c.pot.0 + contribution);
+                emit(
+                    "contributed",
+                    format!(
+                        r#"{{"circle":{circle_id},"round":{round},"member":"{}","amount":"{contribution}","ahead":true}}"#,
+                        m.account_id
+                    ),
+                );
+            }
+        } else {
             c.status = CircleStatus::Finished;
             for m in &c.members {
                 let mut r = load_record(&m.account_id);

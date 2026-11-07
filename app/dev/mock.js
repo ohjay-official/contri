@@ -30,7 +30,7 @@ export const accounts = [me0, me1];
 // Other members' accounts: 64 hex characters, like any implicit NEAR account.
 const other = (/** @type {number} */ n) => Array.from({ length: 64 }, (_, i) => ((n * 2654435761 + i * 40503 + (i * i * n) % 977) >>> 3) % 16).map((d) => d.toString(16)).join("");
 const T = (/** @type {number} */ days) => String(BigInt(Date.now() + days * 86_400_000) * 1_000_000n);
-const member = (/** @type {string} */ a, paid = false, missed = 0, deposit = "5000000") => ({ account_id: a, deposit, paid_this_round: paid, defaulted: missed > 0, missed });
+const member = (/** @type {string} */ a, paid = false, missed = 0, deposit = "5000000") => ({ account_id: a, deposit, paid_this_round: paid, defaulted: missed > 0, missed, ahead: 0 });
 
 /** @type {any[]} */
 const circles = [
@@ -111,17 +111,28 @@ function apply(payload) {
         c.started_at = T(0);
         c.round_deadline = T(c.period_secs / 86400);
       }
-    } else if (kind === "contribute") {
+    } else if (kind === "contribute" || kind === "ahead") {
       const c = circles[Number(args[0])];
       const m = c?.members.find((/** @type {any} */ x) => x.account_id === who);
-      if (!c || !m || m.paid_this_round || Number(args[1]) !== c.round) {
+      const rounds = kind === "ahead" ? Number(args[1]) : 1;
+      const left = c && m ? c.size - c.round - (m.paid_this_round ? 1 : 0) - (m.ahead ?? 0) : 0;
+      const wrong = kind === "ahead" ? rounds < 1 || rounds > left || amount !== BigInt(c.contribution) * BigInt(rounds) : m?.paid_this_round || Number(args[1]) !== c?.round;
+      if (!c || !m || wrong) {
         balances[who] += amount;
         notes.push("refunded: nothing to pay");
         continue;
       }
-      m.paid_this_round = true;
-      c.pot = String(BigInt(c.pot) + amount);
-      events.push({ event: "contributed", data: [{ circle: c.id, round: c.round, member: who }] });
+      let later = rounds;
+      if (!m.paid_this_round) {
+        m.paid_this_round = true;
+        c.pot = String(BigInt(c.pot) + BigInt(c.contribution));
+        later--;
+        events.push({ event: "contributed", data: [{ circle: c.id, round: c.round, member: who }] });
+      }
+      if (kind === "ahead") {
+        m.ahead = (m.ahead ?? 0) + later;
+        events.push({ event: "paid_ahead", data: [{ circle: c.id, member: who, rounds: later, ahead: m.ahead }] });
+      }
       if (c.members.every((/** @type {any} */ x) => x.paid_this_round)) {
         const to = c.members[c.round].account_id;
         balances[to] = (balances[to] ?? 0n) + BigInt(c.pot);
@@ -129,7 +140,14 @@ function apply(payload) {
         events.push({ event: "paid_out", data: [{ circle: c.id, round: c.round, to }] });
         c.pot = "0";
         c.round++;
-        for (const x of c.members) x.paid_this_round = false;
+        for (const x of c.members) {
+          x.paid_this_round = false;
+          if (c.round < c.size && x.ahead > 0) {
+            x.ahead--;
+            x.paid_this_round = true;
+            c.pot = String(BigInt(c.pot) + BigInt(c.contribution));
+          }
+        }
         if (c.round >= c.size) {
           c.status = "Finished";
           c.round_deadline = null;
@@ -173,8 +191,8 @@ export async function handle(name, request) {
       const depositAddress = freshAddress();
       const amount = BigInt(body.amount);
       arriving.set(depositAddress, { account: body.account, amount, at: Date.now() });
-      const send = ((amount * 1005n) / 1000n + 9999n) / 10000n;
-      return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress, depositMemo: null, send: `${send / 100n}.${String(send % 100n).padStart(2, "0")}`, minSend: "1.00", receive: (Number(amount) / 1e6).toFixed(2), deadline: new Date(Date.now() + 86_400_000).toISOString(), seconds: 5 });
+      const send = ((amount * 10075n) / 10000n + 9999n) / 10000n;
+      return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress, depositMemo: null, send: `${send / 100n}.${String(send % 100n).padStart(2, "0")}`, minSend: "1.00", receive: (Number(amount) / 1e6).toFixed(2), contriFee: "0.25%", deadline: new Date(Date.now() + 86_400_000).toISOString(), seconds: 5 });
     }
     if (body.action === "status") {
       // A top-up "arrives" 4 seconds after its address was handed out.
@@ -189,9 +207,9 @@ export async function handle(name, request) {
     }
     if (body.action === "psignin") return json({ session: "mock.session.token.for.the.private.balance", expiresIn: 900 });
     if (body.action === "pbalance") return json({ amount: String(privateHeld) });
-    if (body.action === "ptopup") return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress: "0x1c4B2a9E7d3F60b5A8c1D2e3F4a5B6c7D8e9F0a1", depositMemo: null, send: "10.06", receive: "10.05", deadline: new Date(Date.now() + 86_400_000).toISOString(), seconds: 35 });
+    if (body.action === "ptopup") return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress: "0x1c4B2a9E7d3F60b5A8c1D2e3F4a5B6c7D8e9F0a1", depositMemo: null, send: "10.08", receive: "10.05", contriFee: "0.25%", deadline: new Date(Date.now() + 86_400_000).toISOString(), seconds: 35 });
     if (body.action === "pmove") {
-      if (body.dry) return json({ receive: "9.98", fee: "0.02", seconds: 13 });
+      if (body.dry) return json({ receive: "9.95", fee: "0.02", contriFee: body.to ? null : "0.25%", seconds: 13 });
       pendingMove = { to: body.to ?? null, amount: BigInt(body.amount) };
       const message = JSON.stringify({ deadline: new Date(Date.now() + 3 * 86_400_000).toISOString(), intents: [{ intent: "transfer", receiver_id: other(16), tokens: { [`imt:${"51e8".repeat(16)}:${TOKEN}`]: body.amount } }], signer_id: body.vault });
       return json({ receive: "1.00", fee: "0", seconds: 10, depositAddress: other(16), intent: { standard: "nep413", payload: { message, nonce: toBase64(randomBytes(32)), recipient: "intents.far" } } });
@@ -209,7 +227,7 @@ export async function handle(name, request) {
       privateHeld += BigInt(body.amount);
       return json({ depositAddress: other(17), receive: "1.00", seconds: 10 });
     }
-    if (body.action === "cashout") return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress: body.dry ? null : other(15), receive: "3.19", fee: "0.01", seconds: 13 });
+    if (body.action === "cashout") return json({ network: body.network, label: "BNB Smart Chain (BEP20)", symbol: "USDT", depositAddress: body.dry ? null : other(15), receive: "3.18", fee: "0.01", contriFee: "0.25%", seconds: 13 });
   }
   if (name === "relay") return json(apply(body.signed[0]));
   if (name === "keeper") return json({ done: [] });
