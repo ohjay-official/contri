@@ -295,7 +295,7 @@ export async function circleScreen(id, openShare = false) {
 
 /**
  * The invite link, with ways to send it: the phone's own share sheet (any
- * app), or WhatsApp and copy where a browser has no share sheet.
+ * app), or copying it where a browser has no share sheet.
  * @param {import("../../lib/contri.js").Circle} c @param {string} name @param {string} link @param {boolean} open
  */
 export function shareBox(c, name, link, open) {
@@ -312,13 +312,11 @@ export function shareBox(c, name, link, open) {
   });
   return h("details", { class: "share", open },
     h("summary", null, "Invite people"),
-    h("p", null, "Anyone with this link can join the circle and read its name, so send it only to the people you're saving with. Browsers never send the part after # to Contri, but the app you share it through carries the whole link, and Send on WhatsApp passes it, with the circle's name, to WhatsApp's website."),
+    h("p", null, "Anyone with this link can join the circle and read its name, so send it only to the people you're saving with. Browsers never send the part after # to Contri, but the app you share it through carries the whole link."),
     h("p", { class: "code-block", translate: "no" }, link),
     h("div", { class: "actions row" },
-      canShare
-        ? share
-        : h("a", { class: "button primary", href: `https://wa.me/?text=${encodeURIComponent(`${text} ${link}`)}`, target: "_blank", rel: "noopener noreferrer" }, "Send on WhatsApp"),
-      h("button", { class: "secondary", onclick: () => copy(`${text} ${link}`, "Invite copied") }, "Copy invite"),
+      canShare ? share : null,
+      h("button", { class: canShare ? "secondary" : "primary", onclick: () => copy(`${text} ${link}`, "Invite copied") }, "Copy invite"),
     ),
   );
 }

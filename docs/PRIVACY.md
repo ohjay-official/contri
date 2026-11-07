@@ -66,7 +66,7 @@ Where a passkey can't give a PRF secret, the member can keep a random key in the
 The organizer's app makes an ed25519 **invite key**. Its public half is stored with the circle; its secret half lives only in the invite link. To join, the joiner's app signs `contri-join:<contract>:<circle>:<joiner account>:<deposit>` with the invite key, and the contract checks the signature (`env::ed25519_verify`) before taking the seat. Because the signature names the joiner, a signature seen on chain can't be reused by anyone else. Everyone with the link holds the same invite key, so the deposit can't be set per person: the contract takes exactly one contribution as every member's deposit. Without a valid invite, the money is refunded.
 
 ### 4. End-to-end encrypted circle details
-The invite link carries a secret after `#`, which browsers don't send to the site. Sharing the link through an app, or through WhatsApp's website when the phone has no share sheet, passes it on, with the circle's name in the message. The app derives two keys from it: the invite signing key and an AES-GCM key. The AES-GCM key encrypts:
+The invite link carries a secret after `#`, which browsers don't send to the site. Sharing the link through an app passes it on, with the circle's name in the message. The app derives two keys from it: the invite signing key and an AES-GCM key. The AES-GCM key encrypts:
 
 - the circle's name, stored on chain as ciphertext (the contract stores names as given, up to 256 bytes, and seat NFTs never show them). Its length is visible.
 
