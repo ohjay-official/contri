@@ -1,0 +1,9 @@
+PASS  app and server tests: 55 passed, 0 failed
+PASS  the app starts offline and every page loads
+PASS  a whole circle, offline, signed by the app and checked by the relayer: top-ups arrived, circle 2 created, second member joined, round 1 paid out, round 2 paid out, both got the pot and their deposit back
+PASS  the contract circles.contring.near is locked: 0 access keys
+PASS  its code is the build the README names: on chain 8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC, README 8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC
+PASS  the real-money circle 7 finished with every pot paid: Finished, 2 of 2 payouts, $2 and $2
+SKIP  contract unit tests: add --all to run them (needs Rust); CI's run is on the ci-results branch
+
+Everything checked works as the README says.
