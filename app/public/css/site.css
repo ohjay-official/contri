@@ -381,3 +381,6 @@
 .scene-grid { z-index: 3; }
 /* Nothing decorative may widen the page on a phone. */
 html, .site-page { overflow-x: clip; }
+
+/* A button inside page text keeps the button colours, not the link colour. */
+.prose a.button.primary { color: var(--on-adire); text-decoration: none; }

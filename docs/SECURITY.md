@@ -88,11 +88,20 @@ A cold hackathon judge, a contract attacker, an economics auditor, a server and 
 | **Claims stronger than the code** (logs, linkability, the deploy key's powers, domain changes, gas for self-hosting, NEAR Intents' governance) (privacy, on-chain) | **Fixed** in the site, app, README and docs | this page, PRIVACY.md |
 | A member who takes an early pot and stops paying | **Accepted**, by design: deposits are one contribution because everyone shares the invite key. Backing, refills and held-back arrears limit it | FAQ, How it works, Terms |
 | A 1Click refund comes back as the coin sent, which the app can't show yet (integration) | **Accepted for now.** The app tells members to add exchange fees on top, and Help explains how to get it back | screens |
-| The relayer's NEAR can be spent by real, valid actions at up to 60 a minute; Redis is on a free plan | **Accepted.** Keep the relayer funded; a per-payment fee is the fix at scale | |
+| The relayer's NEAR can be spent by real, valid actions at up to 60 a minute; Redis is on a free plan | **Accepted.** Keep the relayer funded; the 0.25% fee on top-ups and cash-outs (7 November) pays it | |
 | Storage can be filled by many 1-USDT circles; track records stay stored | **Accepted.** Anyone can send the contract NEAR; running circles are never affected | |
 | The phone can't check where a 1Click deposit address sends money (integration) | **Accepted.** Contri's server also serves the app's code, so this adds no new trust | |
 | The contract build isn't reproducible by outsiders without CI's paths | **Accepted.** CI's build and the deployed code hash match, and both are published | `audit-run` evidence |
 | Seats can't be transferred outside the sale flow; views scan every circle; no pause control for animations; heavy videos; address checksums | **Accepted** for the hackathon build | |
+
+### 7 November 2026: paying ahead, and a fee on top-ups and cash-outs
+
+Two additions after the eight-auditor round, reviewed again before the lock.
+
+| Change | What could go wrong, and why it can't | Proof |
+| --- | --- | --- |
+| **Paying ahead** (`ahead:<c>:<rounds>`): a member pays this round and later ones at once; each new round takes one when it starts | Paying more rounds than are left: refused, so nothing paid ahead can be left in a finished circle, and a circle with rounds paid ahead can't be closed. A wrong amount, a stranger or a circle that isn't running: refunded. A round settled late doesn't charge a member who paid ahead. When every member paid ahead, the new round waits for the keeper (or anyone) to pay it out, as a round normally does. The member's record is 4 bytes bigger, counted in what each member reserves | `rounds_paid_ahead_pay_each_new_round_by_themselves`, `paying_ahead_is_refused_past_the_last_round_or_for_the_wrong_amount`, `when_everyone_paid_ahead_the_next_round_is_ready_to_pay_out`, `a_late_round_settles_without_charging_a_member_who_paid_ahead`, the sandbox's whole-circle run, and the relayer's own checks |
+| **A 0.25% fee** on top-ups from another chain and cash-outs to one, as a 1Click `appFees` entry | It is on the server, not in the contract, so it touches no pot. It is never added to moves between a member's own balances or to anything inside a circle. The app shows it before every top-up and cash-out, and asks members to send 0.75% over so fees don't leave them short. Paid to Contri's public NEAR Intents account, so its size and timing can show that a deposit or withdrawal went through Contri (PRIVACY.md) | `Contri's fee is on top-ups and cash-outs only, never on moves between a member's own balances` |
 
 We disagreed with one suggestion: a function to recover a stuck payout. The contract can't tell whether a stuck transfer left, so recovering could pay a pot twice out of other circles' money. Measured gas headroom (5.4 of 30 Tgas) is the defence instead.
 
