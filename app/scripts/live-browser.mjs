@@ -98,7 +98,7 @@ await site.ctx.close();
     await d.page.goto(base + "/demo");
     await d.page.waitForSelector("text=Yaba traders", { timeout: 30_000 });
     await d.page.waitForSelector(".demo-bar");
-    await d.page.click("text=Yaba traders");
+    await d.page.click(".circle-list >> text=Yaba traders");
     await d.page.waitForSelector("button:has-text('Buy turn 3')", { timeout: 30_000 });
     await d.page.click("button:has-text('Buy turn 3')");
     await d.page.waitForSelector("text=Turn 3 is yours", { timeout: 30_000 });

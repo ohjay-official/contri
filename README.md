@@ -1,10 +1,19 @@
 # Contri
 
-Àjọ without the collector. Savings circles on NEAR.
+**Àjọ without the collector.** In a rotating savings circle (àjọ, esusu, susu, chit fund), one person often holds everyone's money, and can disappear with it. Contri gives the pot to a locked contract on NEAR that pays each turn by itself, in the same transaction as the round's last payment.
 
-Contri runs a rotating savings circle (àjọ, esusu, adashe, susu, tanda, chit fund) where a NEAR smart contract holds the pot instead of a person. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. A member who needs cash early can buy an earlier turn from someone willing to wait.
+**Try it in 30 seconds, no wallet:** **https://contri.ng/demo**. Open *Yaba traders*, buy turn 3, pay $5, and the $25 pot comes to you.
 
-Millions of people across Africa, Asia and Latin America save in circles like this. In many, one person collects and holds the pot, and can disappear with it. Savings circles on a blockchain have been tried before; what Contri adds:
+**Proof it's real:**
+- The contract, [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near), is on NEAR mainnet and **locked**: no keys, so nobody, Contri included, can change it or move its money outside its rules ([lock transaction](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)).
+- A circle ran with real USDT on two phones on this exact code ([its transactions](#5-on-mainnet-with-real-money)).
+- `node app/scripts/verify.mjs` checks all of this, and runs a whole circle offline, in about 20 seconds.
+
+Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: Real-World Money, Privacy & Private AI, NFTs That Do Something, Open Innovation. **Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng).
+
+## What's New Here
+
+Millions of people across Africa, Asia and Latin America save in circles like this. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. Savings circles on a blockchain have been tried before; what Contri adds:
 
 - **Nobody holds the pot, not even Contri.** The contract pays each turn by itself, in the same transaction as the round's last payment (a round every member paid ahead goes out on the keeper's next run, within minutes). A late round can be settled by anyone, so a circle always finishes.
 - **No crypto knowledge needed.** A phone passkey, no seed phrase, no NEAR account and no gas token. Members pay straight from an exchange withdrawal on BNB Chain, Solana, Tron, TON, Base, Arbitrum or Ethereum.
@@ -13,11 +22,7 @@ Millions of people across Africa, Asia and Latin America save in circles like th
 - **Private by default.** Circle names are encrypted, each circle uses its own account, and money can move through NEAR Intents' confidential private balance, so nothing on chain names a member or links their wallet.
 - **Pay once, done.** A member can pay every round ahead; each round then takes its share by itself.
 
-Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: Real-World Money, Privacy & Private AI, NFTs That Do Something, Open Innovation.
-
 ## How to test
-
-**Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng). **Contract:** [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near) on NEAR mainnet, **locked on 7 November 2026** ([QxnCNCi…](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)): the account has no keys, so nobody, Contri included, can change its code or move the money it holds outside its rules. See [Security](#security).
 
 Five ways in, from quickest to most real. None needs a NEAR account.
 
@@ -25,10 +30,9 @@ Five ways in, from quickest to most real. None needs a NEAR account.
 
 **https://contri.ng/demo**, on any phone or computer: the real app's screens with pretend money on a pretend chain that runs in your browser tab. No passkey, no money, no second device, and nothing is sent to a server or saved. You're a member of two sample circles, and the other members are pretend: they join a circle you start a few seconds after you start it, and pay each round right after you do. Things to try, about two minutes:
 
-1. Open **Yaba traders**. Buy **turn 3** for $1.50 from the member listing it, so the pot comes to you sooner.
-2. Tap **Add money to pay**, move the money in from your private balance, and pay. The other members pay, and the $25 pot comes to you.
-3. Back on **Your circles**, tap **Start a circle**: $2, 3 members. Add money, create it, and wait a few seconds: the others join and the circle starts. Pay round 1 and watch the pot go out; try **Pay all rounds** too.
-4. Open **Live circles** and **Help**, and move money out to see a cash-out quote.
+1. A card on the first screen says what to try first: open **Yaba traders**, buy **turn 3** for $1.50 from the member listing it, and pay your $5. The other members pay too, and the $25 pot comes to you in the same moment.
+2. Back on **Your circles**, tap **Start a circle**: $2, 3 members. Move money in, create it, and the others join within seconds. Pay round 1 and watch the pot go out; try **Pay all rounds** too.
+3. Open **Live circles** and **Help**, and move money out to see a cash-out quote.
 
 A bar on every screen says it's the demo. The real app is at https://contri.ng/app.
 

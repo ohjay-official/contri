@@ -2,18 +2,21 @@
 // One circle: the ring, what you owe or receive, members, the turn market,
 // payouts, and this circle's money.
 
-import { actions, dueFor, needs, parseAmount, payoutDateMs, potSize, roundDeadlineMs, roundEndMs, seatOf, shortAccount } from "../../lib/contri.js";
+import { actions, dueFor, findEvent, needs, parseAmount, payoutDateMs, potSize, roundDeadlineMs, roundEndMs, seatOf, shortAccount } from "../../lib/contri.js";
 import { decryptName, inviteLink, parseInvite } from "../../lib/invite.js";
 import { getCircle, getConfig, keep, relay, sign, views } from "../api.js";
 import { ring } from "../ring.js";
 import { every, fromNow, nameOf, refresh, slotFor, usd, when } from "../state.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
 import { confirmRecentPasskey, decodeSecret, encodeSecret, labels, local, remember, setLabel } from "../wallet.js";
+import { demo } from "../demo.js";
 import { standing } from "./home.js";
 
 /** @param {number} id @param {boolean} openShare */
 export async function circleScreen(id, openShare = false) {
   let c = await getCircle(id);
+  // In the demo, a circle still filling fills by itself in a few seconds: show it when it does.
+  if (demo && c?.status === "Open") setTimeout(() => location.hash.startsWith(`#/c/${id}`) && circleScreen(id), 3500);
   if (!c) {
     show(h("section", { class: "stack narrow" }, h("a", { class: "back", href: "#/" }, "Your circles"), h("h1", null, "Circle not found"), h("p", null, "It may have been closed after everyone was paid back.")));
     return;
@@ -42,7 +45,9 @@ export async function circleScreen(id, openShare = false) {
     if (!slot) throw new Error("You're not in this circle.");
     const r = await relay([await sign(slot.signer, intents)]);
     if (!r.events.length && r.notes.length) throw new Error(r.notes[0]);
-    notice(done);
+    // A payment that closed the round paid the pot out in the same transaction: say where it went.
+    const out = findEvent(r.events, "paid_out");
+    notice(!out ? done : out.to === me ? `${done}. That closed the round: the ${usd(out.amount ?? potSize(c))} pot is yours.` : `${done}. That closed the round: the pot went to turn ${Number(out.round) + 1}.`);
     await circleScreen(id);
   };
 

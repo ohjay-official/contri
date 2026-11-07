@@ -134,7 +134,7 @@ async function wholeCircle() {
 {
   const readme = readFileSync(`${root}README.md`, "utf8");
   const claimedHash = /code hash `([1-9A-HJ-NP-Za-km-z]{43,44})`/.exec(readme)?.[1];
-  const contract = /\*\*Contract:\*\* \[`([a-z0-9._-]+)`\]/.exec(readme)?.[1] ?? "circles.contring.near";
+  const contract = /\[`([a-z0-9._-]+\.near)`\]\(https:\/\/nearblocks\.io\/address\//.exec(readme)?.[1] ?? "circles.contring.near";
   const RPC = ["https://rpc.mainnet.fastnear.com", "https://rpc.mainnet.near.org"];
   /** @param {string} method @param {object} params */
   const rpc = async (method, params) => {

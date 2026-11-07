@@ -6,6 +6,7 @@ import { getConfig, keep, relay, sign } from "../api.js";
 import { privateBalance } from "../private.js";
 import { every, fromNow, nameOf, refresh, state, usd, when } from "../state.js";
 import { busy, h, notice, show } from "../ui.js";
+import { demo } from "../demo.js";
 import { local, recoverySeen } from "../wallet.js";
 
 /** One line saying where the member stands. @param {import("../../lib/contri.js").Circle} c @param {string} me */
@@ -117,6 +118,15 @@ export async function homeScreen() {
   show(
     h("section", { class: "stack" },
       h("h1", null, "Your circles"),
+      // The demo's first 30 seconds: the one thing to try.
+      demo ? h("div", { class: "callout stack demo-start" },
+        h("p", null, h("strong", null, "Try this first, it takes 30 seconds")),
+        h("ol", null,
+          h("li", null, "Open ", h("strong", null, "Yaba traders"), " and buy turn 3 for $1.50, so the next pot is yours."),
+          h("li", null, "Pay your $5 for the round. The other members pay too, and the $25 pot comes to you at once: nobody holds it in between."),
+        ),
+        h("p", { class: "hint" }, "Then start your own circle: the other members join in a few seconds."),
+      ) : null,
       rows.length
         ? h("ul", { class: "circle-list" }, rows)
         : h("div", { class: "empty" },

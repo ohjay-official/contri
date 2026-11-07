@@ -91,7 +91,7 @@ function payOutIfPaid(c, events) {
   const to = c.members[c.round].account_id;
   balances[to] = (balances[to] ?? 0n) + BigInt(c.pot);
   c.payouts.push({ round: c.round, to, amount: c.pot, shortfall: "0", at: T(0) });
-  events.push({ event: "paid_out", data: [{ circle: c.id, round: c.round, to }] });
+  events.push({ event: "paid_out", data: [{ circle: c.id, round: c.round, to, amount: c.pot }] });
   c.pot = "0";
   c.round++;
   for (const x of c.members) {
@@ -122,9 +122,20 @@ let bots = false;
 const people = new Set(accounts);
 let botNo = 100;
 export function useBots() {
+  if (bots) return;
   bots = true;
+  // Enough to buy a turn and pay a round straight away.
+  balances[me0] = 10_000_000n;
 }
-/** Moves the pretend members along: joining new circles, then paying each round after the person does. */
+/** The pretend members pay this round. @param {any} c */
+function botsPay(c) {
+  for (const m of c.members) {
+    if (people.has(m.account_id) || m.paid_this_round) continue;
+    m.paid_this_round = true;
+    c.pot = String(BigInt(c.pot) + BigInt(c.contribution));
+  }
+}
+/** Moves the pretend members along: joining new circles a few seconds after they're made. */
 function tick() {
   if (!bots) return;
   const now = Date.now();
@@ -133,15 +144,6 @@ function tick() {
       while (c.members.length < c.size) c.members.push(member(other(botNo++), false, 0, c.contribution));
       startIfFull(c);
       delete c.fillAt;
-    }
-    if (c.status === "Active" && c.botsPayAt && now >= c.botsPayAt && !c.paying) {
-      delete c.botsPayAt;
-      for (const m of c.members) {
-        if (people.has(m.account_id) || m.paid_this_round) continue;
-        m.paid_this_round = true;
-        c.pot = String(BigInt(c.pot) + BigInt(c.contribution));
-      }
-      payOutIfPaid(c, []);
     }
   }
 }
@@ -175,7 +177,7 @@ function apply(payload) {
         fill_by: T(14), backing: "0", backers: [], status: "Open", created_at: T(0), started_at: "0", round: 0, pot: "0", paying: false, payouts: [], round_deadline: null,
       });
       events.push({ event: "circle_created", data: [{ circle: id }] });
-      if (bots) circles[id].fillAt = Date.now() + 6000;
+      if (bots) circles[id].fillAt = Date.now() + 3000;
     } else if (kind === "join") {
       const c = circles[Number(args[0])];
       if (!c || c.status !== "Open" || c.members.some((/** @type {any} */ m) => m.account_id === who)) {
@@ -208,9 +210,10 @@ function apply(payload) {
         m.ahead = (m.ahead ?? 0) + later;
         events.push({ event: "paid_ahead", data: [{ circle: c.id, member: who, rounds: later, ahead: m.ahead }] });
       }
+      // In the demo, the other (pretend) members pay as soon as you do, so
+      // your payment closes the round and pays the pot, as the last one would.
+      if (bots) botsPay(c);
       payOutIfPaid(c, events);
-      // In the demo, the other (pretend) members pay a moment later.
-      if (bots) c.botsPayAt = Date.now() + 2500;
     } else if (kind === "buy_seat") {
       const c = circles[Number(args[0])];
       const s = Number(args[1]);
