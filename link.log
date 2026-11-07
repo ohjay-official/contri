@@ -1,0 +1,14 @@
+Vercel CLI 65.11.0
+Loading teams…
+
+  Directory       ~/work/contri/contri/app
+
+Searching for existing projects…
+
+✓ Linked          oh-jay-s-projects/contri
+
+Retrieving project…
+> Downloading a fresh `VERCEL_OIDC_TOKEN` for contri
+Downloading
+
+✓ Created         .env.local file
