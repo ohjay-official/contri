@@ -118,7 +118,7 @@ export async function helpScreen() {
       h("ul", { class: "stack" },
         h("li", null, "A top-up usually arrives within a few minutes. If it says Waiting for your deposit long after you sent it, check you sent the right coin on the right network."),
         h("li", null, "If a payment into a circle didn't go through, your money stayed in that circle's account. Open the circle to try again."),
-        h("li", null, "A top-up or cash-out that can't go through is refunded to your own account or private balance, never to anyone else."),
+        h("li", null, "A top-up or cash-out that can't go through is refunded to your own account or private balance, never to anyone else. A top-up comes back as the coin you sent, which the app can't show yet: copy its details below and send them to us."),
       ),
       h("p", null, "Still stuck? Tap Copy details for support on the payment, and send it to Contri on ", h("a", { href: "https://x.com/contri_ng", target: "_blank", rel: "noopener noreferrer" }, "X (@contri_ng)"), ". The details include your circle account and addresses, so sending them tells us they're yours. Never send your recovery code: nobody from Contri will ever ask for it."),
       ),

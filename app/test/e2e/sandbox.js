@@ -103,10 +103,11 @@ assert.equal(c.organizer, ada.accountId);
 assert.equal(c.members.length, 1);
 assert.equal(await decryptName(secret, c.name), "Yaba Traders Ajo", "the name only opens with the invite secret");
 
-// Without the invite, a join is refunded; with it, Bayo and Chioma join and the circle starts.
-const refused = await act(bayo, a.join(id, C, null), "join without invite");
-assert.equal(findEvent(refused.events, "joined"), undefined);
-assert.equal(await balance(bayo.accountId), 50n * USDT, "refunded");
+// Without the invite, the relayer turns a join away before paying any gas (the
+// contract would refund it); with it, Bayo and Chioma join and the circle starts.
+const noInvite = await signIntents(bayo, a.join(id, C, null), { now: await chainNow(), recipient: INTENTS, salt: await salt() });
+await assert.rejects(call(relayPost, { signed: [noInvite] }), /needs an invite/);
+assert.equal(await balance(bayo.accountId), 50n * USDT, "nothing moved");
 for (const m of [bayo, chioma]) await act(m, a.join(id, C, await signJoin(secret, CONTRI, id, m.accountId, C)), "join with invite");
 c = await circle(id);
 assert.equal(c.status, "Active");
@@ -156,7 +157,7 @@ assert.deepEqual(await view("contri", "get_record", { account_id: bayo.accountId
 // The relayer pays for it only with the ticket /api/swap gives with the deposit account.
 const cashout = await signIntents(ada, [transfer(`cashout.${CONTRI}`, TOKEN, USDT)], { now: await chainNow(), recipient: INTENTS, salt: await salt() });
 await assert.rejects(call(relayPost, { signed: [cashout] }), /deposit account Contri just set up/);
-await act(ada, [transfer(`cashout.${CONTRI}`, TOKEN, USDT)], "cash out", [await issueTicket(env("RELAYER_KEY"), `cashout.${CONTRI}`)]);
+await act(ada, [transfer(`cashout.${CONTRI}`, TOKEN, USDT)], "cash out", [await issueTicket(env("RELAYER_KEY"), `cashout.${CONTRI}`, ada.accountId, USDT)]);
 assert.equal(await balance(`cashout.${CONTRI}`), USDT);
 
 // The relayer refuses intents it shouldn't pay for, before spending gas.

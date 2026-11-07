@@ -3,7 +3,7 @@ name: contract
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, audit-fixes-wip]
     paths:
       - contract/**
       - .github/workflows/contract.yml
@@ -11,6 +11,10 @@ on:
 
 permissions:
   contents: write
+
+# Pushes to a work-in-progress branch publish to ci-results-wip, so ci-results stays main's.
+env:
+  RESULTS: ${{ github.ref_name == 'main' && 'ci-results' || 'ci-results-wip' }}
 
 jobs:
   test-and-build:
@@ -20,6 +24,8 @@ jobs:
         working-directory: contract
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install the pinned Rust toolchain
         run: |
@@ -37,7 +43,7 @@ jobs:
       - name: Install cargo-near
         id: install
         continue-on-error: true
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.23.0/cargo-near-installer.sh | sh
 
       - name: Generate the ABI from the typed interface
         id: abi
@@ -111,13 +117,13 @@ jobs:
           mkdir -p /tmp/publish && cp -r ci-out /tmp/publish/
           cd /tmp/publish
           git init -q
-          git checkout -q -b ci-results
+          git checkout -q -b "$RESULTS"
           git config user.name "contri-ci"
           git config user.email "actions@users.noreply.github.com"
           git add -A
           git commit -q -m "ci results ${GITHUB_SHA}"
           # GitHub sometimes answers a push with a server error; try again.
-          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ci-results && break; [ "$i" = 3 ] && exit 1; sleep $((i * 5)); done
+          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" "$RESULTS" && break; [ "$i" = 3 ] && exit 1; sleep $((i * 5)); done
 
       - name: Fail the job if tests, ABI or build failed
         if: steps.test.outcome != 'success' || steps.abi.outcome != 'success' || steps.build.outcome != 'success' || steps.exports.outcome != 'success'

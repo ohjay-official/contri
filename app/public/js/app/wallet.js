@@ -24,6 +24,7 @@ import { getConfig, views } from "./api.js";
  * @property {Signer} signer
  * @property {number[]} circles circles this account organizes or sits in
  * @property {bigint} balance USDT on NEAR Intents
+ * @property {bigint} credit owed to this account by Contri after a transfer out failed
  */
 /**
  * @typedef {object} Local
@@ -78,11 +79,16 @@ export const secret = () => {
   return session.secret;
 };
 
+/** When the passkey was last used on this page (not across reloads). */
+let passkeyAt = 0;
+
 export async function signUpWithPasskey() {
   await start(await createPasskey(), "passkey");
+  passkeyAt = Date.now();
 }
 export async function signInWithPasskey() {
   await start(await unlockWithPasskey(), "passkey");
+  passkeyAt = Date.now();
 }
 export async function useThisDevice() {
   const { secret, created } = deviceSecret();
@@ -93,15 +99,27 @@ export async function useThisDevice() {
 export const useRestoredSecret = (s) => start(s, "device");
 
 /**
- * Asks for the passkey again before something that can't be undone (sending
- * money outside Contri, showing the recovery code), so a phone left unlocked
- * isn't enough to empty it. A key kept on the device has nothing to ask for.
+ * Asks for the passkey again before something that can't be undone: sending
+ * money outside Contri, showing the recovery code, and (through
+ * confirmRecentPasskey) joining a circle or buying a turn, which commit money
+ * to other people. So a phone left unlocked isn't enough to hand the money to
+ * someone else. A key kept on the device has nothing to ask for.
  */
 export async function confirmWithPasskey() {
   if (session?.mode !== "passkey") return;
   const again = await unlockWithPasskey();
   const same = again.length === session.secret.length && again.every((b, i) => b === session?.secret[i]);
   if (!same) throw new Error("That passkey isn't the one you signed in with.");
+  passkeyAt = Date.now();
+}
+
+/**
+ * The same, unless the passkey was used on this page in the last two minutes,
+ * so someone who has just signed in to join a circle is asked once, not twice.
+ */
+export async function confirmRecentPasskey() {
+  if (Date.now() - passkeyAt < 120_000) return;
+  await confirmWithPasskey();
 }
 
 export async function lock() {
@@ -177,18 +195,21 @@ export async function discover() {
   /** @type {Slot[]} */
   const slots = [];
   let unused = 0;
-  for (let start = 0; unused < 3 && start < 100; start += 5) {
+  // Accounts empty out in normal use (a cashed-out circle, a cancelled one the
+  // keeper closed), so a new phone keeps looking past a run of 10 unused ones.
+  for (let start = 0; unused < 10 && start < 100; start += 5) {
     const batch = await Promise.all([0, 1, 2, 3, 4].map((i) => signer(start + i)));
     const results = await views(
       batch.flatMap((s) => [
         { contract: "contri", method: "get_circles_for", args: { account_id: s.accountId } },
         { contract: "intents", method: "mt_balance_of", args: { account_id: s.accountId, token_id: tokenId } },
+        { contract: "contri", method: "get_credit", args: { account_id: s.accountId } },
       ]),
     );
     batch.forEach((s, i) => {
       const index = start + i;
-      const slot = { index, signer: s, circles: results[2 * i], balance: BigInt(results[2 * i + 1]) };
-      const used = slot.circles.length > 0 || slot.balance > 0n || index <= maxKnown;
+      const slot = { index, signer: s, circles: results[3 * i], balance: BigInt(results[3 * i + 1]), credit: BigInt(results[3 * i + 2] ?? "0") };
+      const used = slot.circles.length > 0 || slot.balance > 0n || slot.credit > 0n || index <= maxKnown;
       if (used) {
         slots.push(slot);
         unused = 0;

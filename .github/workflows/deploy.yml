@@ -31,6 +31,8 @@ jobs:
       first_deploy: ${{ steps.accounts.outputs.first_deploy }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -79,6 +81,8 @@ jobs:
       SMOKE: ${{ contains(github.event.head_commit.message, '[smoke]') }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -87,7 +91,7 @@ jobs:
           workspaces: contract
       - name: Install cargo-near
         if: env.DO_DEPLOY == 'true'
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.23.0/cargo-near-installer.sh | sh
       - name: Build
         if: env.DO_DEPLOY == 'true'
         working-directory: contract
@@ -110,7 +114,9 @@ jobs:
           RELAYER_KEY: ${{ secrets.RELAYER_KEY }}
         run: |
           set -o pipefail
-          node app/scripts/deploy.js --lock 2>&1 | tee deploy.log
+          # The lock refuses unless the deployed code is exactly CI's build of main.
+          git fetch -q origin ci-results && git show FETCH_HEAD:ci-out/contri.wasm > /tmp/ci-contri.wasm
+          EXPECTED_WASM=/tmp/ci-contri.wasm node app/scripts/deploy.js --lock 2>&1 | tee deploy.log
       - name: Publish the log
         if: always()
         run: |

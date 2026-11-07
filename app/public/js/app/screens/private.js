@@ -29,7 +29,7 @@ export async function privateAddScreen(then) {
 
   /** Shows a deposit address and follows it until the money arrives. @param {any} q */
   const showDeposit = (q) => {
-    depositBox.replaceChildren(...depositDetails(q, "Send exactly this amount. If 1Click can't complete it, it refunds the money into your private balance anyway.").filter((x) => x !== null));
+    depositBox.replaceChildren(...depositDetails(q, "Send exactly this amount, plus your exchange's fee if it takes the fee out. If less arrives, 1Click sends it back as the coin you sent, which the app can't show yet; copy the details from Help and send them to us.").filter((x) => x !== null));
     progress.textContent = STATUS.PENDING_DEPOSIT;
     const screen = depositBox.closest("section");
     if (!screen) return;
@@ -61,7 +61,7 @@ export async function privateAddScreen(then) {
       progress,
       next,
       field("How much, in dollars", amountInput, "Adding more than one round's worth, and paying from it over time, makes it harder for anyone to match what you send to what you pay."),
-      h("p", null, "Choose the network you're sending from. Withdrawing from an exchange works: pick the same network there."),
+      h("p", null, "Choose the network you're sending from. Withdrawing from an exchange works: pick the same network there, and if the exchange takes its fee out of the amount, add the fee on top so the full amount arrives."),
       networks.el,
       h("div", { class: "actions" }, getAddress),
       depositBox,

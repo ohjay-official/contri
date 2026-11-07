@@ -155,3 +155,4 @@
 .site-page .light-prose h2, .site-page .light-prose .policy-title { color: var(--light-ink); }
 .site-page .light-prose { color: var(--light-ink-2); }
 .site-page .light-prose a { color: var(--ember-deep); }
+.light-prose .updated { color: var(--light-ink-2); }

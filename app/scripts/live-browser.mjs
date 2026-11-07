@@ -70,6 +70,9 @@ for (const [name, path] of [["site-home", "/"], ["site-how", "/how-it-works"], [
     if (path === "/no-such-page") site.problems.splice(0); // the 404 itself is expected
     else if (!r?.ok()) throw new Error(`HTTP ${r?.status()}`);
     await site.page.waitForSelector("h1");
+    // Screenshots don't scroll: every section has to be visible without it.
+    const hidden = await site.page.locator("[data-fade]:not(.in)").count();
+    if (hidden) throw new Error(`${hidden} sections stay hidden until scrolled, so screenshots show them blank`);
   });
 }
 for (const [name, scheme] of [["site-home-dark", "dark"]]) {

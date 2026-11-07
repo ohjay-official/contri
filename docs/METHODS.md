@@ -34,7 +34,7 @@ For members who have a NEAR account and want to call the contract from their wal
 | Method | Arguments | Returns |
 | --- | --- | --- |
 | `create_circle` | `name`, `contribution`, `size`, `period_secs`, `order` (optional: `join` or `random`), `invite_key` (optional, 64 hex). Attach 0.01 NEAR for the circle's storage | The new circle's id. The caller organizes without taking a seat (a DAO organizing for its members, say) |
-| `leave_circle` | `circle_id` | Nothing. Leaves a circle that has not started; the deposit comes back. |
+| `leave_circle` | `circle_id` | Nothing. Leaves a circle that has not started; the deposit comes back. An organizer who leaves their own circle empty cancels it, so it can be closed at once. |
 | `list_seat` | `circle_id`, `seat`, `price` | Nothing |
 | `unlist_seat` | `circle_id`, `seat` | Nothing |
 | `cancel_circle` | `circle_id` | Nothing. Cancels a circle that has not started: the organizer at any time, anyone once it has stayed unfilled past `fill_by` (14 days). |
@@ -50,7 +50,7 @@ near contract call-function as-transaction contri.testnet create_circle json-arg
 
 | Method | Arguments | Returns |
 | --- | --- | --- |
-| `settle_round` | `circle_id` | Nothing. After the round deadline, takes each missed contribution from the member's deposit, then from the circle's backing, and pays the pot. |
+| `settle_round` | `circle_id` | Nothing. After the round deadline, takes each missed contribution from the member's deposit, then from the circle's backing, and pays the pot. What a member's own deposit didn't cover, they owe, and it is held back from their own turn's pot; the round's own recipient skipping their share owes nobody. |
 | `pay_out` | `circle_id` | Nothing. Pays the pot when every member has paid, for example after a failed payout. |
 | `release_deposits` | `circle_id` | Number of transfers sent. After a circle finishes or is cancelled, sends members' remaining deposits and backers' shares of the leftover backing, as many as the attached gas allows; call again for the rest. |
 | `close_circle` | `circle_id` | Nothing. Deletes a finished or cancelled circle once all its money has gone back, freeing its storage. Members' records stay. |
@@ -108,7 +108,7 @@ A circle:
 }
 ```
 
-`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. With `random_order`, the contract draws the turn order from NEAR's per-block random seed when the circle fills (best effort: block producers could bias it). After `fill_by`, anyone can cancel the circle if it is still open. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight. `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
+`name` is ciphertext: the app encrypts it with a key from the invite link (see [PRIVACY.md](PRIVACY.md)). `invite_only` means joining needs a signed invite. With `random_order`, the contract draws the turn order from NEAR's per-block random seed when the circle fills (best effort: block producers could bias it). After `fill_by`, anyone can cancel the circle if it is still open. `status` is `Open`, `Active`, `Finished` or `Cancelled`. `listings[n]` is the asking price for seat `n`, or `null`. `paying` is true while a payout transfer is in flight (the last payment pays the pot out in the same transaction when at least 80 Tgas are left for Contri; with less, it is kept and `pay_out` or the keeper sends the pot). `backing` is community money not yet used to cover missed payments; each backer's `due` is their share of what was left when the circle ended, not yet sent. A payout's `shortfall` is how much less than a full pot it was.
 
 A member's `deposit` is exactly one contribution when they join, in every circle. In an invite-only circle the join also needs the invite key's signature over the joiner's account and that deposit. `refill:<circle>` can raise it later, up to every round but the member's own. Members creating a circle through NEAR Intents send `create:...` with their deposit and take the first seat.
 
@@ -153,7 +153,7 @@ Logged as NEP-297 `EVENT_JSON`.
 | `contri` | `circle_started` | `circle`, `first_deadline` |
 | `contri` | `contributed` | `circle`, `round`, `member`, `amount` |
 | `contri` | `round_settled` | `circle`, `round`, `missed` (accounts), `from_backing` |
-| `contri` | `paid_out` | `circle`, `round`, `to`, `amount`, `shortfall` |
+| `contri` | `paid_out` | `circle`, `round`, `to`, `amount`, `shortfall`, `withheld` (what the recipient owed, held back from their pot) |
 | `contri` | `circle_backed` | `circle`, `backer`, `amount`, `backing` |
 | `contri` | `deposit_refilled` | `circle`, `member`, `deposit` |
 | `contri` | `payout_failed` | `circle`, `round` |

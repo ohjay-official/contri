@@ -159,6 +159,8 @@ export async function handle(name, request) {
           case "mt_balance_of": return { ok: String(balances[a.account_id] ?? 0n) };
           case "get_circle": return { ok: circles[a.circle_id] ?? null };
           case "current_salt": return { ok: "0a0b0c0d" };
+          case "get_credit": return { ok: "0" };
+          case "get_config": return { ok: { owner_id: "contring.near", intents_id: "intents.near", token_id: "nep141:usdt.tether-token.near", circle_count: circles.length } };
           case "get_circles": return { ok: circles.slice(a.from_index ?? 0, (a.from_index ?? 0) + (a.limit ?? 50)) };
           case "nft_token": return { ok: { token_id: a.token_id, owner_id: me0, metadata: { title: "Contri seat - turn 4 of 5", media: SEAT_SVG } } };
           default: return { error: `mock has no ${c.method}` };

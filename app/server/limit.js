@@ -13,9 +13,10 @@
 // the per-instance limits rather than failing.
 //
 // Callers are counted by a salted hash of their IP address. Without Redis the
-// salt is random per instance and the hashes stay in memory; with Redis the
-// salt is the Redis token (secret, so the hashes can't be reversed by trying
-// every IP), and each count expires after a minute. Neither is logged.
+// salt is random per instance and the hashes stay in memory. With Redis every
+// instance needs the same salt, so it is derived from the relayer's key, which
+// the database's operator (Upstash) doesn't hold: it can't reverse a hash by
+// trying every IP. Each count expires after two minutes. Neither is logged.
 
 import { toHex } from "../public/js/lib/bytes.js";
 
@@ -90,6 +91,50 @@ export async function allowShared(key, max) {
   }
 }
 
+/** @type {Promise<string> | null} */
+let shared = null;
+/**
+ * The salt for IP hashes: the same on every instance when Redis is connected,
+ * from a secret Upstash doesn't hold (the relayer's key); otherwise random.
+ */
+function sharedSalt() {
+  const key = process.env.RELAYER_KEY ?? "";
+  if (!REDIS_URL || !REDIS_TOKEN || !key) return Promise.resolve(salt);
+  shared ??= crypto.subtle.digest("SHA-256", new TextEncoder().encode(`contri-limit-salt:${key}`)).then((d) => toHex(new Uint8Array(d)));
+  return shared;
+}
+
+/** Keys this instance has seen once (when Redis isn't connected). @type {Map<string, number>} */
+const once = new Map();
+/**
+ * True the first time `key` is used within `ttlSecs`, false after. Shared by
+ * every instance through Redis; if Redis is connected but can't be reached,
+ * false (fail closed), since a reused ticket would let the relayer pay twice.
+ * @param {string} key @param {number} ttlSecs
+ */
+export async function useOnce(key, ttlSecs) {
+  if (!REDIS_URL || !REDIS_TOKEN) {
+    const now = Date.now();
+    for (const [k, until] of once) if (until < now) once.delete(k);
+    if (once.has(key)) return false;
+    once.set(key, now + ttlSecs * 1000);
+    return true;
+  }
+  try {
+    const res = await fetch(`${REDIS_URL}/pipeline`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${REDIS_TOKEN}`, "content-type": "application/json" },
+      body: JSON.stringify([["SET", `once:${key}`, "1", "NX", "EX", String(ttlSecs)]]),
+      signal: AbortSignal.timeout(1500),
+    });
+    if (!res.ok) return false;
+    const [first] = await res.json();
+    return first?.result === "OK";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * A salted hash of the caller's IP address, or "" when there is none (the local
  * dev server and tests; Vercel always sets it).
@@ -98,6 +143,6 @@ export async function allowShared(key, max) {
 export async function caller(request) {
   const ip = request.headers.get("x-real-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
   if (!ip) return "";
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${REDIS_TOKEN || salt}:${ip}`));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${await sharedSalt()}:${ip}`));
   return toHex(new Uint8Array(digest)).slice(0, 32);
 }

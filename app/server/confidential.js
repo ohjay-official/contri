@@ -227,6 +227,6 @@ export async function privateHome(body, c) {
     referral: "contri",
   });
   if (!q.depositAddress) throw new RelayError("1Click didn't give a deposit address; try again", 502);
-  const ticket = await issueTicket(c.relayerKey, q.depositAddress);
+  const ticket = await issueTicket(c.relayerKey, q.depositAddress, from, amount);
   return { depositAddress: q.depositAddress, ticket, receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS), seconds: q.timeEstimate };
 }

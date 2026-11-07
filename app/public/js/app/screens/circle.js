@@ -8,7 +8,7 @@ import { getCircle, getConfig, keep, relay, sign, views } from "../api.js";
 import { ring } from "../ring.js";
 import { every, fromNow, nameOf, refresh, slotFor, usd, when } from "../state.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
-import { decodeSecret, encodeSecret, labels, local, remember, setLabel } from "../wallet.js";
+import { confirmRecentPasskey, decodeSecret, encodeSecret, labels, local, remember, setLabel } from "../wallet.js";
 import { standing } from "./home.js";
 
 /** @param {number} id @param {boolean} openShare */
@@ -153,6 +153,7 @@ export async function circleScreen(id, openShare = false) {
       buy.addEventListener("click", () =>
         busy(buy, "Buying", async () => {
           if (balance < BigInt(p)) throw new Error(`Add ${usd(BigInt(p) - balance)} to this circle's account first.`);
+          await confirmRecentPasskey();
           await act(a.buySeat(id, i, p), `Turn ${i + 1} is yours`);
         }),
       );
@@ -162,15 +163,27 @@ export async function circleScreen(id, openShare = false) {
 
   // ---- Leaving, cancelling ----
   const manage = [];
+  /**
+   * A button that asks once more before something that can't be undone.
+   * @param {string} label @param {string} warning @param {string} yes @param {string} working @param {() => Promise<void>} run
+   */
+  const confirmed = (label, warning, yes, working, run) => {
+    const first = /** @type {HTMLButtonElement} */ (h("button", { class: "text danger" }, label));
+    const go = /** @type {HTMLButtonElement} */ (h("button", { class: "primary" }, yes));
+    const back = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary" }, "Keep it"));
+    const ask = h("div", { class: "callout stack", hidden: true }, h("p", null, warning), h("div", { class: "actions row" }, go, back));
+    first.addEventListener("click", () => { ask.hidden = false; first.hidden = true; go.focus(); });
+    back.addEventListener("click", () => { ask.hidden = true; first.hidden = false; first.focus(); });
+    go.addEventListener("click", () => busy(go, working, run));
+    return h("div", null, first, ask);
+  };
   if (me && c.status === "Open" && mySeat >= 0 && !isOrganizer) {
-    const leave = h("button", { class: "text danger" }, "Leave this circle");
-    leave.addEventListener("click", () => busy(leave, "Leaving", () => act(a.leave(id), "You left. Your deposit is back in your balance.")));
-    manage.push(leave);
+    manage.push(confirmed("Leave this circle", "You give up your seat and your deposit comes back to this circle's account.", "Yes, leave", "Leaving",
+      () => act(a.leave(id), "You left. Your deposit is back in your balance.")));
   }
   if (isOrganizer && c.status === "Open") {
-    const cancel = h("button", { class: "text danger" }, "Cancel this circle");
-    cancel.addEventListener("click", () => busy(cancel, "Cancelling", () => act(a.cancel(id), "Cancelled. Deposits are going back to members.")));
-    manage.push(cancel);
+    manage.push(confirmed("Cancel this circle", "This can't be undone. The circle closes for everyone and every deposit goes back.", "Yes, cancel it", "Cancelling",
+      () => act(a.cancel(id), "Cancelled. Deposits are going back to members.")));
   }
 
   // The member's seat NFT, drawn by the contract from the circle's live state.
@@ -247,7 +260,7 @@ export async function circleScreen(id, openShare = false) {
         ? h("div", { class: "stack money" },
             h("h2", null, "This circle's money"),
             h("p", { class: "balance-line" }, "In your account for this circle: ", h("strong", { class: "amount" }, usd(balance))),
-            h("p", { class: "hint" }, "Payouts and returned deposits land here. This account is used for this circle only, so nothing on chain links it to your other circles."),
+            h("p", { class: "hint" }, "Payouts and returned deposits land here. This account is used for this circle only, so no key or address on chain links it to your other circles. Amounts and timing still can."),
             h("div", { class: "actions row" },
               h("a", { class: "button secondary", href: `#/add/${slot.index}` }, "Add money"),
               balance > 0n ? h("a", { class: "button secondary", href: `#/cash/${slot.index}` }, "Move money out") : null,
@@ -278,7 +291,7 @@ export function shareBox(c, name, link, open) {
   });
   return h("details", { class: "share", open },
     h("summary", null, "Invite people"),
-    h("p", null, "Anyone with this link can join the circle and read its name, so send it only to the people you're saving with. Browsers never send the part after # to Contri, but the app you share it through carries the whole link."),
+    h("p", null, "Anyone with this link can join the circle and read its name, so send it only to the people you're saving with. Browsers never send the part after # to Contri, but the app you share it through carries the whole link, and Send on WhatsApp passes it, with the circle's name, to WhatsApp's website."),
     h("p", { class: "code-block", translate: "no" }, link),
     h("div", { class: "actions row" },
       canShare

@@ -1,9 +1,10 @@
 // @ts-check
 // Deploys Contri. Run by .github/workflows/deploy.yml with keys from GitHub
-// secrets; the keys never leave GitHub's runner.
+// secrets. Until --lock, the deploy key is also the relayer's key, which
+// Vercel holds too (scripts/vercel.js), so locking is what takes it away.
 //
 //   node app/scripts/deploy.js <contri.wasm>   create the contract account (first time), deploy, init
-//   node app/scripts/deploy.js --lock          delete the contract account's key: nobody can change the code again
+//   EXPECTED_WASM=<ci build> node app/scripts/deploy.js --lock   delete every key: nobody can change the code again
 //
 // One funded account is enough. The relayer's account (RELAYER_ACCOUNT_ID,
 // RELAYER_KEY) pays members' gas, and the first deploy creates the contract
@@ -17,7 +18,7 @@
 import { readFile } from "node:fs/promises";
 import { config } from "../server/config.js";
 import { sha256, toBase58 } from "../public/js/lib/bytes.js";
-import { signerFromSecretKey } from "../public/js/lib/keys.js";
+import { signerFromSecretKey, signerFromSeed } from "../public/js/lib/keys.js";
 import { outcome, RpcError, rpc, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
 
 const YOCTO = 10n ** 24n;
@@ -73,6 +74,28 @@ async function smoke() {
   console.log(`smoke: passed (circle ${id} created, cancelled and closed)`);
 }
 
+/**
+ * An upgrade can change how circles are stored, and a circle stored the old
+ * way couldn't be read by the new code. So before upgrading, finished or
+ * cancelled circles that have paid everything back are closed (anyone may),
+ * and the upgrade stops if any circle is still open or running.
+ */
+async function clearForUpgrade() {
+  const { circle_count: count } = await view(c.rpcUrl, c.contractId, "get_config");
+  /** @type {any[]} */
+  const circles = [];
+  for (let from = 0; from < count; from += 100) circles.push(...(await view(c.rpcUrl, c.contractId, "get_circles", { from_index: from, limit: 100 })));
+  const live = circles.filter((x) => x.status === "Open" || x.status === "Active");
+  if (live.length) throw new Error(`circles ${live.map((x) => x.id).join(", ")} are still open or running; finish or cancel them before this upgrade`);
+  const relayer = await signerFromSecretKey(c.relayerKey, c.relayerId);
+  for (const x of circles) {
+    const { hash, result } = await sendTransaction(c.rpcUrl, relayer, c.contractId, [{ functionCall: { method: "close_circle", args: { circle_id: x.id }, gas: 30n * TGAS, deposit: 0n } }], "FINAL");
+    const { failure } = outcome(result);
+    if (failure) throw new Error(`circle ${x.id} couldn't be closed (${JSON.stringify(failure).slice(0, 160)}); release its deposits first`);
+    console.log(`closed circle ${x.id} before the upgrade: ${hash}`);
+  }
+}
+
 /** Bytes the contract's NEAR covers beyond what it stores. @param {any} a */
 const headroom = (a) => Number(BigInt(a.amount) / 10n ** 19n) - a.storage_usage;
 /**
@@ -100,22 +123,54 @@ async function topUpStorage() {
 
 if (process.argv[2] === "--lock") {
   if (!existing) throw new Error(`${c.contractId} doesn't exist`);
-  // NEAR Intents lets an account register keys that sign intents for its balance.
-  // A lock with one registered would leave a way to move the contract's money.
+  // Locking makes the deployed code permanent, so it must be exactly the code
+  // CI built from the repository: EXPECTED_WASM is that build (deploy.yml takes
+  // it from the ci-results branch).
+  if (!process.env.EXPECTED_WASM) throw new Error("set EXPECTED_WASM to CI's build of the contract");
+  const expected = toBase58(await sha256(new Uint8Array(await readFile(process.env.EXPECTED_WASM))));
+  if (existing.code_hash !== expected) throw new Error(`${c.contractId} runs ${existing.code_hash}, not CI's build ${expected}. Not locking.`);
+
+  // NEAR Intents lets an account register keys that sign intents for its
+  // balance; payouts move it as the caller ("predecessor auth"); and Intents
+  // can lock an account. Any of these wrong at the lock would stay wrong.
   /** @returns {Promise<string[]>} */
   const intentsKeys = () => view(c.rpcUrl, c.intentsId, "public_keys_of", { account_id: c.contractId });
-  const before = await intentsKeys();
-  if (before.length) throw new Error(`${c.contractId} has keys registered on ${c.intentsId}: ${before.join(", ")}. Remove them before locking.`);
-  // Every access key goes, in one transaction: the deploy key and any other.
-  const list = await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: c.contractId });
+  /** @returns {Promise<boolean>} */
+  const canPay = () => view(c.rpcUrl, c.intentsId, "is_auth_by_predecessor_id_enabled", { account_id: c.contractId });
+  /** @returns {Promise<boolean>} */
+  const lockedOnIntents = () => view(c.rpcUrl, c.intentsId, "is_account_locked", { account_id: c.contractId });
+  const intentsOk = async () => {
+    const keys = await intentsKeys();
+    if (keys.length) throw new Error(`${c.contractId} has keys registered on ${c.intentsId}: ${keys.join(", ")}. Not locking.`);
+    if ((await canPay()) !== true) throw new Error(`${c.intentsId} doesn't let ${c.contractId} move its own balance; payouts would fail. Not locking.`);
+    if ((await lockedOnIntents()) !== false) throw new Error(`${c.contractId} is locked on ${c.intentsId}. Not locking.`);
+  };
+  await intentsOk();
+
+  /** @returns {Promise<{ public_key: string }[]>} */
+  const accessKeys = async () => (await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: c.contractId })).keys;
+  const list = await accessKeys();
+  if (!list.some((k) => k.public_key === signer.publicKeyStr)) throw new Error("the deploy key isn't on the account");
   const { fromBase58 } = await import("../public/js/lib/bytes.js");
-  const deletes = list.keys.map((/** @type {{ public_key: string }} */ k) => ({ deleteKey: { publicKey: fromBase58(k.public_key.replace(/^ed25519:/, "")) } }));
-  if (!list.keys.some((/** @type {{ public_key: string }} */ k) => k.public_key === signer.publicKeyStr)) throw new Error("the deploy key isn't on the account");
-  const { hash } = await sendTransaction(c.rpcUrl, signer, c.contractId, deletes, "FINAL");
-  const keys = await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: c.contractId });
+  const del = (/** @type {string} */ k) => ({ deleteKey: { publicKey: fromBase58(k.replace(/^ed25519:/, "")) } });
+
+  // 1. Swap every key for a fresh one that exists only in this process, in one
+  //    transaction. From here the deploy key (also the relayer's) can't act as
+  //    the contract, so nothing can slip in between the checks and the lock.
+  const fresh = await signerFromSeed(crypto.getRandomValues(new Uint8Array(32)), c.contractId);
+  const swap = await sendTransaction(c.rpcUrl, signer, c.contractId, [{ addFullAccessKey: { publicKey: fresh.publicKey } }, ...list.map((k) => del(k.public_key))], "FINAL");
+  console.log(`swapped ${list.length} key(s) for a one-time key: ${swap.hash}`);
+  // 2. Check again, now that nobody else can change anything.
+  await intentsOk();
+  if ((await account(c.contractId)).code_hash !== expected) throw new Error("the code changed before the lock");
+  // 3. Delete the one-time key.
+  const { hash } = await sendTransaction(c.rpcUrl, fresh, c.contractId, [del(fresh.publicKeyStr)], "FINAL");
+  const left = await accessKeys();
   const after = await intentsKeys();
-  console.log(`locked ${c.contractId} in ${hash}: ${keys.keys.length} access keys left, ${after.length} keys on ${c.intentsId}`);
-  if (keys.keys.length || after.length) throw new Error("the account still has keys");
+  const paying = await canPay();
+  console.log(`locked ${c.contractId} in ${hash}: ${left.length} access keys left, ${after.length} keys on ${c.intentsId}, predecessor auth ${paying}, code ${expected}`);
+  if (left.length || after.length) throw new Error("the account still has keys");
+  if (paying !== true) throw new Error("predecessor auth is off: payouts would fail");
 } else {
   const wasm = new Uint8Array(await readFile(process.argv[2]));
   const init = { functionCall: { method: "new", args: { intents_id: c.intentsId, token_id: c.tokenId }, gas: 30n * TGAS, deposit: 0n } };
@@ -151,6 +206,7 @@ if (process.argv[2] === "--lock") {
       console.log(JSON.stringify(await view(c.rpcUrl, c.contractId, "get_config")));
       process.exit(0);
     }
+    if (!fresh) await clearForUpgrade();
     // A fresh account stores the whole code; an upgrade replaces code of about the same size.
     const needed = storage(fresh ? wasm.length + existing.storage_usage + 5_000 : Math.max(existing.storage_usage, wasm.length) + 2_000);
     if (BigInt(existing.amount) < needed) throw new Error(`needs about ${near(needed)} NEAR, has ${near(existing.amount)}`);

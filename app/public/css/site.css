@@ -368,7 +368,9 @@
   .chip { width: 92px; height: 92px; font-size: 21px; }
 }
 @media (max-width: 767px) { .vortex { height: 92svh; min-height: 620px; } }
-.cta-card h2, .cta-card p { text-shadow: 0 1px 14px rgba(140, 40, 0, 0.35); }
+/* Dark text stays readable (5.5:1 or better) on every colour the glow moves through. */
+.cta-card { color: var(--light-ink); }
+.cta-card h2, .cta-card p { text-shadow: none; }
 .cta-card p { opacity: 1; font-weight: 500; }
 @media (max-width: 900px) {
   .card-scene-copy { bottom: 0; padding: 72px 0 24px; background: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 38%); }

@@ -147,7 +147,7 @@ export async function cashOut(body, c) {
     symbol: n.symbol,
     depositAddress: q.depositAddress ?? null,
     // Lets the relayer pay for the member's transfer to it (see ticket.js).
-    ticket: q.depositAddress ? await issueTicket(c.relayerKey, q.depositAddress) : null,
+    ticket: q.depositAddress ? await issueTicket(c.relayerKey, q.depositAddress, body.account, amount) : null,
     receive: formatDown(BigInt(q.amountOut), n.decimals),
     fee: q.withdrawFee ? formatUnits(BigInt(q.withdrawFee), n.decimals) : "0",
     seconds: q.timeEstimate,

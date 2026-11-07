@@ -62,8 +62,8 @@ export async function settingsScreen() {
     h("div", { class: "orbit" }, h("i", { class: "orbit-dot" })),
     h("div", { class: "sphere" }),
     h("span", { class: "glass-tag t1" }, h("i", { class: "dot" }), num(n, n === 1 ? "account" : "accounts")),
-    h("span", { class: "glass-tag t2" }, h("i", { class: "dot" }), num(0, "names stored")),
-    h("span", { class: "glass-tag t3" }, h("i", { class: "dot amber" }), num(0, "keys shared")),
+    h("span", { class: "glass-tag t2" }, h("i", { class: "dot" }), "No name asked for"),
+    h("span", { class: "glass-tag t3" }, h("i", { class: "dot amber" }), "No key shared between circles"),
     h("p", { class: "kcard-copy" }, "Each circle gets its own account. No key on the blockchain ties them to each other or to you."),
   );
   scramble(middle);

@@ -37,11 +37,12 @@ export async function keep(body, c, nowMs) {
     const one = await view(c.rpcUrl, c.contractId, "get_circle", { circle_id: id });
     circles = one ? [one] : [];
   } else {
+    // Pages run by circle id, and closed circles leave gaps, so a short page
+    // isn't the end: go up to the number of circles ever made.
     circles = [];
-    for (let from = 0; ; from += 100) {
-      const page = await view(c.rpcUrl, c.contractId, "get_circles", { from_index: from, limit: 100 });
-      circles.push(...page);
-      if (page.length < 100) break;
+    const { circle_count: count } = await view(c.rpcUrl, c.contractId, "get_config");
+    for (let from = 0; from < count; from += 100) {
+      circles.push(...(await view(c.rpcUrl, c.contractId, "get_circles", { from_index: from, limit: 100 })));
     }
   }
 

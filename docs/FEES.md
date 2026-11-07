@@ -1,6 +1,6 @@
 # Fees and minimums (measured)
 
-Dry-run quotes from the 1Click API on Oct 31, 2026 (unauthenticated), from `scripts/probe-1click.mjs`. No money moved. Re-run the probe before quoting these numbers anywhere public.
+Dry-run quotes from the 1Click API on 1 November 2026, Lagos time (unauthenticated), from `scripts/probe-1click.mjs`. No money moved. Re-run the probe before quoting these numbers anywhere public.
 
 The circle asset is USDT on NEAR inside NEAR Intents: `nep141:usdt.tether-token.near` (6 decimals).
 
@@ -47,7 +47,8 @@ Storage on NEAR is staked, not spent: an account locks 1 NEAR per 100 KB it stor
 | Community backing, trust deposits, refills; a bump allocator instead of wee_alloc | 95 KB | 0.95 NEAR |
 | Fair random draws, leaving before the start, fill deadlines, cleanup, live seat images | 99.4 KB | 0.99 NEAR |
 | Creating costs a deposit (no free spam) | 99.8 KB | 1.00 NEAR (99,751 bytes deployed) |
-| Security fixes: storage reservations and credit slots, a $1 minimum, empty pots, one-contribution invites, fair backing, relative deadlines, gas floors with a share of leftover gas | **102.2 KB** | **1.02 NEAR** (102,245 bytes, CI build of the deployed source) |
+| Security fixes: storage reservations and credit slots, a $1 minimum, empty pots, one-contribution invites, fair backing, relative deadlines, gas floors with a share of leftover gas | 102.2 KB | 1.02 NEAR (102,245 bytes) |
+| Third audit round: arrears held back from a defaulter's own turn, emptied circles cancel, an 80 Tgas payout guard | **105.1 KB** | **1.05 NEAR** (105,123 bytes, CI build) |
 
 The 193 KB step removed two things: direct calls for members with a NEAR account, and the embedded ABI. Both came back in the 88 KB row (the ABI is generated from typed declarations in `contract/interface`, see `contract/abi/README.md`). Nothing else was removed, and the later steps added NFT enumeration views, NEP-171 events and a round-deadline view. CI measures the size on every push (`ci-results` branch, `size.json`).
 

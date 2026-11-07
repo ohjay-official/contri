@@ -7,7 +7,7 @@ name: sandbox
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, audit-fixes-wip]
     paths:
       - contract/**
       - app/public/js/lib/**
@@ -25,12 +25,16 @@ permissions:
 env:
   # The NEAR Intents source the tests run against.
   INTENTS_REF: d340060
+  # Pushes to a work-in-progress branch publish to sandbox-results-wip, so sandbox-results stays main's.
+  RESULTS: ${{ github.ref_name == 'main' && 'sandbox-results' || 'sandbox-results-wip' }}
 
 jobs:
   e2e:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Check out NEAR Intents
         run: |
@@ -50,7 +54,7 @@ jobs:
             contract/sandbox
 
       - name: Install cargo-near
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.23.0/cargo-near-installer.sh | sh
 
       - name: Build NEAR Intents
         id: intents
@@ -97,13 +101,13 @@ jobs:
           echo "{\"commit\":\"${GITHUB_SHA}\",\"intents\":\"${{ steps.intents.outcome }}\",\"contri\":\"${{ steps.contri.outcome }}\",\"e2e\":\"${{ steps.e2e.outcome }}\"}" > e2e-out/status.json
           cd e2e-out
           git init -q
-          git checkout -q -b sandbox-results
+          git checkout -q -b "$RESULTS"
           git config user.name "contri-ci"
           git config user.email "actions@users.noreply.github.com"
           git add -A
           git commit -q -m "sandbox results ${GITHUB_SHA}"
           # GitHub sometimes answers a push with a server error; try again.
-          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" sandbox-results && break; [ "$i" = 3 ] && exit 1; sleep $((i * 5)); done
+          for i in 1 2 3; do git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" "$RESULTS" && break; [ "$i" = 3 ] && exit 1; sleep $((i * 5)); done
 
       - name: Fail the job if a step failed
         if: steps.intents.outcome != 'success' || steps.contri.outcome != 'success' || steps.e2e.outcome != 'success'

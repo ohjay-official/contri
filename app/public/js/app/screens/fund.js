@@ -14,7 +14,7 @@ import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { follow, moveOut, privateBalance, STATUS } from "../private.js";
 import { nameOf, usd } from "../state.js";
 import { busy, copy, field, h, notice, show, sleep } from "../ui.js";
-import { balanceOf, decodeSecret, local, logMove, remember, signer } from "../wallet.js";
+import { balanceOf, confirmRecentPasskey, decodeSecret, local, logMove, remember, signer } from "../wallet.js";
 
 /** Networks shown first are the cheapest for small amounts. */
 export const NETWORKS = [
@@ -100,6 +100,8 @@ export async function fundScreen(index) {
       whole: deposit + BigInt(c.contribution) * BigInt(c.size),
       button: `Join and pay ${usd(deposit)} deposit`,
       run: async () => {
+        // Joining commits money to other people: ask for the passkey again.
+        await confirmRecentPasskey();
         const sig = l.secret && c.invite_only ? await signJoin(decodeSecret(l.secret), cfg.contractId, id, s.accountId, deposit) : null;
         const r = await relay([await sign(s, a.join(id, deposit, sig))]);
         if (!findEvent(r.events, "joined")) throw new Error(`${r.notes[0] ?? "You weren't added"}. Your deposit is back in your balance.`);
@@ -118,7 +120,9 @@ export async function fundScreen(index) {
         whole: BigInt(c.contribution) * BigInt(c.size - round),
         button: `Pay ${usd(c.contribution)}`,
         run: async () => {
-          await relay([await sign(s, a.contribute(id, round, c.contribution))]);
+          const r = await relay([await sign(s, a.contribute(id, round, c.contribution))]);
+          // A payment the contract refunded (the round moved on, a payout in flight) isn't paid.
+          if (!findEvent(r.events, "contributed")) throw new Error(`${r.notes[0] ?? "It wasn't recorded"}. Your money is back in this circle's account.`);
           return `#/c/${id}`;
         },
       };
@@ -167,7 +171,7 @@ export async function fundScreen(index) {
       depositAddress = q.depositAddress;
       // Kept for this circle account, so it's still here if the phone reloads the page.
       await remember(index, { deposit: q });
-      depositBox.replaceChildren(...depositDetails(q, "Sending more is fine: the extra stays in this circle's account.").filter((x) => x !== null));
+      depositBox.replaceChildren(...depositDetails(q, "Sending more is fine: the extra stays in this circle's account. If less arrives than this, 1Click sends it back as the coin you sent, which the app can't show yet; copy the details from Help and send them to us.").filter((x) => x !== null));
       progress.textContent = "Waiting for your deposit";
       depositBox.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     }),
@@ -202,12 +206,12 @@ export async function fundScreen(index) {
   const viaPrivate = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "route", value: "private" }));
   const routes = h("div", { class: "networks", role: "radiogroup", "aria-label": "How to add money" },
     h("label", { class: "choice" }, direct, h("span", null, h("strong", null, "Straight from an exchange or wallet"), h("span", { class: "hint" }, "Quickest. It comes in through NEAR Intents' confidential route, so no address links your wallet to this circle."))),
-    h("label", { class: "choice" }, viaPrivate, h("span", null, h("strong", null, "Privately, through your private balance"), h("span", { class: "hint" }, "Most private. Keep money in your private balance and pay circles from it over time, so not even amounts and timing match your wallet."))),
+    h("label", { class: "choice" }, viaPrivate, h("span", null, h("strong", null, "Privately, through your private balance"), h("span", { class: "hint" }, "Most private. Keep money in your private balance and pay circles from it over time, so amounts and timing are harder to match to your wallet."))),
   );
   const directForm = h("div", { class: "stack" },
     field("How much, in dollars", amountInput, "Adding enough for every round at once saves a network fee each round. Anything not used stays in this account, and you can cash it out."),
     amountChoices,
-    h("p", null, "Choose the network you're sending from. Withdrawing from an exchange works: pick the same network there."),
+    h("p", null, "Choose the network you're sending from. Withdrawing from an exchange works: pick the same network there, and if the exchange takes its fee out of the amount, add the fee on top so the full amount arrives."),
     networks.el,
     h("div", { class: "actions" }, getAddress),
     depositBox,
@@ -254,7 +258,7 @@ export async function fundScreen(index) {
   // A deposit address from before a reload, while it's still valid.
   if (l.deposit && Date.parse(l.deposit.deadline) > Date.now()) {
     depositAddress = l.deposit.depositAddress;
-    depositBox.replaceChildren(...depositDetails(l.deposit, "Sending more is fine: the extra stays in this circle's account.").filter((x) => x !== null));
+    depositBox.replaceChildren(...depositDetails(l.deposit, "Sending more is fine: the extra stays in this circle's account. If less arrives than this, 1Click sends it back as the coin you sent, which the app can't show yet; copy the details from Help and send them to us.").filter((x) => x !== null));
     progress.textContent = STATUS.PENDING_DEPOSIT;
   }
   if (purpose && purpose.whole - balance > short) {

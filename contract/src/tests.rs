@@ -377,24 +377,28 @@ fn full_run_updates_records() {
     set("contri.near", 101);
     c.finalize_payout(id, 0, U128(2 * CONTRIBUTION), true);
 
-    // Round 1: Bayo misses, deposit covers it.
+    // Round 1 is Bayo's turn and he doesn't pay it: his share would only have
+    // come back to him, so nobody is owed it and his deposit stays.
     contribute(&mut c, ADA, id, 1, 200);
     set("anyone.near", 10 + 2 * DAY + 1);
     c.internal_settle(id);
+    assert_eq!(c.circle_of(id).unwrap().pot, U128(CONTRIBUTION));
     set("contri.near", 10 + 2 * DAY + 2);
-    c.finalize_payout(id, 1, U128(2 * CONTRIBUTION), true);
+    c.finalize_payout(id, 1, U128(CONTRIBUTION), true);
 
     let circle = c.circle_of(id).unwrap();
     assert_eq!(circle.status, CircleStatus::Finished);
     assert_eq!(circle.payouts[1].to, acc(BAYO));
+    assert_eq!(circle.payouts[1].shortfall, U128(0));
     assert_eq!(c.record_of(&acc(ADA)).completed, 1);
-    assert_eq!(c.record_of(&acc(BAYO)).defaults, 1);
+    assert_eq!(c.record_of(&acc(BAYO)).completed, 1);
     assert_eq!(c.record_of(&acc(BAYO)).missed_payments, 1);
 
-    // Ada's deposit is still held and can be released.
+    // Both deposits are still held and can be released.
     assert_eq!(circle.members[0].deposit, U128(CONTRIBUTION));
+    assert_eq!(circle.members[1].deposit, U128(CONTRIBUTION));
     set("anyone.near", 10 + 2 * DAY + 3);
-    assert_eq!(c.internal_release(id), 1);
+    assert_eq!(c.internal_release(id), 2);
     assert_eq!(c.circle_of(id).unwrap().members[0].deposit, U128(0));
 }
 
@@ -1189,19 +1193,22 @@ fn community_backing_covers_what_a_deposit_cannot() {
     c.finalize_payout(0, 1, circle.pot, true);
     assert_eq!(c.circle_of(0).unwrap().payouts[1].shortfall, U128(0));
 
-    // Round 2: only 1 USDT of backing is left, so the pot is 4 USDT short.
+    // Round 2 is Chioma's own turn. Skipping her own share owes nobody, but the
+    // 5 USDT the backing paid for her is held back from her pot and goes back
+    // to the backing.
     contribute(&mut c, ADA, 0, 2, 13 + 2 * DAY);
     contribute(&mut c, BAYO, 0, 2, 13 + 2 * DAY);
     set("anyone.near", 12 + 3 * DAY);
     c.internal_settle(0);
     let circle = c.circle_of(0).unwrap();
-    assert_eq!(circle.pot, U128(2 * CONTRIBUTION + 1_000_000));
-    assert_eq!(circle.backing, U128(0));
+    assert_eq!(circle.pot, U128(CONTRIBUTION));
+    assert_eq!(circle.backing, U128(6_000_000), "the backing is whole again");
     set("contri.near", 13 + 3 * DAY);
     c.finalize_payout(0, 2, circle.pot, true);
-    assert_eq!(c.circle_of(0).unwrap().payouts[2].shortfall, U128(4_000_000));
+    assert_eq!(c.circle_of(0).unwrap().payouts[2].shortfall, U128(0));
     let paid = event(&events(), "contri", "paid_out").clone();
-    assert_eq!(paid["data"][0]["shortfall"], "4000000");
+    assert_eq!(paid["data"][0]["withheld"], "5000000");
+    assert_eq!(c.circle_of(0).unwrap().backers[0].due, U128(6_000_000));
 }
 
 #[test]
@@ -1790,23 +1797,30 @@ fn leaving_and_cancelling_release_reservations() {
 #[test]
 fn an_empty_pot_closes_the_round_without_a_transfer() {
     let mut c = setup();
-    assert_eq!(transfer(&mut c, ADA, MIN_CONTRIBUTION, &format!("create:{MIN_CONTRIBUTION}:2:60:join:-:x"), 0), 0);
-    assert_eq!(transfer(&mut c, BAYO, MIN_CONTRIBUTION, "join:0", 0), 0);
-    // Round 0: nobody pays; the deposits cover it.
+    let m = MIN_CONTRIBUTION;
+    assert_eq!(transfer(&mut c, ADA, m, &format!("create:{m}:3:60:join:-:x"), 0), 0);
+    assert_eq!(transfer(&mut c, BAYO, m, "join:0", 0), 0);
+    assert_eq!(transfer(&mut c, CHIOMA, m, "join:0", 0), 0);
+    // Nobody ever pays. Round 0: Bayo's and Chioma's deposits cover them.
     set("anyone.near", 60);
     c.internal_settle(0);
     set("contri.near", 61);
-    assert!(c.finalize_payout(0, 0, U128(2 * MIN_CONTRIBUTION), true));
-    // Round 1: nobody pays and nothing is left to cover it. The round closes
-    // with its whole pot short, and no zero transfer is attempted.
+    assert!(c.finalize_payout(0, 0, U128(2 * m), true));
+    // Round 1: Ada's deposit covers her; Chioma's is gone, so the pot is short.
     set("anyone.near", 121);
+    c.internal_settle(0);
+    set("contri.near", 122);
+    assert!(c.finalize_payout(0, 1, U128(m), true));
+    // Round 2: nothing is left to cover Ada or Bayo. The round closes with its
+    // pot short, and no zero transfer is attempted.
+    set("anyone.near", 182);
     c.internal_settle(0);
     assert!(get_created_receipts().is_empty(), "no transfer of nothing");
     let circle = c.circle_of(0).unwrap();
     assert_eq!(circle.status, CircleStatus::Finished);
     assert!(!circle.paying);
-    assert_eq!(circle.payouts[1].amount, U128(0));
-    assert_eq!(circle.payouts[1].shortfall, U128(2 * MIN_CONTRIBUTION));
+    assert_eq!(circle.payouts[2].amount, U128(0));
+    assert_eq!(circle.payouts[2].shortfall, U128(2 * m), "Chioma's own share isn't counted");
     assert_eq!(c.record_of(&acc(BAYO)).defaults, 1);
 }
 
@@ -1816,11 +1830,11 @@ fn backing_is_refused_once_some_has_covered_a_missed_payment() {
     assert_eq!(transfer(&mut c, "coop.near", 10_000_000, "back:0", 11), 0);
     // While none is used, more backing is welcome, while the circle runs too.
     assert_eq!(transfer(&mut c, "church.near", CONTRIBUTION, "back:0", 12), 0);
-    // Rounds 0 and 1: Bayo misses; his deposit, then the backing, covers it.
+    // Rounds 0 and 1: Chioma misses; her deposit, then the backing, covers it.
     for round in 0..2u32 {
         let at = 10 + round as u64 * DAY;
         contribute(&mut c, ADA, 0, round, at + 100);
-        contribute(&mut c, CHIOMA, 0, round, at + 100);
+        contribute(&mut c, BAYO, 0, round, at + 100);
         set("anyone.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000);
         c.internal_settle(0);
         set("contri.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000 + 1);
@@ -1858,4 +1872,119 @@ fn a_round_closed_late_still_gets_a_full_period() {
     set("contri.near", 101);
     assert!(c.finalize_payout(0, 0, U128(3 * CONTRIBUTION), true));
     assert_eq!(c.circle_of(0).unwrap().round_deadline(), (10 + 2 * DAY) * 1_000_000_000);
+}
+
+/// The money a circle holds, by its own books: pot, deposits, backing not yet
+/// used, backers' shares and what was held back from members who owed.
+fn held(c: &Contri, id: u64) -> u128 {
+    let x = c.circle_of(id).unwrap();
+    x.pot.0 + x.members.iter().map(|m| m.deposit.0).sum::<u128>() + x.backing.0 + x.backers.iter().map(|b| b.due.0).sum::<u128>() + x.recovered.0
+}
+
+#[test]
+fn a_member_who_never_pays_has_what_they_owe_held_back_from_their_own_turn() {
+    // Chioma (seat 2) never pays. Her deposit covers round 0; round 1 is short
+    // and she owes it; round 2 is her own turn. She gets the pot less what she
+    // owes, and that goes to Bayo, whose pot was short, when the circle ends.
+    let mut c = full_circle_of_three();
+    let one = CONTRIBUTION;
+    contribute(&mut c, ADA, 0, 0, 100);
+    contribute(&mut c, BAYO, 0, 0, 100);
+    set("anyone.near", 10 + DAY + 1);
+    c.internal_settle(0);
+    assert!(c.finalize_payout(0, 0, U128(3 * one), true));
+    contribute(&mut c, ADA, 0, 1, 10 + DAY + 100);
+    contribute(&mut c, BAYO, 0, 1, 10 + DAY + 100);
+    set("anyone.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000);
+    c.internal_settle(0);
+    assert_eq!(c.circle_of(0).unwrap().members[2].owed, U128(one));
+    assert!(c.finalize_payout(0, 1, U128(2 * one), true));
+    assert_eq!(c.circle_of(0).unwrap().payouts[1].shortfall, U128(one));
+    contribute(&mut c, ADA, 0, 2, 10 + 2 * DAY + 100);
+    contribute(&mut c, BAYO, 0, 2, 10 + 2 * DAY + 100);
+    set("anyone.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000);
+    c.internal_settle(0);
+    let paying = c.circle_of(0).unwrap();
+    assert_eq!(paying.pot, U128(one), "2 paid in, 1 held back");
+    assert_eq!(paying.recovered, U128(one));
+    assert_eq!(paying.members[2].owed, U128(0));
+    assert_eq!(paying.members[2].deposit, U128(0), "her own turn doesn't take a deposit");
+    assert!(c.finalize_payout(0, 2, U128(one), true));
+    let done = c.circle_of(0).unwrap();
+    assert_eq!(done.status, CircleStatus::Finished);
+    assert_eq!(done.payouts[2].amount, U128(one));
+    assert_eq!(done.payouts[2].shortfall, U128(0));
+    assert_eq!(done.recovered, U128(0));
+    // Everyone ends even: Ada's deposit back; Bayo's deposit plus the 1 his pot
+    // was short; Chioma paid 1 (her deposit) and received 1.
+    assert_eq!(done.members[0].deposit, U128(one));
+    assert_eq!(done.members[1].deposit, U128(2 * one));
+    assert_eq!(done.members[2].deposit, U128(0));
+    assert_eq!(held(&c, 0), 3 * one);
+    let event = events().into_iter().filter(|e| e["event"] == "paid_out").last().unwrap();
+    assert_eq!(event["data"][0]["withheld"], json!(one.to_string()));
+}
+
+#[test]
+fn backing_that_covered_a_member_is_repaid_from_their_turn_first() {
+    let mut c = full_circle_of_three();
+    let one = CONTRIBUTION;
+    assert_eq!(transfer(&mut c, "dao.near", one, "back:0", 20), 0);
+    // Chioma misses rounds 0 and 1: her deposit, then the backing, cover them.
+    for round in 0..2u32 {
+        let at = 10 + round as u64 * DAY;
+        contribute(&mut c, ADA, 0, round, at + 100);
+        contribute(&mut c, BAYO, 0, round, at + 100);
+        set("anyone.near", c.circle_of(0).unwrap().round_deadline() / 1_000_000_000);
+        c.internal_settle(0);
+        assert!(c.finalize_payout(0, round, U128(3 * one), true));
+    }
+    let mid = c.circle_of(0).unwrap();
+    assert_eq!(mid.backing, U128(0));
+    assert_eq!((mid.members[2].owed, mid.members[2].backed), (U128(one), U128(one)));
+    // Her turn: what she owes goes back to the backing, not to her.
+    contribute(&mut c, ADA, 0, 2, 10 + 2 * DAY + 100);
+    contribute(&mut c, BAYO, 0, 2, 10 + 2 * DAY + 100);
+    contribute(&mut c, CHIOMA, 0, 2, 10 + 2 * DAY + 100);
+    let paying = c.circle_of(0).unwrap();
+    assert_eq!(paying.pot, U128(2 * one));
+    assert_eq!(paying.backing, U128(one));
+    assert!(c.finalize_payout(0, 2, U128(2 * one), true));
+    let done = c.circle_of(0).unwrap();
+    assert_eq!(done.backers[0].due, U128(one), "the backer gets all of it back");
+    assert_eq!(held(&c, 0), 3 * one);
+}
+
+#[test]
+fn the_member_whose_turn_it_is_owes_nobody_for_skipping_it() {
+    let mut c = full_circle_of_three();
+    contribute(&mut c, BAYO, 0, 0, 100);
+    contribute(&mut c, CHIOMA, 0, 0, 100);
+    set("anyone.near", 10 + DAY + 1);
+    c.internal_settle(0);
+    let circle = c.circle_of(0).unwrap();
+    assert_eq!(circle.pot, U128(2 * CONTRIBUTION));
+    assert_eq!(circle.members[0].deposit, U128(CONTRIBUTION), "Ada's deposit stays for later rounds");
+    assert!(!circle.members[0].defaulted);
+    assert_eq!(circle.members[0].owed, U128(0));
+    assert!(c.finalize_payout(0, 0, U128(2 * CONTRIBUTION), true));
+    assert_eq!(c.circle_of(0).unwrap().payouts[0].shortfall, U128(0));
+}
+
+#[test]
+fn an_organizer_who_leaves_their_empty_circle_cancels_it() {
+    let mut c = setup();
+    let m = MIN_CONTRIBUTION;
+    assert_eq!(transfer(&mut c, ADA, m, &format!("create:{m}:20:60:join:-:spam"), 0), 0);
+    auth(&mut c, ADA, "leave:0", 5);
+    assert_eq!(c.circle_of(0).unwrap().status, CircleStatus::Cancelled);
+    set("anyone.near", 6);
+    c.internal_close(0);
+    assert!(c.circle_of(0).is_none(), "its storage is freed at once");
+    // A circle organized by an account that took no seat isn't cancelled by
+    // someone joining and leaving it.
+    organize(&mut c, "dao.near", &format!("create:{m}:3:60:join:-:coop"), 10);
+    assert_eq!(transfer(&mut c, BAYO, m, "join:1", 11), 0);
+    auth(&mut c, BAYO, "leave:1", 12);
+    assert_eq!(c.circle_of(1).unwrap().status, CircleStatus::Open);
 }

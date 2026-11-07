@@ -420,6 +420,7 @@ async fn the_deploy_script_creates_upgrades_and_locks_the_contract() -> Result<(
             .env("TOKEN_ID", &env.token)
             .env("RELAYER_ACCOUNT_ID", env.root.id().as_str())
             .env("RELAYER_KEY", env.root.secret_key().to_string())
+            .env("EXPECTED_WASM", std::env::var("CONTRI_WASM").unwrap_or_default())
             .output()
     };
     for (what, arg) in [("first deploy", std::env::var("CONTRI_WASM")?), ("upgrade", std::env::var("CONTRI_WASM")?), ("lock", "--lock".to_string())] {
@@ -432,6 +433,8 @@ async fn the_deploy_script_creates_upgrades_and_locks_the_contract() -> Result<(
     ensure!(config["intents_id"] == env.intents.id().as_str(), "initialized for NEAR Intents: {config}");
     let keys = env.worker.view_access_keys(&id).await?;
     ensure!(keys.is_empty(), "locked: no keys left");
+    // The relayer's own account keeps its key, so the relayer and keeper go on.
+    ensure!(!env.worker.view_access_keys(env.root.id()).await?.is_empty(), "the relayer keeps its key");
     Ok(())
 }
 
@@ -479,7 +482,9 @@ async fn the_payout_callback_fits_its_gas_floor_in_the_biggest_circle() -> Resul
             .call(env.intents.id(), "mt_transfer_call")
             .args_json(json!({"receiver_id": env.contri.id(), "token_id": env.token, "amount": C.to_string(), "msg": "contribute:0:19"}))
             .deposit(NearToken::from_yoctonear(1))
-            .gas(near_workspaces::types::Gas::from_tgas(100))
+            // Enough for NEAR Intents' part and Contri's payout guard (80 Tgas);
+            // with less, the last payment is kept and the keeper pays out.
+            .gas(near_workspaces::types::Gas::from_tgas(200))
             .transact()
             .await?;
         check(&format!("{} pays contribute:0:19", m.id()), &r)?;

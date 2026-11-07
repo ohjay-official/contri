@@ -1,11 +1,11 @@
 // @ts-check
 // Your circles: what each one needs from you now.
 
-import { dueFor, needs, payoutDateMs, potSize, roundDeadlineMs, seatOf } from "../../lib/contri.js";
-import { keep } from "../api.js";
+import { actions, dueFor, needs, payoutDateMs, potSize, roundDeadlineMs, seatOf } from "../../lib/contri.js";
+import { getConfig, keep, relay, sign } from "../api.js";
 import { privateBalance } from "../private.js";
 import { every, fromNow, nameOf, refresh, state, usd, when } from "../state.js";
-import { h, show } from "../ui.js";
+import { busy, h, notice, show } from "../ui.js";
 import { local, recoverySeen } from "../wallet.js";
 
 /** One line saying where the member stands. @param {import("../../lib/contri.js").Circle} c @param {string} me */
@@ -44,9 +44,27 @@ export async function homeScreen() {
   }
   const slots = state.slots ?? [];
   const known = await local();
+  const cfg = await getConfig();
 
   const rows = [];
   for (const slot of slots) {
+    // A transfer out of Contri that failed left a credit: claiming sends it again.
+    if (slot.credit > 0n) {
+      const claim = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary" }, `Claim ${usd(slot.credit)}`));
+      claim.addEventListener("click", () =>
+        busy(claim, "Claiming", async () => {
+          const r = await relay([await sign(slot.signer, actions(cfg.contractId, cfg.tokenId).claimCredit())]);
+          if (!r.ok) throw new Error(r.notes[0] ?? "It didn't go through. Try again in a minute.");
+          notice(`Claimed. ${usd(slot.credit)} is on its way to this account.`);
+          claim.disabled = true;
+        }),
+      );
+      rows.push(h("li", null, h("div", { class: "circle-row" },
+        h("span", { class: "row-title" }, `${usd(slot.credit)} owed to you`),
+        h("span", { class: "row-sub" }, "A payment out of Contri didn't go through, so the contract kept it for you."),
+        claim,
+      )));
+    }
     for (const id of slot.circles) {
       const c = state.circles.get(id);
       if (!c) continue;

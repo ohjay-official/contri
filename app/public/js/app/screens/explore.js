@@ -13,10 +13,11 @@ export async function exploreScreen() {
   const cfg = await getConfig();
   /** @type {import("../../lib/contri.js").Circle[]} */
   const circles = [];
-  for (let from = 0; ; from += 100) {
+  // Pages run by circle id and closed circles leave gaps: read up to the count.
+  const [{ circle_count: count }] = await views([{ contract: "contri", method: "get_config", args: {} }]);
+  for (let from = 0; from < count; from += 100) {
     const [page] = await views([{ contract: "contri", method: "get_circles", args: { from_index: from, limit: 100 } }]);
     circles.push(...page);
-    if (page.length < 100) break;
   }
   const paidOut = circles.flatMap((c) => c.payouts).reduce((sum, p) => sum + BigInt(p.amount), 0n);
   const running = circles.filter((c) => c.status === "Active").length;

@@ -21,7 +21,7 @@ import { fromBase58, fromBase64, toHex } from "../public/js/lib/bytes.js";
 import { nep413Hash } from "../public/js/lib/intents.js";
 import { signerFromSecretKey, verify } from "../public/js/lib/keys.js";
 import { events, outcome, sendTransaction, TGAS, view } from "../public/js/lib/near.js";
-import { allowShared } from "./limit.js";
+import { allowShared, useOnce } from "./limit.js";
 import { ticketed } from "./ticket.js";
 
 /** @typedef {import("./config.js").Config} Config */
@@ -50,8 +50,9 @@ const AUTH_MSG = new RegExp(`^(claim_credit|list_seat:${N}:${N}:${N}|unlist_seat
 /**
  * Checks one signed payload against what Contri relays. Returns the signer.
  * @param {unknown} p @param {Config} c @param {number} [nowMs] @param {unknown[]} [tickets] for transfers to 1Click deposit accounts
+ * @param {string[]} [used] tickets already matched to a transfer in this request; each serves one
  */
-export async function checkPayload(p, c, nowMs = Date.now(), tickets = []) {
+export async function checkPayload(p, c, nowMs = Date.now(), tickets = [], used = []) {
   const s = /** @type {SignedIntents} */ (p);
   if (!s || s.standard !== "nep413" || typeof s.payload?.message !== "string") throw new RelayError("only NEP-413 signed intents are relayed");
   if (s.payload.recipient !== c.intentsId) throw new RelayError(`intents must be signed for ${c.intentsId}`);
@@ -68,9 +69,12 @@ export async function checkPayload(p, c, nowMs = Date.now(), tickets = []) {
   if (!Array.isArray(msg.intents) || msg.intents.length < 1 || msg.intents.length > MAX_INTENTS) throw new RelayError("unexpected number of intents");
   for (const i of msg.intents) checkIntent(i, c);
   for (const i of msg.intents) {
-    if (i.intent === "transfer" && i.receiver_id !== c.contractId && !(await ticketed(c.relayerKey, i.receiver_id, tickets, nowMs))) {
-      throw new RelayError("money leaves Contri only for a deposit account Contri just set up; start again to get a new one");
-    }
+    if (i.intent !== "transfer" || i.receiver_id === c.contractId) continue;
+    // A ticket names the deposit account, who pays into it and how much, and
+    // serves one transfer.
+    const t = await ticketed(c.relayerKey, i.receiver_id, String(msg.signer_id), String(Object.values(i.tokens)[0]), tickets.filter((x) => !used.includes(String(x))), nowMs);
+    if (!t) throw new RelayError("money leaves Contri only for a deposit account Contri just set up; start again to get a new one");
+    used.push(t);
   }
 
   // The signature, here first so a bad one costs no RPC call. NEAR Intents
@@ -121,16 +125,14 @@ export async function relay(body, c) {
   if (!Array.isArray(signed) || signed.length < 1 || signed.length > MAX_PAYLOADS) throw new RelayError("send 1 or 2 signed payloads");
   const given = /** @type {any} */ (body)?.tickets;
   const tickets = Array.isArray(given) ? given.slice(0, 4) : [];
+  /** @type {string[]} */
+  const used = [];
   for (const p of signed) {
-    const signer = await checkPayload(p, c, Date.now(), tickets);
+    const signer = await checkPayload(p, c, Date.now(), tickets, used);
     if (!(await allowShared(`relay-signer:${signer}`, 10))) throw new RelayError("Too many requests from this account. Wait a minute and try again.", 429);
     await checkAuthCalls(p, signer, c);
     await checkPayments(p, signer, c);
   }
-
-  // One cap on everything the relayer pays for, whoever asks: at most this
-  // many transactions a minute, so its NEAR can't drain faster than that.
-  if (!(await allowShared("relay-all", RELAYS_PER_MINUTE))) throw new RelayError("Contri is busy right now. Wait a minute and try again.", 429);
 
   /** @type {any} */
   let simulation;
@@ -140,6 +142,15 @@ export async function relay(body, c) {
     throw new RelayError(`NEAR Intents would reject this: ${simulationReason(e)}`);
   }
   if (simulation?.invariant_violated) throw new RelayError("NEAR Intents would reject this: the intents don't balance");
+
+  // One cap on everything the relayer pays for, whoever asks: at most this
+  // many transactions a minute, so its NEAR can't drain faster than that.
+  // Counted only for what passed simulation and will really be sent, so
+  // requests from empty accounts can't use the cap up and lock members out.
+  if (!(await allowShared("relay-all", RELAYS_PER_MINUTE))) throw new RelayError("Contri is busy right now. Wait a minute and try again.", 429);
+  for (const t of used) {
+    if (!(await useOnce(`ticket:${t}`, 31 * 60))) throw new RelayError("This deposit account has already been used; start again to get a new one.");
+  }
 
   const relayer = await signerFromSecretKey(c.relayerKey, c.relayerId);
   /** @type {Awaited<ReturnType<typeof sendTransaction>>} */
@@ -182,9 +193,41 @@ async function checkAuthCalls(p, signer, c) {
       continue;
     }
     const circle = await view(c.rpcUrl, c.contractId, "get_circle", { circle_id: Number(i.msg.split(":")[1]) }).catch(() => null);
-    const involved = circle && (circle.organizer === signer || circle.members.some((/** @type {any} */ m) => m.account_id === signer));
-    if (!involved) throw new RelayError("only the circle's members can do that");
+    const why = authProblem(i.msg, signer, circle, Date.now());
+    if (why) throw new RelayError(why);
   }
+}
+
+/**
+ * Why the contract would refuse this auth call, or null. Mirrors the checks in
+ * the contract's on_auth (leave, list_seat, unlist_seat, cancel), so a call it
+ * would refuse costs the relayer no gas; the contract still makes them itself.
+ * @param {string} msg @param {string} signer @param {any} circle @param {number} nowMs
+ */
+export function authProblem(msg, signer, circle, nowMs) {
+  const [op, , arg, price] = msg.split(":");
+  if (!circle) return "There's no such circle";
+  const seat = circle.members.findIndex((/** @type {any} */ m) => m.account_id === signer);
+  if (op === "leave") {
+    if (circle.status !== "Open") return "This circle has already started";
+    if (seat < 0) return "You're not in this circle";
+    return null;
+  }
+  if (op === "cancel") {
+    if (circle.status !== "Open") return "This circle has already started";
+    if (circle.organizer !== signer && nowMs < Number(BigInt(circle.fill_by) / 1_000_000n)) return "Only the organizer can cancel it yet";
+    return null;
+  }
+  if (op === "list_seat" || op === "unlist_seat") {
+    const n = Number(arg);
+    if (circle.status !== "Active") return "Turns can only be sold while the circle is running";
+    if (n !== seat) return "Only that turn's owner can do this";
+    if (n < circle.round) return "That turn has already been paid";
+    if (op === "list_seat" && BigInt(price ?? "0") === 0n) return "The price has to be more than zero";
+    if (op === "unlist_seat" && circle.listings[n] === null) return "That turn isn't for sale";
+    return null;
+  }
+  return "Contri wouldn't understand this request";
 }
 
 /**
@@ -237,6 +280,7 @@ export function paymentProblem(msg, amount, signer, circle) {
       if (seat >= 0) return "You're already in this circle";
       if (circle.members.length >= circle.size) return "This circle is full";
       if (amount !== contribution) return "The deposit to join is one contribution";
+      if (circle.invite_only && circle.organizer !== signer && msg.split(":").length < 3) return "This circle needs an invite";
       return null;
     case "contribute":
       if (!running) return "This circle isn't running";
@@ -261,6 +305,7 @@ export function paymentProblem(msg, amount, signer, circle) {
     case "back":
       if (circle.status !== "Open" && !running) return "This circle has ended";
       if (amount < contribution) return "Backing has to be at least one contribution";
+      if (BigInt(circle.backing ?? "0") < (circle.backers ?? []).reduce((/** @type {bigint} */ t, /** @type {any} */ b) => t + BigInt(b.amount), 0n)) return "This circle's backing has already covered a missed payment";
       return null;
     case "refill":
       if (circle.status !== "Open" && !running) return "This circle has ended";

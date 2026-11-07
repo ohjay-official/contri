@@ -44,8 +44,13 @@ export async function cashOutScreen(from) {
   // Where to: a circle account can also send to the private balance.
   const toPrivate = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "dest", value: "private", checked: true }));
   const toChain = /** @type {HTMLInputElement} */ (h("input", { type: "radio", name: "dest", value: "chain" }));
+  // TON exchanges credit deposits by a comment (memo), which 1Click can't
+  // add, so a TON cash-out is for your own wallet only.
+  const tonNote = h("p", { class: "callout", hidden: true }, "TON: send only to your own wallet. Exchanges need a memo to credit a TON deposit, and this can't add one, so money sent to an exchange may never arrive.");
+  network.addEventListener("change", () => (tonNote.hidden = network.value !== "ton"));
   const chainFields = h("div", { class: "stack" },
-    field("Send to", network, "Pick the network your exchange or wallet accepts for this coin. Sending on the wrong network can lose the money."),
+    field("Send to", network, "Pick the network your exchange or wallet accepts for this coin. Sending on the wrong network can lose the money. Trying a small amount first is safest."),
+    tonNote,
     field("Address", address),
   );
   const destination = fromPrivate
@@ -127,7 +132,7 @@ export async function cashOutScreen(from) {
       if (!screen) return;
       const back = fromPrivate ? "your private balance" : "this circle's account";
       follow(q.depositAddress, (st) => {
-        progress.textContent = st === "SUCCESS" ? arrived : st === "REFUNDED" || st === "FAILED" ? `It couldn't be sent and the money came back to ${back}.` : STATUS[st] ?? progress.textContent;
+        progress.textContent = st === "SUCCESS" ? arrived : st === "REFUNDED" ? `It couldn't be sent and the money came back to ${back}.` : st === "FAILED" ? `It failed. Keep this deposit address (${q.depositAddress}) and open Help: it is how the money can be traced.` : STATUS[st] ?? progress.textContent;
       }, screen, 15);
     }),
   );

@@ -19,8 +19,10 @@ async function account(id) {
     const keys = await rpc(c.rpcUrl, "query", { request_type: "view_access_key_list", finality: "final", account_id: id });
     /** @type {string[] | null} */
     const intentsKeys = await view(c.rpcUrl, c.intentsId, "public_keys_of", { account_id: id }).catch(() => null);
+    /** @type {boolean | null} */
+    const predecessorAuth = await view(c.rpcUrl, c.intentsId, "is_auth_by_predecessor_id_enabled", { account_id: id }).catch(() => null);
     const code = a.code_hash !== "11111111111111111111111111111111";
-    return { id, exists: true, near: near(a.amount), storage_bytes: a.storage_usage, code, code_hash: code ? a.code_hash : null, keys: keys.keys.length, intents_keys: intentsKeys ? intentsKeys.length : null };
+    return { id, exists: true, near: near(a.amount), storage_bytes: a.storage_usage, code, code_hash: code ? a.code_hash : null, keys: keys.keys.length, intents_keys: intentsKeys ? intentsKeys.length : null, intents_predecessor_auth: predecessorAuth };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     if (/UNKNOWN_ACCOUNT|does not exist/i.test(message)) return { id, exists: false };

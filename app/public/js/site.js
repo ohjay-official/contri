@@ -8,8 +8,12 @@ const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 // ---------- Sections fade up once, as they come into view ----------
 
 const faders = document.querySelectorAll("[data-fade]");
-if (still || !("IntersectionObserver" in window)) {
-  for (const el of faders) el.classList.add("in");
+const showAll = () => { for (const el of faders) el.classList.add("in"); };
+// Automated browsers (screenshots, link previews, AI screeners) and printouts
+// get every section at once: they don't scroll, so nothing would fade in.
+addEventListener("beforeprint", showAll);
+if (still || navigator.webdriver || !("IntersectionObserver" in window)) {
+  showAll();
 } else {
   const seen = new IntersectionObserver(
     (entries) => {
@@ -55,7 +59,9 @@ function hero(frame) {
 
   const STRANDS = 196;
   const SAMPLES = 41;
-  let W = 0, H = 0, u = 1, shift = 0, dpr = 1;
+  // Phones (lite): a lower-resolution glow upscaled instead of a blur filter, a
+  // lower pixel ratio and 30 frames a second, so the ring doesn't hold up taps.
+  let W = 0, H = 0, u = 1, shift = 0, dpr = 1, gs = 0.32, lite = false;
   // Pointer, eased: the ring leans a little toward it.
   let px = 0, py = 0, tx = 0, ty = 0;
 
@@ -68,11 +74,13 @@ function hero(frame) {
     shift = phone ? Math.max(0, (H - 754 * u) / 2) : 0;
     frame.style.setProperty("--u", `${u}px`);
     frame.style.setProperty("--shift", `${shift}px`);
-    dpr = Math.min(2, devicePixelRatio || 1);
+    lite = phone;
+    dpr = Math.min(lite ? 1.5 : 2, devicePixelRatio || 1);
+    gs = lite ? 0.12 : 0.32;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
-    glow.width = Math.max(1, Math.round(W * dpr * 0.32));
-    glow.height = Math.max(1, Math.round(H * dpr * 0.32));
+    glow.width = Math.max(1, Math.round(W * dpr * gs));
+    glow.height = Math.max(1, Math.round(H * dpr * gs));
   };
 
   const smooth = (/** @type {number} */ e0, /** @type {number} */ e1, /** @type {number} */ x) => {
@@ -122,7 +130,7 @@ function hero(frame) {
     const body = radial(ctx, cx, cy, ri, ro, [[0, "#b01e50"], [0.12, "#9c1236"], [0.4, "#860c18"], [0.7, "#9c1a0a"], [0.9, "#c63c0e"], [1, "#e85a18"]]);
     const edge = radial(ctx, cx, cy, ri, ro, [[0, "rgba(255,130,185,.85)"], [0.08, "rgba(255,84,138,.95)"], [0.28, "rgba(255,56,80,.95)"], [0.55, "rgba(255,58,44,.95)"], [0.8, "rgb(255,92,36)"], [0.94, "rgb(255,122,44)"], [1, "rgb(255,150,70)"]]);
 
-    const g = 0.32 * dpr;
+    const g = gs * dpr;
     gctx.setTransform(g, 0, 0, g, 0, 0);
     gctx.clearRect(0, 0, W, H);
     gctx.globalAlpha = 0.7;
@@ -201,9 +209,9 @@ function hero(frame) {
     gctx.ellipse(cx, cy, ri, ri * sy, 0, 0, Math.PI * 2);
     gctx.stroke();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if ("filter" in ctx) ctx.filter = `blur(${8 * u * dpr}px)`;
+    if ("filter" in ctx && !lite) ctx.filter = `blur(${8 * u * dpr}px)`;
     ctx.drawImage(glow, 0, 0, canvas.width, canvas.height);
-    if ("filter" in ctx) ctx.filter = "none";
+    if ("filter" in ctx && !lite) ctx.filter = "none";
     ctx.globalCompositeOperation = "source-over";
   };
 
@@ -232,7 +240,8 @@ function hero(frame) {
   };
 
   size();
-  addEventListener("resize", size, { passive: true });
+  // A resize clears the canvas; with reduced motion nothing redraws it, so draw once.
+  addEventListener("resize", () => { size(); if (still) draw(0); }, { passive: true });
   if (still) {
     draw(0);
     return;
@@ -247,8 +256,10 @@ function hero(frame) {
   let onScreen = true;
   new IntersectionObserver(([e]) => (onScreen = e.isIntersecting)).observe(frame);
   const t0 = performance.now();
+  let last = 0;
   const loop = (/** @type {number} */ now) => {
-    if (onScreen && !document.hidden) {
+    if (onScreen && !document.hidden && (!lite || now - last >= 1000 / 30)) {
+      last = now;
       const t = (now - t0) / 1000;
       draw(t);
       type(t);

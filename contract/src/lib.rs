@@ -34,6 +34,8 @@ mod json;
 mod json_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod audit_tests;
 
 pub const MIN_MEMBERS: u32 = 2;
 pub const MAX_MEMBERS: u32 = 20;
@@ -55,7 +57,7 @@ const GAS_PAYOUT_CALLBACK: Gas = Gas::from_tgas(30);
 /// `on_sent` writes at most one credit.
 const GAS_SENT_CALLBACK: Gas = Gas::from_tgas(10);
 /// Gas needed to start a payout from inside another call.
-const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(50);
+const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(80);
 const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
 const ZERO: NearToken = NearToken::from_yoctonear(0);
 /// Most backers a circle takes, which bounds the gas to return their money.
@@ -72,7 +74,7 @@ pub const CREATE_FEE: NearToken = NearToken::from_millinear(10);
 pub const MIN_CONTRIBUTION: u128 = 1_000_000;
 // Storage sizes in bytes, for 64-character accounts (the longest). A stored
 // key-value pair costs 40 bytes on top of its key and value.
-const MEMBER_BYTES: u64 = 90;
+const MEMBER_BYTES: u64 = 122;
 const BACKER_BYTES: u64 = 100;
 const LISTING_BYTES: u64 = 16;
 const PAYOUT_BYTES: u64 = 112;
@@ -114,6 +116,11 @@ pub struct Member {
     pub paid_this_round: bool,
     pub defaulted: bool,
     pub missed: u32,
+    /// Missed payments this member's own deposit didn't cover, so backing or
+    /// a short pot paid for them. Held back from their own payout.
+    pub owed: U128,
+    /// The part of `owed` that backing covered, which is repaid to backing first.
+    pub backed: U128,
 }
 
 #[near(serializers = [borsh])]
@@ -176,6 +183,13 @@ pub struct Circle {
     /// A payout is in flight. No other money movement for this circle until it resolves.
     pub paying: bool,
     pub payouts: Vec<PayoutRecord>,
+    /// Held back from members who owed the circle, not yet returned. When the
+    /// circle finishes it goes to the members whose pots were short.
+    pub recovered: U128,
+    /// This round: the recipient's own missed share (nobody else is owed it),
+    /// and what was held back from them. Both left out of the round's shortfall.
+    pub excused: U128,
+    pub held: U128,
 }
 
 /// A member's track record across circles.
@@ -313,10 +327,9 @@ pub enum TransferMsg {
         invite_key: Option<[u8; 32]>,
     },
     /// `join:<circle>` or `join:<circle>:<invite signature, 128 hex>`: pay the
-    /// deposit and take the next free seat. In an open circle the deposit is
-    /// one contribution. An invite-only circle needs the invite's signature,
-    /// which also sets the deposit, from zero up to every round but the
-    /// member's own (see `join_message`).
+    /// deposit and take the next free seat. The deposit is exactly one
+    /// contribution. An invite-only circle also needs the invite's signature
+    /// over the joiner's account and that deposit (see `join_message`).
     Join { circle: u64, invite_sig: Option<[u8; 64]> },
     /// `contribute:<circle>:<round>`: pay this round's contribution.
     Contribute { circle: u64, round: u32 },
@@ -850,12 +863,22 @@ impl Contri {
         require!(env::block_timestamp() >= c.round_deadline(), "round deadline has not passed");
         // Each missed payment comes out of the member's deposit first, then out
         // of the circle's community backing. Anything still missing makes the
-        // pot short, and the payout records the shortfall.
+        // pot short, and the payout records the shortfall. What a member's own
+        // deposit didn't cover, they owe: it is held back from their own payout.
+        // The round's own recipient missing their share owes nobody: it would
+        // only have come back to them.
         let contribution = c.contribution.0;
+        let recipient = c.round as usize;
         let mut defaulted = vec![];
         let mut from_backing = 0;
-        for m in c.members.iter_mut() {
+        for (seat, m) in c.members.iter_mut().enumerate() {
             if m.paid_this_round {
+                continue;
+            }
+            m.paid_this_round = true;
+            m.missed += 1;
+            if seat == recipient {
+                c.excused = U128(c.excused.0 + contribution);
                 continue;
             }
             let from_deposit = m.deposit.0.min(contribution);
@@ -863,9 +886,9 @@ impl Contri {
             m.deposit = U128(m.deposit.0 - from_deposit);
             c.backing = U128(c.backing.0 - backed);
             from_backing += backed;
-            m.paid_this_round = true;
+            m.owed = U128(m.owed.0 + contribution - from_deposit);
+            m.backed = U128(m.backed.0 + backed);
             m.defaulted = true;
-            m.missed += 1;
             c.pot = U128(c.pot.0 + from_deposit + backed);
             defaulted.push(format!("\"{}\"", m.account_id));
         }
@@ -1005,6 +1028,9 @@ impl Contri {
             pot: U128(0),
             paying: false,
             payouts: vec![],
+            recovered: U128(0),
+            excused: U128(0),
+            held: U128(0),
         };
         // The circle's key and value, its organizer's seat, and the two
         // reservation keys the first circle adds.
@@ -1067,6 +1093,8 @@ impl Contri {
             paid_this_round: false,
             defaulted: false,
             missed: 0,
+            owed: U128(0),
+            backed: U128(0),
         });
         let seat = c.members.len() - 1;
         emit(
@@ -1296,6 +1324,16 @@ impl Contri {
         let m = c.members.remove(seat);
         reserve(circle_id, -(MEMBER_RESERVE as i64));
         emit("left", format!(r#"{{"circle":{circle_id},"member":"{who}"}}"#));
+        // An organizer leaving their own circle empty cancels it, so it can be
+        // closed at once instead of holding storage until `fill_by`. (A circle
+        // organized by an account that took no seat isn't cancelled by others
+        // joining and leaving.)
+        if c.members.is_empty() && who == &c.organizer {
+            c.status = CircleStatus::Cancelled;
+            close_backing(&mut c);
+            free_idle_slots(&c);
+            emit("circle_cancelled", format!(r#"{{"circle":{circle_id},"by":"{who}"}}"#));
+        }
         save_circle(&c);
         if m.deposit.0 > 0 {
             self.send(m.account_id, m.deposit.0, format!("contri:{circle_id}:leave"), has_slots(circle_id));
@@ -1313,6 +1351,7 @@ impl Contri {
         );
         let settled = !c.paying
             && c.backing.0 == 0
+            && c.recovered.0 == 0
             && c.members.iter().all(|m| m.deposit.0 == 0)
             && c.backers.iter().all(|b| b.due.0 == 0);
         require!(settled, "release the deposits first");
@@ -1344,6 +1383,21 @@ impl Contri {
     /// Pays the pot to this round's seat. `on_payout` then closes the round,
     /// or, if the transfer failed, keeps the pot so `pay_out` can retry.
     fn start_payout(&mut self, mut c: Circle) {
+        // Hold back what the recipient owes the circle: first to repay the
+        // backing that covered them, the rest kept for the members whose pots
+        // were short (shared out when the circle finishes).
+        let seat = c.round as usize;
+        let withheld = c.pot.0.min(c.members[seat].owed.0);
+        if withheld > 0 {
+            let to_backing = withheld.min(c.members[seat].backed.0);
+            let m = &mut c.members[seat];
+            m.owed = U128(m.owed.0 - withheld);
+            m.backed = U128(m.backed.0 - to_backing);
+            c.backing = U128(c.backing.0 + to_backing);
+            c.recovered = U128(c.recovered.0 + withheld - to_backing);
+            c.held = U128(c.held.0 + withheld);
+            c.pot = U128(c.pot.0 - withheld);
+        }
         let (id, round, amount) = (c.id, c.round, c.pot.0);
         if amount == 0 {
             // Nobody paid and nothing covered it. NEAR Intents refuses to send
@@ -1401,15 +1455,19 @@ impl Contri {
             return false;
         }
         let to = c.members[round as usize].account_id.clone();
+        // Short by what others failed to pay; not by the recipient's own
+        // missed share, nor by what was held back from them.
         let full = c.contribution.0.saturating_mul(c.size as u128);
-        let shortfall = U128(full.saturating_sub(amount.0));
+        let shortfall = U128(full.saturating_sub(amount.0).saturating_sub(c.excused.0).saturating_sub(c.held.0));
         emit(
             "paid_out",
             format!(
-                r#"{{"circle":{circle_id},"round":{round},"to":"{to}","amount":"{}","shortfall":"{}"}}"#,
-                amount.0, shortfall.0
+                r#"{{"circle":{circle_id},"round":{round},"to":"{to}","amount":"{}","shortfall":"{}","withheld":"{}"}}"#,
+                amount.0, shortfall.0, c.held.0
             ),
         );
+        c.excused = U128(0);
+        c.held = U128(0);
         c.payouts.push(PayoutRecord { round, to, amount, shortfall, at: env::block_timestamp() });
         reserve(circle_id, -(PAYOUT_BYTES as i64));
         c.pot = U128(0);
@@ -1434,6 +1492,7 @@ impl Contri {
             }
             reserve(circle_id, -((c.size as u64 * RECORD_BYTES) as i64));
             close_backing(&mut c);
+            share_recovered(&mut c);
             free_idle_slots(&c);
             emit("circle_finished", format!(r#"{{"circle":{circle_id}}}"#));
         }
@@ -1601,6 +1660,34 @@ fn close_backing(c: &mut Circle) {
     }
     // Rounding leftovers go to the first backer, so nothing stays behind.
     c.backers[0].due = U128(c.backers[0].due.0 + left - given);
+}
+
+/// When a circle finishes, shares what was held back from members who owed it
+/// between the members whose payouts were short, in proportion to how short
+/// (never more than that), by adding it to what `release_deposits` sends them.
+fn share_recovered(c: &mut Circle) {
+    let left = c.recovered.0;
+    let total: u128 = c.payouts.iter().map(|p| p.shortfall.0).sum();
+    c.recovered = U128(0);
+    if left == 0 {
+        return;
+    }
+    let mut given = 0;
+    let mut first = None;
+    for p in &c.payouts {
+        if p.shortfall.0 == 0 || total == 0 {
+            continue;
+        }
+        let Some(i) = c.members.iter().position(|m| m.account_id == p.to) else { continue };
+        let share = (left * p.shortfall.0 / total).min(p.shortfall.0);
+        c.members[i].deposit = U128(c.members[i].deposit.0 + share);
+        given += share;
+        first.get_or_insert(i);
+    }
+    // Rounding leftovers (or, if no payout was short, all of it) go to the
+    // first short-paid member, or the first member, so nothing stays behind.
+    let i = first.unwrap_or(0);
+    c.members[i].deposit = U128(c.members[i].deposit.0 + left - given);
 }
 
 fn parse_seat_token(token_id: &str) -> Option<(u64, u32)> {
