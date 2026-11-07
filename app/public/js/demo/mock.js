@@ -1,6 +1,7 @@
 // @ts-check
-// Made-up circles for checking screens offline (MOCK=1 node dev/server.js).
-// Never used in production, and nothing touches a chain.
+// Made-up circles on a pretend chain: the offline app (MOCK=1 node
+// dev/server.js) and the demo at /demo, which runs it in the browser.
+// Nothing here touches a chain or real money.
 //
 // It behaves like the real thing, in memory: a top-up arrives a few seconds
 // after you ask for a deposit address, creating, joining and paying update the
@@ -10,11 +11,15 @@
 //     prints (MEMBER_CODE): you're in two sample circles, one running, one filling;
 //   - "Keep my key on this device": a new member with no circles; start one.
 
-import { fromBase64, randomBytes, toBase58, toBase64 } from "../public/js/lib/bytes.js";
-import { recoveryCode } from "../public/js/lib/passkey.js";
-import { encryptName } from "../public/js/lib/invite.js";
-import { circleSigner } from "../public/js/lib/keys.js";
-import { json } from "../server/http.js";
+import { fromBase64, randomBytes, toBase58, toBase64 } from "../lib/bytes.js";
+import { recoveryCode } from "../lib/passkey.js";
+import { encryptName } from "../lib/invite.js";
+import { circleSigner } from "../lib/keys.js";
+
+/** @param {unknown} v @param {number} [status] */
+const json = (v, status = 200) => new Response(JSON.stringify(v), { status, headers: { "Content-Type": "application/json" } });
+/** Settings from the environment when run by Node; none in a browser. @type {Record<string, string | undefined>} */
+const env = /** @type {any} */ (globalThis).process?.env ?? {};
 
 export const CONTRACT = "circles.contring.near";
 export const DEVICE_SECRET = new Uint8Array(32).fill(11);
@@ -59,9 +64,9 @@ const SEAT_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' v
 const balances = { [me0]: 3_200_000n, [me1]: 0n };
 const TOKEN = "nep141:usdt.tether-token.near";
 // The private balance, and a move out of it waiting for its signature.
-let privateHeld = process.env.MOCK_EMPTY ? 0n : 12_500_000n;
+let privateHeld = env.MOCK_EMPTY ? 0n : 12_500_000n;
 // MOCK_EMPTY=1: no circles and an empty private balance, like a fresh mainnet.
-if (process.env.MOCK_EMPTY) circles.length = 0;
+if (env.MOCK_EMPTY) circles.length = 0;
 /** @type {{ to: string | null, amount: bigint } | null} */
 let pendingMove = null;
 
@@ -71,10 +76,81 @@ let nextAddress = 1;
 // A made-up EVM address, different each time, that looks like one.
 const freshAddress = () => `0x${other(40 + nextAddress++).slice(0, 40).replace(/[a-f]/g, (c, i) => (i % 3 ? c : c.toUpperCase()))}`;
 
+/** Starts the circle once every seat is taken. @param {any} c */
+function startIfFull(c) {
+  if (c.members.length === c.size && c.status === "Open") {
+    c.status = "Active";
+    c.started_at = T(0);
+    c.round_deadline = T(c.period_secs / 86400);
+  }
+}
+
+/** Pays the pot to this round's seat once everyone has paid, as the contract does. @param {any} c @param {{ event: string, data: any[] }[]} events */
+function payOutIfPaid(c, events) {
+  if (!c.members.every((/** @type {any} */ x) => x.paid_this_round)) return;
+  const to = c.members[c.round].account_id;
+  balances[to] = (balances[to] ?? 0n) + BigInt(c.pot);
+  c.payouts.push({ round: c.round, to, amount: c.pot, shortfall: "0", at: T(0) });
+  events.push({ event: "paid_out", data: [{ circle: c.id, round: c.round, to }] });
+  c.pot = "0";
+  c.round++;
+  for (const x of c.members) {
+    x.paid_this_round = false;
+    if (c.round < c.size && x.ahead > 0) {
+      x.ahead--;
+      x.paid_this_round = true;
+      c.pot = String(BigInt(c.pot) + BigInt(c.contribution));
+    }
+  }
+  if (c.listings[c.round - 1] != null) c.listings[c.round - 1] = null;
+  if (c.round >= c.size) {
+    c.status = "Finished";
+    c.round_deadline = null;
+    for (const x of c.members) {
+      balances[x.account_id] = (balances[x.account_id] ?? 0n) + BigInt(x.deposit);
+      x.deposit = "0";
+    }
+  } else c.round_deadline = T((c.round + 1) * (c.period_secs / 86400));
+}
+
+// ---- The demo's pretend members ----
+// With bots on (the demo at /demo), circles fill and the other members pay by
+// themselves, so one person on one phone can run a whole circle. Off for the
+// offline server, whose checks play every member themselves.
+let bots = false;
+/** Accounts that have signed something here: the person trying the demo. @type {Set<string>} */
+const people = new Set(accounts);
+let botNo = 100;
+export function useBots() {
+  bots = true;
+}
+/** Moves the pretend members along: joining new circles, then paying each round after the person does. */
+function tick() {
+  if (!bots) return;
+  const now = Date.now();
+  for (const c of circles) {
+    if (c.status === "Open" && c.fillAt && now >= c.fillAt) {
+      while (c.members.length < c.size) c.members.push(member(other(botNo++), false, 0, c.contribution));
+      startIfFull(c);
+      delete c.fillAt;
+    }
+    if (c.status === "Active" && c.botsPayAt && now >= c.botsPayAt && !c.paying) {
+      delete c.botsPayAt;
+      for (const m of c.members) {
+        if (people.has(m.account_id) || m.paid_this_round) continue;
+        m.paid_this_round = true;
+        c.pot = String(BigInt(c.pot) + BigInt(c.contribution));
+      }
+      payOutIfPaid(c, []);
+    }
+  }
+}
+
 /** Applies a signed intent to the made-up circles, as the contract would. Returns its events. @param {any} payload */
 function apply(payload) {
   const message = JSON.parse(payload.payload.message);
   const who = message.signer_id;
+  people.add(who);
   /** @type {{ event: string, data: any[] }[]} */
   const events = [];
   /** @type {string[]} */
@@ -99,6 +175,7 @@ function apply(payload) {
         fill_by: T(14), backing: "0", backers: [], status: "Open", created_at: T(0), started_at: "0", round: 0, pot: "0", paying: false, payouts: [], round_deadline: null,
       });
       events.push({ event: "circle_created", data: [{ circle: id }] });
+      if (bots) circles[id].fillAt = Date.now() + 6000;
     } else if (kind === "join") {
       const c = circles[Number(args[0])];
       if (!c || c.status !== "Open" || c.members.some((/** @type {any} */ m) => m.account_id === who)) {
@@ -108,11 +185,7 @@ function apply(payload) {
       }
       c.members.push(member(who, false, 0, String(amount)));
       events.push({ event: "joined", data: [{ circle: c.id, member: who }] });
-      if (c.members.length === c.size) {
-        c.status = "Active";
-        c.started_at = T(0);
-        c.round_deadline = T(c.period_secs / 86400);
-      }
+      startIfFull(c);
     } else if (kind === "contribute" || kind === "ahead") {
       const c = circles[Number(args[0])];
       const m = c?.members.find((/** @type {any} */ x) => x.account_id === who);
@@ -135,30 +208,33 @@ function apply(payload) {
         m.ahead = (m.ahead ?? 0) + later;
         events.push({ event: "paid_ahead", data: [{ circle: c.id, member: who, rounds: later, ahead: m.ahead }] });
       }
-      if (c.members.every((/** @type {any} */ x) => x.paid_this_round)) {
-        const to = c.members[c.round].account_id;
-        balances[to] = (balances[to] ?? 0n) + BigInt(c.pot);
-        c.payouts.push({ round: c.round, to, amount: c.pot, shortfall: "0", at: T(0) });
-        events.push({ event: "paid_out", data: [{ circle: c.id, round: c.round, to }] });
-        c.pot = "0";
-        c.round++;
-        for (const x of c.members) {
-          x.paid_this_round = false;
-          if (c.round < c.size && x.ahead > 0) {
-            x.ahead--;
-            x.paid_this_round = true;
-            c.pot = String(BigInt(c.pot) + BigInt(c.contribution));
-          }
-        }
-        if (c.round >= c.size) {
-          c.status = "Finished";
-          c.round_deadline = null;
-          for (const x of c.members) {
-            balances[x.account_id] = (balances[x.account_id] ?? 0n) + BigInt(x.deposit);
-            x.deposit = "0";
-          }
-        } else c.round_deadline = T((c.round + 1) * (c.period_secs / 86400));
+      payOutIfPaid(c, events);
+      // In the demo, the other (pretend) members pay a moment later.
+      if (bots) c.botsPayAt = Date.now() + 2500;
+    } else if (kind === "buy_seat") {
+      const c = circles[Number(args[0])];
+      const s = Number(args[1]);
+      const buyer = c?.members.findIndex((/** @type {any} */ x) => x.account_id === who) ?? -1;
+      const price = c?.listings[s];
+      if (!c || c.status !== "Active" || price == null || BigInt(price) !== amount || buyer <= s || s < c.round) {
+        balances[who] += amount;
+        notes.push("refunded: that turn isn't for sale at that price");
+        continue;
       }
+      const seller = c.members[s].account_id;
+      [c.members[s], c.members[buyer]] = [c.members[buyer], c.members[s]];
+      c.listings[s] = null;
+      balances[seller] = (balances[seller] ?? 0n) + amount;
+      events.push({ event: "seat_bought", data: [{ circle: c.id, seat: s, buyer: who, seller, price: String(amount) }] });
+    } else if (kind === "list_seat" || kind === "unlist_seat") {
+      const c = circles[Number(args[0])];
+      const s = Number(args[1]);
+      if (!c || c.members[s]?.account_id !== who || s < c.round) {
+        notes.push("only the seat's owner can do this");
+        continue;
+      }
+      c.listings[s] = kind === "list_seat" ? args[2] : null;
+      events.push({ event: kind === "list_seat" ? "seat_listed" : "seat_unlisted", data: [{ circle: c.id, seat: s }] });
     } else {
       events.push({ event: kind, data: [{}] });
     }
@@ -168,6 +244,7 @@ function apply(payload) {
 
 /** @param {string} name @param {Request} request */
 export async function handle(name, request) {
+  tick();
   const body = request.method === "POST" ? await request.json() : {};
   if (name === "config") return json({ network: "mock", contractId: CONTRACT, intentsId: "intents.near", tokenId: "nep141:usdt.tether-token.near", relaying: true });
   if (name === "rpc") {

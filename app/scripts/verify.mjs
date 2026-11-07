@@ -5,7 +5,7 @@
 //
 // 1. The app and server tests.
 // 2. The app itself, offline: starts it against the made-up chain in
-//    app/dev/mock.js, and checks the pages load.
+//    app/public/js/demo/mock.js, and checks the pages load.
 // 3. A whole circle, end to end, offline: two new members top up, one creates a
 //    circle, the other joins, both pay two rounds, each gets the pot. Every
 //    payment is signed by the app's own signing code and passes Contri's real
@@ -52,7 +52,7 @@ try {
     report("the app starts offline", "FAIL", "the offline server didn't answer");
   } else {
     const pages = [];
-    for (const path of ["/", "/app", "/how-it-works", "/privacy", "/terms", "/js/app/main.js"]) {
+    for (const path of ["/", "/app", "/demo", "/how-it-works", "/privacy", "/terms", "/js/app/main.js", "/js/demo/mock.js"]) {
       const r = await fetch(base + path);
       if (!r.ok) pages.push(`${path} ${r.status}`);
     }

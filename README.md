@@ -19,9 +19,20 @@ Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: Real-World Money, Privacy & P
 
 **Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng). **Contract:** [`circles.contring.near`](https://nearblocks.io/address/circles.contring.near) on NEAR mainnet, **locked on 7 November 2026** ([QxnCNCi…](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)): the account has no keys, so nobody, Contri included, can change its code or move the money it holds outside its rules. See [Security](#security).
 
-Three ways in, from quickest to most real. None needs a NEAR account.
+Five ways in, from quickest to most real. None needs a NEAR account.
 
-### 0. One command (about 20 seconds, Node 22, nothing to install)
+### 1. The demo, in your browser (recommended for judges)
+
+**https://contri.ng/demo**, on any phone or computer: the real app's screens with pretend money on a pretend chain that runs in your browser tab. No passkey, no money, no second device, and nothing is sent to a server or saved. You're a member of two sample circles, and the other members are pretend: they join a circle you start a few seconds after you start it, and pay each round right after you do. Things to try, about two minutes:
+
+1. Open **Yaba traders**. Buy **turn 3** for $1.50 from the member listing it, so the pot comes to you sooner.
+2. Tap **Add money to pay**, move the money in from your private balance, and pay. The other members pay, and the $25 pot comes to you.
+3. Back on **Your circles**, tap **Start a circle**: $2, 3 members. Add money, create it, and wait a few seconds: the others join and the circle starts. Pay round 1 and watch the pot go out; try **Pay all rounds** too.
+4. Open **Live circles** and **Help**, and move money out to see a cash-out quote.
+
+A bar on every screen says it's the demo. The real app is at https://contri.ng/app.
+
+### 2. One command (about 20 seconds, Node 22, nothing to install)
 
 ```
 node app/scripts/verify.mjs
@@ -29,7 +40,7 @@ node app/scripts/verify.mjs
 
 It runs the app and server tests, starts the app offline, runs a whole circle end to end (two new members top up, create, join, pay two rounds, each gets the pot and their deposit back; every payment is signed by the app's own code and passes the relayer's real checks), then reads mainnet to check what this README claims: the contract has no keys, its code hash is the one given below, and the real-money circle finished with every pot paid. It prints PASS, FAIL or SKIP for each. `--all` adds the contract's unit tests if Rust is installed. CI runs it on every push (`app-results` branch, `verify.log`).
 
-### 1. The app offline, in two minutes (no money, no chain)
+### 3. The app offline, on your own machine (no money, no chain)
 
 Needs Node 22. No install step: the app and its server have no runtime dependencies.
 
@@ -43,7 +54,7 @@ The mock behaves like the real thing, in memory, and touches no chain: a top-up 
 - **As a member of two sample circles** (one running, one filling up): choose **Other ways in > Restore from a recovery code** and paste `k7Fa-K87W-HGVX-zkao-Hb7C-dVPg-kKDQ-hZ29-VLDe-BVbD-fYn` (the server prints it too). Open the running circle to see the pot, the turn order, your seat NFT and a turn for sale.
 - **As a new member:** choose **Other ways in > Keep my key on this device**, then **Start a circle**, get a deposit address, wait for it to arrive and tap **Create circle**. Open the invite link in a second browser profile to join as the second member.
 
-### 2. The tests
+### 4. The tests
 
 ```
 (cd contract && cargo test)                # 98 contract unit tests, incl. a JSON parser fuzzed against serde_json and an attacker-view audit's tests
@@ -62,7 +73,7 @@ End-to-end, against the real NEAR Intents contract built from [near/intents](htt
 
 After every deploy, `.github/workflows/web.yml` checks the live site the way visitors reach it: every page, file, redirect and API route (`scripts/site-check.mjs`), every screen in a real browser (`app/scripts/live-browser.mjs`), staying signed in through a dropped tab and a browser restart in Chromium, WebKit and Firefox with Android, iPhone and desktop profiles (`app/scripts/live-sessions.mjs`), and the 1Click and private-balance calls with an empty account (`scripts/live-check.mjs`). Results go to the `web-results` branch.
 
-### 3. On mainnet, with real money
+### 5. On mainnet, with real money
 
 **Watch without paying:** open **Live circles** at https://contri.ng/app#/explore. It shows every open, running or finished circle on the contract, read from the chain through Contri's server.
 

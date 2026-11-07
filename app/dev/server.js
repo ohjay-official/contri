@@ -1,6 +1,6 @@
 // @ts-check
 // Local server for working on the app: serves public/ like Vercel does and
-// runs the /api handlers. With MOCK=1, the API answers from dev/mock.js
+// runs the /api handlers. With MOCK=1, the API answers from public/js/demo/mock.js
 // (made-up circles, nothing on chain) so screens can be checked offline.
 //
 // Routing and headers come from vercel.json, the file production uses, so a
@@ -25,7 +25,7 @@ const HEADERS = Object.fromEntries((VERCEL.headers ?? []).find((/** @type {{ sou
 // Production is served over HTTPS; locally these would break plain http.
 delete HEADERS["Strict-Transport-Security"];
 if (HEADERS["Content-Security-Policy"]) HEADERS["Content-Security-Policy"] = HEADERS["Content-Security-Policy"].replace(/; upgrade-insecure-requests/, "");
-const mock = process.env.MOCK ? await import("./mock.js") : null;
+const mock = process.env.MOCK ? await import("../public/js/demo/mock.js") : null;
 
 /** @param {string} path */
 async function file(path) {

@@ -88,6 +88,25 @@ for (const [name, scheme] of [["site-home-dark", "dark"]]) {
 }
 await site.ctx.close();
 
+// ---- The demo: the app on a pretend chain in the tab, with no server calls ----
+{
+  const d = await open();
+  /** @type {string[]} */
+  const calls = [];
+  d.page.on("request", (r) => new URL(r.url()).pathname.startsWith("/api/") && calls.push(new URL(r.url()).pathname));
+  await screen(d, "demo", async () => {
+    await d.page.goto(base + "/demo");
+    await d.page.waitForSelector("text=Yaba traders", { timeout: 30_000 });
+    await d.page.waitForSelector(".demo-bar");
+    await d.page.click("text=Yaba traders");
+    await d.page.waitForSelector("button:has-text('Buy turn 3')", { timeout: 30_000 });
+    await d.page.click("button:has-text('Buy turn 3')");
+    await d.page.waitForSelector("text=Turn 3 is yours", { timeout: 30_000 });
+    if (calls.length) throw new Error(`the demo called the server: ${calls.join(", ")}`);
+  });
+  await d.ctx.close();
+}
+
 // ---- The app, as a new member with a key on this device ----
 const m = await open();
 const { page } = m;

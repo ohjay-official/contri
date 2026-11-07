@@ -704,3 +704,7 @@ body { overflow-x: clip; }
 .topbar { flex-wrap: wrap; row-gap: 10px; }
 .topbar nav { height: auto; min-height: 34px; flex-wrap: wrap; row-gap: 2px; min-width: 0; padding-block: 4px; }
 .topbar nav a { white-space: nowrap; }
+
+/* The demo at /demo says what it is on every screen. */
+.demo-bar { position: sticky; top: 0; z-index: 20; margin: 0; padding: 10px 16px; background: var(--adire); color: var(--on-adire); font-size: 14px; line-height: 20px; text-align: center; }
+.demo-bar a { color: var(--on-adire); font-weight: 600; }

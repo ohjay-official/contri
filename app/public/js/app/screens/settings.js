@@ -5,6 +5,7 @@
 import { forgetDeviceSecret, recoveryCode } from "../../lib/passkey.js";
 import { busy, h, show } from "../ui.js";
 import { refresh, state } from "../state.js";
+import { demo } from "../demo.js";
 import { confirmWithPasskey, lock, markRecoverySeen, mode, recoverySeen, secret, unlocked } from "../wallet.js";
 
 export async function settingsScreen() {
@@ -125,8 +126,9 @@ export async function settingsScreen() {
         passkey
           ? h("p", null, "Contri stays unlocked on this device until you lock it here, so switching apps, closing the browser or restarting doesn't ask for your passkey again. Your phone's screen lock is what protects it. Lock it if other people use this device.")
           : h("p", null, "Anyone who can use this browser can open Contri, and anything that can read its storage can copy your key, so keep only small amounts this way. If other people use this device, write down your recovery code, then remove the key here."),
-        h("div", { class: "actions" }, signOut),
-        confirmRemove,
+        // The demo's key is made up and kept nowhere: nothing to remove.
+        demo ? null : h("div", { class: "actions" }, signOut),
+        demo ? null : confirmRemove,
       ),
     ),
   );

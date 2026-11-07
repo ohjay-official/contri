@@ -2,6 +2,7 @@
 // Calls to Contri's server: settings, chain reads, the relayer, 1Click and the keeper.
 
 import { signIntents } from "../lib/intents.js";
+import { demo } from "./demo.js";
 
 /** @typedef {{ network: string, contractId: string, intentsId: string, tokenId: string, relaying: boolean }} AppConfig */
 
@@ -9,7 +10,13 @@ import { signIntents } from "../lib/intents.js";
 async function request(path, body) {
   let res;
   try {
-    res = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+    if (demo) {
+      // The demo answers from the pretend chain in this tab; nothing leaves the phone.
+      const { handle, useBots } = await import("../demo/mock.js");
+      useBots();
+      const url = new URL(path, location.origin);
+      res = await handle(url.pathname.replace(/^\/api\//, ""), new Request(url, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}));
+    } else res = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
   } catch {
     throw new Error("You're offline, or Contri can't be reached. Check your connection and try again.");
   }

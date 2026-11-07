@@ -384,3 +384,8 @@ html, .site-page { overflow-x: clip; }
 
 /* A button inside page text keeps the button colours, not the link colour. */
 .prose a.button.primary { color: var(--on-adire); text-decoration: none; }
+
+/* Under the hero's button: the demo, for anyone who wants to look first. */
+.vortex-copy .demo-link { display: block; margin-top: calc(14 * var(--u)); color: rgba(255, 255, 255, 0.85); font-size: max(14px, calc(15 * var(--u))); text-decoration: underline; text-underline-offset: 3px; }
+.vortex-copy .demo-link:hover { color: #fff; }
+.cta-card p a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }

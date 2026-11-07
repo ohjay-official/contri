@@ -19,6 +19,7 @@ import { privateAddScreen } from "./screens/private.js";
 import { settingsScreen } from "./screens/settings.js";
 import { unlockScreen } from "./screens/unlock.js";
 import { h, notice, show } from "./ui.js";
+import { demo } from "./demo.js";
 import { restore, unlocked } from "./wallet.js";
 
 /** The invite being looked at, kept for this tab so a reload doesn't lose it. */
@@ -73,6 +74,11 @@ async function run(fn) {
 }
 
 async function main() {
+  if (demo) {
+    // Every link into the app stays in the demo, and a bar says what it is.
+    for (const a of document.querySelectorAll('a[href^="/app#"], a[href="/app"]')) a.setAttribute("href", String(a.getAttribute("href")).replace(/^\/app/, "/demo"));
+    document.body.prepend(h("p", { class: "demo-bar", role: "note" }, h("strong", null, "Demo. "), "Pretend money on a pretend chain, and the other members are pretend too. Nothing here is real or saved. ", h("a", { href: "/app" }, "Open the real app")));
+  }
   await restore();
   // Not waited for: the first screen shouldn't wait on the network.
   getConfig().then(

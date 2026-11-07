@@ -15,6 +15,11 @@ import { fromBase58, toBase64Url, fromBase64 } from "../lib/bytes.js";
 import { circleSigner, vaultSigner } from "../lib/keys.js";
 import { createPasskey, deviceSecret, unlockWithPasskey } from "../lib/passkey.js";
 import { forget, keep as keepSession, recall } from "../lib/session.js";
+import { demo } from "./demo.js";
+
+/** Where this phone's notes go: the browser's storage, or, in the demo, this tab only, so they reset with the pretend chain. */
+const memory = new Map();
+const store = () => (demo ? { getItem: (/** @type {string} */ k) => memory.get(k) ?? null, setItem: (/** @type {string} */ k, /** @type {string} */ v) => void memory.set(k, v) } : localStorage);
 import { getConfig, views } from "./api.js";
 
 /** @typedef {import("../lib/keys.js").Signer} Signer */
@@ -45,6 +50,17 @@ let vaultKey = null;
 
 /** Picks up an unlocked session after the page reloads (see lib/session.js). */
 export async function restore() {
+  // The demo is always the made-up sample member, kept nowhere, so it can't
+  // replace or clear a real member's session on this phone.
+  if (demo) {
+    const { DEVICE_SECRET, INVITE_SECRET } = await import("../demo/mock.js");
+    session = { secret: DEVICE_SECRET, mode: "device" };
+    // The sample member's two circles, with their invite keys so their names show.
+    const secret = encodeSecret(INVITE_SECRET);
+    if (!memory.has(await storeKey())) memory.set(await storeKey(), JSON.stringify({ 0: { circle: 0, secret }, 1: { circle: 1, secret } }));
+    memory.set(await recoveryKey(), "1");
+    return true;
+  }
   const kept = await recall();
   if (kept && (kept.mode === "passkey" || kept.mode === "device")) session = { secret: kept.secret, mode: kept.mode };
   else {
@@ -69,7 +85,7 @@ async function start(secret, mode) {
   session = { secret, mode };
   signers.clear();
   vaultKey = null;
-  await keepSession(secret, mode);
+  if (!demo) await keepSession(secret, mode);
 }
 
 export const unlocked = () => Boolean(session);
@@ -126,7 +142,7 @@ export async function lock() {
   session = null;
   signers.clear();
   vaultKey = null;
-  await forget();
+  if (!demo) await forget();
 }
 
 /** @param {number} index */
@@ -158,7 +174,7 @@ async function storeKey() {
 /** @returns {Promise<Record<number, Local>>} */
 export async function local() {
   try {
-    return JSON.parse(localStorage.getItem(await storeKey()) ?? "{}");
+    return JSON.parse(store().getItem(await storeKey()) ?? "{}");
   } catch {
     return {};
   }
@@ -170,7 +186,7 @@ export async function remember(index, patch) {
   if (patch === null) delete all[index];
   else all[index] = { ...all[index], ...patch };
   try {
-    localStorage.setItem(await storeKey(), JSON.stringify(all));
+    store().setItem(await storeKey(), JSON.stringify(all));
   } catch {
     // Storage full or blocked: the flow still works, it just won't survive a reload.
   }
@@ -259,7 +275,7 @@ async function movesKey() {
 /** @returns {Promise<Move[]>} newest first */
 export async function moves() {
   try {
-    return JSON.parse(localStorage.getItem(await movesKey()) ?? "[]");
+    return JSON.parse(store().getItem(await movesKey()) ?? "[]");
   } catch {
     return [];
   }
@@ -268,7 +284,7 @@ export async function moves() {
 export async function logMove(move) {
   const all = [{ ...move, at: Date.now() }, ...(await moves())].slice(0, 50);
   try {
-    localStorage.setItem(await movesKey(), JSON.stringify(all));
+    store().setItem(await movesKey(), JSON.stringify(all));
   } catch {}
 }
 
@@ -280,14 +296,14 @@ async function recoveryKey() {
 /** Whether this device has shown the member their recovery code. */
 export async function recoverySeen() {
   try {
-    return localStorage.getItem(await recoveryKey()) === "1";
+    return store().getItem(await recoveryKey()) === "1";
   } catch {
     return true;
   }
 }
 export async function markRecoverySeen() {
   try {
-    localStorage.setItem(await recoveryKey(), "1");
+    store().setItem(await recoveryKey(), "1");
   } catch {}
 }
 
@@ -302,7 +318,7 @@ async function labelsKey() {
 /** @returns {Promise<Record<string, string>>} */
 export async function labels() {
   try {
-    return JSON.parse(localStorage.getItem(await labelsKey()) ?? "{}");
+    return JSON.parse(store().getItem(await labelsKey()) ?? "{}");
   } catch {
     return {};
   }
@@ -315,7 +331,7 @@ export async function setLabel(account, name) {
   if (clean) all[account] = clean;
   else delete all[account];
   try {
-    localStorage.setItem(await labelsKey(), JSON.stringify(all));
+    store().setItem(await labelsKey(), JSON.stringify(all));
   } catch {
     // Storage blocked: the name lasts until the page closes.
   }
