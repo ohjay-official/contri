@@ -9,12 +9,15 @@
 //     app imports, followed import by import) answers 200 with the right type.
 //  3. The security headers are on every page.
 //  4. Every API route answers, and refuses what it should.
+//  5. No response sets a cookie (the privacy policy says Contri sets none).
 //
 // Prints one line per check and exits 1 if any fails.
 // Usage: node scripts/site-check.mjs https://contri.ng
 
 const base = (process.argv[2] || "https://contri.ng").replace(/\/$/, "");
 let failed = 0;
+/** Every Set-Cookie header seen, as "path: cookie name". */
+const cookies = [];
 /** @param {boolean} ok @param {string} what @param {string} [detail] */
 const check = (ok, what, detail = "") => {
   if (!ok) failed++;
@@ -24,7 +27,9 @@ const check = (ok, what, detail = "") => {
 async function get(path, init) {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await fetch(path.startsWith("http") ? path : base + path, { redirect: "manual", signal: AbortSignal.timeout(20_000), ...init });
+      const r = await fetch(path.startsWith("http") ? path : base + path, { redirect: "manual", signal: AbortSignal.timeout(20_000), ...init });
+      for (const c of r.headers.getSetCookie?.() ?? []) cookies.push(`${path}: ${c.split("=")[0]}`);
+      return r;
     } catch (e) {
       if (attempt === 3) throw e;
       await new Promise((r) => setTimeout(r, 2000 * attempt));
@@ -152,6 +157,9 @@ const keeper = await get("/api/keeper");
 check(keeper.status === 200, "GET /api/keeper", String(keeper.status));
 const tooBig = await post("/api/relay", { pad: "x".repeat(70_000) });
 check(tooBig.status === 413, "oversized requests are refused", String(tooBig.status));
+
+// ---- 5. No cookies ----
+check(cookies.length === 0, "no response sets a cookie", cookies.slice(0, 5).join(", "));
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");
 process.exit(failed ? 1 : 0);
