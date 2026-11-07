@@ -94,7 +94,7 @@ export async function helpScreen() {
             h("div", { class: "hcard-inner" },
               h("span", { class: "hcard-num" }, "01"),
               h("h2", null, "Contri never", h("br"), "holds your keys"),
-              h("p", { class: "hcard-bottom" }, "Your keys are made on this phone from your passkey, and each pot is held by the contract, which is locked: nobody, us included, can change it or move its money."),
+              h("p", { class: "hcard-bottom" }, "Your keys are made on this phone from your passkey, and each pot is held by the contract, which is locked: nobody, us included, can change it or move its money outside its rules."),
             ),
           ),
           h("article", { class: "hcard hcard-text" },

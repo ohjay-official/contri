@@ -70,7 +70,7 @@ After every deploy, `.github/workflows/web.yml` checks the live site the way vis
 | Round 2: last payment, the $2 pot paid to seat 2, and the circle finished, in one transaction | [CTq2BVe…](https://nearblocks.io/txns/CTq2BVedNKJsaCDSawDPvs83BChmV3ZEhuyP7Ydt1jAJ) |
 | Both $1 deposits sent back by the keeper, six seconds later | [2sugJcU…](https://nearblocks.io/txns/2sugJcUq2MNwLfDGNmq84UFp2rpuwFE2k8ECNWi96vuE) |
 
-Both payouts and both deposits went back to the members, and the contract ended holding $0. Circle 7 stays on the contract, so it is still there under **Live circles**. An earlier run on 5 November used an older contract version.
+Both payouts and both deposits went back to the members, and the contract ended holding $0. Contri's keeper doesn't close finished circles, so circle 7 shows under **Live circles** unless someone closes it (anyone may, once it is settled); its transactions stay on chain either way. An earlier run on 5 November used an older contract version.
 
 **Run one yourself** (about $6 in, nearly all of it back; 10 minutes):
 
@@ -131,7 +131,7 @@ Who can do what, every finding and its fix, and what's still open: [docs/SECURIT
 ## Sustainability
 
 - **Circles are free; money in and out pays 0.25%.** Contributions, payouts, deposits and turn trades carry no fee. Top-ups from another chain and cash-outs to one carry a 0.25% fee, which 1Click takes from what is sent and shares between Contri and itself (`appFees`, set on the server, shown before every confirm, never on moves between a member's own balances). A member of a $5, five-person circle moves about $30 in and $30 out, so Contri's share is about 7 cents; the gas Contri pays for that member's payments is about 0.01 to 0.02 NEAR.
-- **Costs little to run.** Storage is paid in NEAR the contract holds (under 0.005 NEAR per member while a circle runs, freed when it closes), and the relayer pays about 0.001 to 0.002 NEAR of gas per payment. The fee lands as USDT in the relayer's NEAR Intents balance; Contri swaps it for the NEAR the relayer spends on gas, by hand for now.
+- **Costs little to run.** Storage is paid in NEAR the contract holds (under 0.005 NEAR per member while a circle runs, most of it freed when the circle closes; each member's 117-byte track record stays), and the relayer pays about 0.001 to 0.002 NEAR of gas per payment. The fee lands as USDT in the relayer's NEAR Intents balance; Contri swaps it for the NEAR the relayer spends on gas, by hand for now.
 - **Little to maintain.** Once locked, the contract can't be upgraded, so it can't be broken by an update either. The app and server are plain JavaScript with no runtime dependencies or build step.
 - **It runs without Contri.** The contract's methods and the app's signing code are public; anyone can run the relayer and keeper, or call the contract from any NEAR account. See [Run your own Contri](#run-your-own-contri).
 
