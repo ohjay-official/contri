@@ -1,0 +1,1185 @@
+{
+  "ranAt": "2026-11-07T16:37:21.139Z",
+  "partnerKey": true,
+  "steps": [
+    {
+      "label": "authenticate (nep413, versioned nonce, empty intents)",
+      "path": "/v0/auth/authenticate",
+      "status": 201,
+      "request": {
+        "signedData": {
+          "standard": "nep413",
+          "payload": {
+            "message": "{\"signer_id\":\"21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a\",\"deadline\":\"2026-11-07T16:41:21Z\",\"intents\":[]}",
+            "nonce": "Vij2xgAlKBKzAKpNlt7Q5RhAPUjOptDlGMhe5CbdFeg=",
+            "recipient": "intents.near"
+          },
+          "public_key": "ed25519:3H2hiiHtdFzhoZjYwjr9CGUNsoMs5qWWyrqUoF5S963K",
+          "signature": "ed25519:dBMK9w6N6wqCAHRoBk7RHX6SuGd6iWn3fQvFAzotejQpPostvkzAQBRjvjS2R156YQa7ZqSwcviFfzwFpvydYpE"
+        }
+      },
+      "response": {
+        "accessToken": "eyJhbGciOiJS...",
+        "refreshToken": "eyJhbGciOiJS...",
+        "expiresIn": 900,
+        "refreshExpiresIn": 604800
+      }
+    },
+    {
+      "label": "confidential balances with the session",
+      "path": "/v0/account/balances",
+      "status": 200,
+      "response": {
+        "balances": []
+      }
+    },
+    {
+      "label": "top up: BSC USDT -> confidential (dry)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:21.870Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000000000000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000000000000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000000000000000",
+          "amountOut": "4998990",
+          "amountOutFormatted": "4.99899",
+          "amountOutUsd": "4.995270751440",
+          "minAmountOut": "4949000",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000000000000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:21.870Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:xjbKp9mGfbNGZsqMVoyiNmKyoAj12P6Wgm9fWALE6gR7eXcNLpm4sJWPLi6dUMnWEYSrftxS5HDA4UP8yqVKMd4",
+        "timestamp": "2026-11-07T16:37:21.954Z",
+        "correlationId": "29f08b99-842e-4e7c-93f7-6fefc35ddf9f"
+      }
+    },
+    {
+      "label": "top up: BSC USDT -> confidential (dry, with session)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:22.350Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000000000000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000000000000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000000000000000",
+          "amountOut": "4998990",
+          "amountOutFormatted": "4.99899",
+          "amountOutUsd": "4.995270751440",
+          "minAmountOut": "4949000",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000000000000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:22.350Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "userAccountId": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:3HVieBZRCAiUZNR98nUG8SV36xYbiiT8QD9nLapAU1kukBw7DwCoHL78AjBzRUhE1VdESRjmebaLRHjAQJ2tvMVD",
+        "timestamp": "2026-11-07T16:37:22.415Z",
+        "correlationId": "b1771d8d-985e-42d8-bfa0-15bef508fdc4"
+      }
+    },
+    {
+      "label": "contribute: confidential -> public circle account (dry)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:22.801Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "CONFIDENTIAL_INTENTS",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000",
+        "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "recipientType": "INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000",
+          "amountOut": "5000000",
+          "amountOutFormatted": "5.0",
+          "amountOutUsd": "4.996280000000",
+          "minAmountOut": "4950000",
+          "timeEstimate": 10,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "CONFIDENTIAL_INTENTS",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "recipientType": "INTENTS",
+          "deadline": "2026-11-07T17:07:22.801Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": []
+        },
+        "signature": "ed25519:4MLrHemJ1wURpUa9YWkCoQ52XRkWjztfMu86vreQDHbXBgjGWSQXFtd2oHQuRLtN6d6o67qXttyrwWXP89Kn2Q1G",
+        "timestamp": "2026-11-07T16:37:22.888Z",
+        "correlationId": "65016668-88c1-43c1-ac4b-78e8e2e2417d"
+      }
+    },
+    {
+      "label": "contribute: confidential -> public circle account (dry, with session)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:22.946Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "CONFIDENTIAL_INTENTS",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000",
+        "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "recipientType": "INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000",
+          "amountOut": "5000000",
+          "amountOutFormatted": "5.0",
+          "amountOutUsd": "4.996280000000",
+          "minAmountOut": "4950000",
+          "timeEstimate": 10,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "CONFIDENTIAL_INTENTS",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "recipientType": "INTENTS",
+          "deadline": "2026-11-07T17:07:22.946Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "userAccountId": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "appFees": []
+        },
+        "signature": "ed25519:3FH1T6cEsxX2yzbfEB86yAhZrgh6L6qPXGh7XSRtWXdaRAmfxWnsKswrikRT2MHXCFcjezvLynxvsoyMfnNNQgKj",
+        "timestamp": "2026-11-07T16:37:23.007Z",
+        "correlationId": "768b199f-ce48-48b6-8b90-f8440b64b6a6"
+      }
+    },
+    {
+      "label": "payout home: public circle account -> confidential (dry)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:23.069Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "refundType": "INTENTS"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000",
+          "amountOut": "5000000",
+          "amountOutFormatted": "5.0",
+          "amountOutUsd": "4.996280000000",
+          "minAmountOut": "4950000",
+          "timeEstimate": 10,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "INTENTS",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000",
+          "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "refundType": "INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:23.069Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": []
+        },
+        "signature": "ed25519:5F4kRSjc7C2N5qNa9qDShncEBRQ9JE5eja2RRKwPTA51RgEUHC1bRY6raomTAz9EKXxnCFdXb484dNWZxnMKXgGH",
+        "timestamp": "2026-11-07T16:37:23.150Z",
+        "correlationId": "fd74895d-af31-4347-94f3-317734c4884c"
+      }
+    },
+    {
+      "label": "payout home: public circle account -> confidential (dry, with session)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:23.212Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "refundType": "INTENTS"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000",
+          "amountOut": "5000000",
+          "amountOutFormatted": "5.0",
+          "amountOutUsd": "4.996280000000",
+          "minAmountOut": "4950000",
+          "timeEstimate": 10,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "INTENTS",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000",
+          "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "refundType": "INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:23.212Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "userAccountId": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "appFees": []
+        },
+        "signature": "ed25519:28LfSzQnuH5KR7LxsMSifrbhyQYn8mHLUcvAbqy7XPpPT9zeaXeWwPY7B31CuWpEVYRwVw3ab6QRaD5HQtY5LCf3",
+        "timestamp": "2026-11-07T16:37:23.274Z",
+        "correlationId": "e311943f-bf3c-4b2d-937d-9db8035fdf87"
+      }
+    },
+    {
+      "label": "cash out: confidential -> BSC (dry)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:23.339Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "CONFIDENTIAL_INTENTS",
+        "destinationAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "amount": "5000000",
+        "recipient": "0x2222222222222222222222222222222222222222",
+        "recipientType": "DESTINATION_CHAIN",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000",
+          "amountOut": "4980729982744981738",
+          "amountOutFormatted": "4.980729982744981738",
+          "amountOutUsd": "4.977024319638",
+          "minAmountOut": "4930922682917531920",
+          "timeEstimate": 13,
+          "refundFee": "0",
+          "withdrawFee": "18260018260018262"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "CONFIDENTIAL_INTENTS",
+          "destinationAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "amount": "5000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "0x2222222222222222222222222222222222222222",
+          "recipientType": "DESTINATION_CHAIN",
+          "deadline": "2026-11-07T17:07:23.339Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:2dW4tAJazDtwoQpJsWTicWmvFwAdtiGoZLpiU27MNaSypj1EGhJQxcdNkVHZY47oGGNdUxsYMR6kPohhmx9BxZeh",
+        "timestamp": "2026-11-07T16:37:23.432Z",
+        "correlationId": "d6dfb42a-8e03-4b41-a2c8-894b63adff4c"
+      }
+    },
+    {
+      "label": "cash out: confidential -> BSC (dry, with session)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:24.191Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "CONFIDENTIAL_INTENTS",
+        "destinationAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "amount": "5000000",
+        "recipient": "0x2222222222222222222222222222222222222222",
+        "recipientType": "DESTINATION_CHAIN",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000",
+          "amountOut": "4980729982744981738",
+          "amountOutFormatted": "4.980729982744981738",
+          "amountOutUsd": "4.977024319638",
+          "minAmountOut": "4930922682917531920",
+          "timeEstimate": 13,
+          "refundFee": "0",
+          "withdrawFee": "18260018260018262"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "CONFIDENTIAL_INTENTS",
+          "destinationAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "amount": "5000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "0x2222222222222222222222222222222222222222",
+          "recipientType": "DESTINATION_CHAIN",
+          "deadline": "2026-11-07T17:07:24.191Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "userAccountId": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:3j24qoV1MMdENjAuEG9jrLuWLRGG3W5oZvGi8Tf6JY1o9deVfugjb7TGAgvhJJviagbDfTZTmCt2nzUZfHUXk92p",
+        "timestamp": "2026-11-07T16:37:24.273Z",
+        "correlationId": "bf0677b0-eb4a-4e6c-8363-0f1a81fef759"
+      }
+    },
+    {
+      "label": "top up (dry), session in User-Session",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:25.033Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000000000000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000000000000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000000000000000",
+          "amountOut": "4998990",
+          "amountOutFormatted": "4.99899",
+          "amountOutUsd": "4.995270751440",
+          "minAmountOut": "4949000",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000000000000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:25.033Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:5nfjrpCban9Cq1FgDy4a6HF3sWvr45t33fBxc2Q6nCBoAfLoDmMYhFBJStVKLZc63gNgKVQAYv9x9xj7g9yZ5owr",
+        "timestamp": "2026-11-07T16:37:25.118Z",
+        "correlationId": "d6f2006b-b7a6-4f11-9c75-60c02842d28f"
+      }
+    },
+    {
+      "label": "top up (dry), session in X-User-Session",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:25.507Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000000000000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000000000000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000000000000000",
+          "amountOut": "4998990",
+          "amountOutFormatted": "4.99899",
+          "amountOutUsd": "4.995270751440",
+          "minAmountOut": "4949000",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000000000000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:25.507Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:4yjMFWLznmEAzTqWMzT1CeptmCxCKuSydj39N2Tg438xvJUVhPVDKHbYRGuWEGRAV9QHcUsoxs7GPVB152McWCEB",
+        "timestamp": "2026-11-07T16:37:25.569Z",
+        "correlationId": "39a810c7-f983-41b9-a115-00d6e451c0f5"
+      }
+    },
+    {
+      "label": "top up (dry), session in X-Session-Token",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:25.955Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000000000000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000000000000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000000000000000",
+          "amountOut": "4998990",
+          "amountOutFormatted": "4.99899",
+          "amountOutUsd": "4.995270751440",
+          "minAmountOut": "4949000",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000000000000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:25.955Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:4LiPdG25wtfuFxKBza1EAEzWHBYuyi7dpcgzmnoBeRivMrUy2ZEtYxK6MJuDUTt7kPsjUsnvkb45S89nppCPcdzV",
+        "timestamp": "2026-11-07T16:37:26.023Z",
+        "correlationId": "5c92d783-4061-4332-a524-c92481930f30"
+      }
+    },
+    {
+      "label": "top up (dry), session in X-Access-Token",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:26.404Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000000000000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000000000000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000000000000000",
+          "amountOut": "4998990",
+          "amountOutFormatted": "4.99899",
+          "amountOutUsd": "4.995270751440",
+          "minAmountOut": "4949000",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000000000000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:26.404Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:yATomPHwUaPpBfPrrFmhtfJXHUmj9CH1DLMy71DUUwdRdfnkxnV3oC4KZZsdzFEsx86kdstyVty8Xb6W1djJBQX",
+        "timestamp": "2026-11-07T16:37:26.470Z",
+        "correlationId": "29c3e249-ddad-4c05-af7c-ad9323d10022"
+      }
+    },
+    {
+      "label": "top up (dry), session in Cookie",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:26.857Z",
+        "referral": "contri",
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000000000000000",
+        "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000000000000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000000000000000",
+          "amountOut": "4998990",
+          "amountOutFormatted": "4.99899",
+          "amountOutUsd": "4.995270751440",
+          "minAmountOut": "4949000",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000000000000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "recipientType": "CONFIDENTIAL_INTENTS",
+          "deadline": "2026-11-07T17:07:26.857Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:5Wua2zsK54sAabdHSTqDFWQxRrkN4hWwJtQboMfe9xJZJg6uckQPWLTSnu1W7ATyYRtEd91DLEvYRUS3WBXth4VL",
+        "timestamp": "2026-11-07T16:37:26.942Z",
+        "correlationId": "53a71a21-21e9-4a15-8c56-82d203242f81"
+      }
+    },
+    {
+      "label": "contribute leg (live quote)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:27.323Z",
+        "referral": "contri",
+        "dry": false,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "CONFIDENTIAL_INTENTS",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "5000000",
+        "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "recipientType": "INTENTS",
+        "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "refundType": "CONFIDENTIAL_INTENTS"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996280000000",
+          "minAmountIn": "5000000",
+          "amountOut": "5000000",
+          "amountOutFormatted": "5.0",
+          "amountOutUsd": "4.996280000000",
+          "minAmountOut": "4950000",
+          "timeEstimate": 10,
+          "refundFee": "0",
+          "withdrawFee": "0",
+          "deadline": "2026-11-10T17:07:27.323Z",
+          "timeWhenInactive": "2026-11-10T17:07:27.323Z",
+          "depositAddress": "cbf9204df0f22b7853bbf0da1e39157f0ea1c706f6c77a70f9f92b9118fd0523"
+        },
+        "quoteRequest": {
+          "dry": false,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "CONFIDENTIAL_INTENTS",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "5000000",
+          "refundTo": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "refundType": "CONFIDENTIAL_INTENTS",
+          "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "recipientType": "INTENTS",
+          "deadline": "2026-11-07T17:07:27.323Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "userAccountId": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+          "appFees": []
+        },
+        "signature": "ed25519:nvpMPG43iRdDKJruMaj9sjWJMBe9bdG5TY5gzYHySWmYsRoT4QKdXAQhkx5FQAc1QQUwvJqcvEFDkTK15119oQP",
+        "timestamp": "2026-11-07T16:37:27.385Z",
+        "correlationId": "bd848579-521f-4aae-8a96-e830151a0aae"
+      }
+    },
+    {
+      "label": "generate-intent (nep413)",
+      "path": "/v0/generate-intent",
+      "status": 201,
+      "request": {
+        "type": "swap_transfer",
+        "standard": "nep413",
+        "signerId": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+        "depositAddress": "cbf9204df0f22b7853bbf0da1e39157f0ea1c706f6c77a70f9f92b9118fd0523"
+      },
+      "response": {
+        "intent": {
+          "standard": "nep413",
+          "payload": {
+            "message": "{\"deadline\":\"2026-11-10T17:07:27.323Z\",\"intents\":[{\"intent\":\"transfer\",\"receiver_id\":\"cbf9204df0f22b7853bbf0da1e39157f0ea1c706f6c77a70f9f92b9118fd0523\",\"tokens\":{\"imt:51e8f94d77b5e90dc9852ca6113771e11e8382ce69473a75e313e41665de7cbe:nep141:usdt.tether-token.near\":\"5000000\"}}],\"signer_id\":\"21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a\"}",
+            "nonce": "Vij2xgDhEPMXwOxa+gi+5hhZRDNBqaceDCkYhLayvQQ=",
+            "recipient": "intents.far"
+          }
+        },
+        "correlationId": "014b8248-2865-44f8-a4ff-9ae23b105d95"
+      }
+    },
+    {
+      "label": "submit-intent (no balance: should fail on balance, not signature)",
+      "path": "/v0/submit-intent",
+      "status": 201,
+      "request": {
+        "type": "swap_transfer",
+        "signedData": {
+          "standard": "nep413",
+          "payload": {
+            "message": "{\"deadline\":\"2026-11-10T17:07:27.323Z\",\"intents\":[{\"intent\":\"transfer\",\"receiver_id\":\"cbf9204df0f22b7853bbf0da1e39157f0ea1c706f6c77a70f9f92b9118fd0523\",\"tokens\":{\"imt:51e8f94d77b5e90dc9852ca6113771e11e8382ce69473a75e313e41665de7cbe:nep141:usdt.tether-token.near\":\"5000000\"}}],\"signer_id\":\"21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a\"}",
+            "nonce": "Vij2xgDhEPMXwOxa+gi+5hhZRDNBqaceDCkYhLayvQQ=",
+            "recipient": "intents.far"
+          },
+          "public_key": "ed25519:3H2hiiHtdFzhoZjYwjr9CGUNsoMs5qWWyrqUoF5S963K",
+          "signature": "ed25519:3Rm8Rf2NhD9ebgRiDX5TSct1eUmoBVy18LQBEo38Fgr4aG7tEd7xDwgyfXA4z7BhawknV5Si6baWqCa2aK35M3Ek"
+        }
+      },
+      "response": {
+        "intentHash": "7oJEFWLFWBUFKu6Qvc4KdhBNWQmufgAJyH9TGRs1WHQJ",
+        "correlationId": "ea8abde6-e023-4a8c-857e-f028daa436ef"
+      }
+    },
+    {
+      "label": "direct top-up FLEX_INPUT + confidentiality basic (live)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:27.937Z",
+        "referral": "contri",
+        "dry": false,
+        "swapType": "FLEX_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "3020000000000000000",
+        "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "recipientType": "INTENTS",
+        "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "refundType": "INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "3020000000000000000",
+          "amountInFormatted": "3.02",
+          "amountInUsd": "3.017753120000",
+          "minAmountIn": "2989800000000000000",
+          "amountOut": "3019389",
+          "amountOutFormatted": "3.019389",
+          "amountOutUsd": "3.017142574584",
+          "minAmountOut": "2989195",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0",
+          "deadline": "2026-11-10T17:07:27.937Z",
+          "timeWhenInactive": "2026-11-10T17:07:27.937Z",
+          "depositAddress": "0x6950b7A4562ec14224d00a8C2a5C317b50e11425"
+        },
+        "quoteRequest": {
+          "dry": false,
+          "depositMode": "SIMPLE",
+          "swapType": "FLEX_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "3020000000000000000",
+          "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "refundType": "INTENTS",
+          "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "recipientType": "INTENTS",
+          "deadline": "2026-11-07T17:07:27.937Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1,
+              "limitOrderId": null
+            }
+          ]
+        },
+        "signature": "ed25519:642cNUPd8JLVnrWv4Ym4uiZG3Hvjx3ZKsRBZPSwMnj4xuVThESaRaBU4M9MdSHfJconn7akY72obU5tQtsN8QLrT",
+        "timestamp": "2026-11-07T16:37:27.999Z",
+        "correlationId": "bc356129-a4de-4a30-894f-5fca5c41f17c"
+      }
+    },
+    {
+      "label": "  public status of that address (no key)",
+      "path": "/v0/status",
+      "status": 404,
+      "response": {
+        "recipient": null,
+        "status": "Deposit address 0x6950b7A4562ec14224d00a8C2a5C317b50e11425 not found"
+      }
+    },
+    {
+      "label": "direct top-up EXACT_INPUT + confidentiality basic (live)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:28.848Z",
+        "referral": "contri",
+        "dry": false,
+        "swapType": "EXACT_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "3020000000000000000",
+        "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "recipientType": "INTENTS",
+        "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "refundType": "INTENTS",
+        "confidentiality": "basic"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "3020000000000000000",
+          "amountInFormatted": "3.02",
+          "amountInUsd": "3.017753120000",
+          "minAmountIn": "3020000000000000000",
+          "amountOut": "3019389",
+          "amountOutFormatted": "3.019389",
+          "amountOutUsd": "3.017142574584",
+          "minAmountOut": "2989195",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0",
+          "deadline": "2026-11-10T17:07:28.848Z",
+          "timeWhenInactive": "2026-11-10T17:07:28.848Z",
+          "depositAddress": "0xF8e65AA694bd9459ff8C18fE6408d1e9E80A1b5f"
+        },
+        "quoteRequest": {
+          "dry": false,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "3020000000000000000",
+          "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "refundType": "INTENTS",
+          "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "recipientType": "INTENTS",
+          "deadline": "2026-11-07T17:07:28.848Z",
+          "confidentiality": "basic",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+              "fee": 1,
+              "limitOrderId": null
+            }
+          ]
+        },
+        "signature": "ed25519:634BKVXHimYw9VPHnnebJcg57SZeCij2sSUGqjSQTjzysa4JCWedUeyxM3HRKMd97gnGgY8zDfLMcrtbk9PSwZi",
+        "timestamp": "2026-11-07T16:37:28.911Z",
+        "correlationId": "b0ff902f-796b-44b6-beb9-3e1cbc581747"
+      }
+    },
+    {
+      "label": "  public status of that address (no key)",
+      "path": "/v0/status",
+      "status": 404,
+      "response": {
+        "recipient": null,
+        "status": "Deposit address 0xF8e65AA694bd9459ff8C18fE6408d1e9E80A1b5f not found"
+      }
+    },
+    {
+      "label": "direct top-up FLEX_INPUT, not confidential (live)",
+      "path": "/v0/quote",
+      "status": 201,
+      "request": {
+        "slippageTolerance": 100,
+        "deadline": "2026-11-07T17:07:29.804Z",
+        "referral": "contri",
+        "dry": false,
+        "swapType": "FLEX_INPUT",
+        "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "3020000000000000000",
+        "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "recipientType": "INTENTS",
+        "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "refundType": "INTENTS"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "3020000000000000000",
+          "amountInFormatted": "3.02",
+          "amountInUsd": "3.017753120000",
+          "minAmountIn": "2989800000000000000",
+          "amountOut": "3019389",
+          "amountOutFormatted": "3.019389",
+          "amountOutUsd": "3.017142574584",
+          "minAmountOut": "2989195",
+          "timeEstimate": 35,
+          "refundFee": "0",
+          "withdrawFee": "0",
+          "deadline": "2026-11-10T17:07:29.804Z",
+          "timeWhenInactive": "2026-11-10T17:07:29.804Z",
+          "depositAddress": "0xcB0Ea1920D4bA2b520158b5638cf31db84c5accE"
+        },
+        "quoteRequest": {
+          "dry": false,
+          "depositMode": "SIMPLE",
+          "swapType": "FLEX_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep245:v2_1.omni.hot.tg:56_2CMMyVTGZkeyNZTSvS5sarzfir6g",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "3020000000000000000",
+          "refundTo": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "refundType": "INTENTS",
+          "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+          "recipientType": "INTENTS",
+          "deadline": "2026-11-07T17:07:29.804Z",
+          "confidentiality": "public",
+          "referral": "contri",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+              "fee": 1,
+              "limitOrderId": null
+            }
+          ]
+        },
+        "signature": "ed25519:2fxiXPXXuLJje8bcaQYduWSxmGC19vjpqqNR9Z2mNr4qeri1Zn3jAebKHrYxee4iz4n65qXyNhfXm8h4VieSE43k",
+        "timestamp": "2026-11-07T16:37:29.867Z",
+        "correlationId": "b3184d41-1ebd-4753-8d2a-c7bcb6424c1f"
+      }
+    },
+    {
+      "label": "  public status of that address (no key)",
+      "path": "/v0/status",
+      "status": 200,
+      "response": {
+        "recipient": "18fae641eaa621d0226c007ba671082cc4d3095ba639a08166359f0d1ab8bf6f",
+        "status": "PENDING_DEPOSIT"
+      }
+    }
+  ],
+  "vault": "21d29760915ff7890a59314ecb1bc61274aeb0938d01bdac1723ad3b67ef7a0a",
+  "salt": "252812b3"
+}
