@@ -1,6 +1,6 @@
 # Security
 
-Who can do what with members' money, what the contract guarantees, what three rounds of AI-assisted security review found, and what changed because of them.
+Who can do what with members' money, what the contract guarantees, what five rounds of AI-assisted security review found, and what changed because of them.
 
 ## Who holds what
 

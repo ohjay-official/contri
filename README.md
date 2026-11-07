@@ -9,7 +9,7 @@
 - A circle ran with real USDT on two phones on this exact code ([its transactions](#5-on-mainnet-with-real-money)).
 - `node app/scripts/verify.mjs` checks all of this, and runs a whole circle offline, in about 20 seconds.
 
-Built for NEAR HACKATHON (Nov 1-14, 2026). Tracks: Real-World Money, Privacy & Private AI, NFTs That Do Something, Open Innovation. **Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng).
+Built for NEAR HACKATHON (Nov 1-14, 2026), in the tracks `realworld`, `privacy` and `nfts` ([what fits each, and where to check](#tracks)). **Live app:** https://contri.ng. **X:** [@contri_ng](https://x.com/contri_ng). How it was built, with what, and with which AI: [Built during NEAR HACKATHON](#built-during-near-hackathon).
 
 ## What's New Here
 
@@ -30,9 +30,14 @@ Five ways in, from quickest to most real. None needs a NEAR account.
 
 **https://contri.ng/demo**, on any phone or computer: the real app's screens with pretend money on a pretend chain that runs in your browser tab. No passkey, no money, no second device, and nothing is sent to a server or saved. You're a member of two sample circles, and the other members are pretend: they join a circle you start a few seconds after you start it, and pay each round right after you do. Things to try, about two minutes:
 
-1. A card on the first screen says what to try first: open **Yaba traders**, buy **turn 3** for $1.50 from the member listing it, and pay your $5. The other members pay too, and the $25 pot comes to you in the same moment.
-2. Back on **Your circles**, tap **Start a circle**: $2, 3 members. Move money in, create it, and the others join within seconds. Pay round 1 and watch the pot go out; try **Pay all rounds** too.
-3. Open **Live circles** and **Help**, and move money out to see a cash-out quote.
+Do each step and check that you see what it says:
+
+1. **Open https://contri.ng/demo.** You see **Your circles**, a card **Try this first, it takes 30 seconds**, and two sample circles, **Yaba traders** and **Family December**.
+2. **Tap Yaba traders.** You see the pot ring with **$25.00** and **to turn 3** in the middle, your seat marked **You** at turn 4, and, under **Swap turns**, a button **Buy turn 3 for $1.50**.
+3. **Tap Buy turn 3 for $1.50.** You see **Turn 3 is yours**, and in **Members, in turn order** you are now turn 3, marked **Receives this round**.
+4. **Tap Pay $5.00 for round 3.** You see **Paid. That closed the round: the $25.00 pot is yours.** The ring moves on to turn 4, and **Payouts** lists **Round 3: $25.00 to you**. The other members paid too; nobody held the pot in between.
+5. **Back on Your circles, tap Start a circle:** $2, 3 members, **Every 10 minutes (to try it out)**. Move money in and create it. The pretend members join within seconds and the circle starts. Pay round 1 and the pot goes out; try **Pay all rounds** too.
+6. **Open Live circles and Help,** and move money out to see a cash-out quote.
 
 A bar on every screen says it's the demo. The real app is at https://contri.ng/app.
 
@@ -43,6 +48,15 @@ node app/scripts/verify.mjs
 ```
 
 It runs the app and server tests, starts the app offline, runs a whole circle end to end (two new members top up, create, join, pay two rounds, each gets the pot and their deposit back; every payment is signed by the app's own code and passes the relayer's real checks), then reads mainnet to check what this README claims: the contract has no keys, its code hash is the one given below, and the real-money circle finished with every pot paid. It prints PASS, FAIL or SKIP for each. `--all` adds the contract's unit tests if Rust is installed. CI runs it on every push (`app-results` branch, `verify.log`).
+
+Without Node, from any terminal with `curl`, the lock and the code hash:
+
+```bash
+RPC=https://rpc.mainnet.fastnear.com
+q() { curl -s $RPC -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"query\",\"params\":{\"request_type\":\"$1\",\"finality\":\"final\",\"account_id\":\"circles.contring.near\"}}"; echo; }
+q view_access_key_list   # "keys":[]
+q view_account           # "code_hash":"8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC"
+```
 
 ### 3. The app offline, on your own machine (no money, no chain)
 
@@ -120,6 +134,27 @@ Every circle action is a NEP-413 intent signed on the phone and submitted by Con
 
 The current app on a phone, with sample circles.
 
+## Tracks
+
+Submitted to three tracks (ids from the organizers' HACKATHON.md), each backed by something you can open:
+
+| Track | What in Contri fits it | Where to check |
+| --- | --- | --- |
+| `realworld`: Real-World Money | Savings circles that millions of people already run, moved onto stablecoins. Members pay USDT or USDC from the exchange they already use on seven chains (1Click), the contract pays each pot in the same transaction as the round's last payment, and the business model is a 0.25% fee on money in and out. It ran with real USDT on two phones. | The demo (steps above); circle 7's transactions ([On mainnet](#5-on-mainnet-with-real-money)); [docs/FEES.md](docs/FEES.md) |
+| `privacy`: Privacy & Private AI | Private finance. One account per circle, derived from the passkey, so no key links a member's circles; invite-only circles with names encrypted on the phone; a private balance on Confidential Intents so the chain never sees the exchange or wallet behind it; no personal data, no cookies, no trackers. | [Privacy](#privacy); [docs/PRIVACY.md](docs/PRIVACY.md); https://contri.ng/privacy |
+| `nfts`: NFTs That Do Something | Each turn is a NEP-171 seat NFT that carries a right to money: whoever holds the seat receives that round's pot. A member who needs the pot sooner buys an earlier seat from one who can wait, and the contract swaps the seats and pays the seller. Each seat's picture is an SVG the contract draws from the circle's live state. | Demo step 3 (buy turn 3); `nft_token` and `nft_tokens` on `circles.contring.near`; [docs/METHODS.md](docs/METHODS.md) |
+
+## What works today
+
+| Piece | State |
+| --- | --- |
+| Contract, `circles.contring.near` | On mainnet and locked (no keys); its code hash is CI's build. 98 unit tests, and sandbox end-to-end tests against the real NEAR Intents contract |
+| App and site, https://contri.ng | Live: passkey sign-in, top-ups from seven chains, circles, paying ahead, turn trading, the private balance, cash-outs, Live circles, Help |
+| Real money on mainnet | 5 November: top-up, contribution, cash-out, and the private route. 7 November: circle 7, a whole circle on two phones on the locked code |
+| Demo, https://contri.ng/demo | Works: the real app's screens on a pretend chain in the tab, with pretend members |
+| Relayer and keeper | Running: the relayer on Vercel, the keeper every 10 minutes on GitHub Actions plus a daily Vercel cron |
+| Community backing (`back:<circle>`) | In the contract and unit-tested; not in the app yet. The Sputnik DAO template hasn't been run against a live DAO |
+
 ## What it does
 
 1. An organizer creates a circle: amount per round, number of members, how often, and whether turns go in join order or are drawn at random.
@@ -145,7 +180,7 @@ Full design, what each party can see, the limits (amounts and timing), and what 
 ## Security
 
 - **The contract is locked and has no admin method.** Its code can't pay anyone outside a circle's rules, and since 7 November 2026 its account has no keys ([lock transaction](https://nearblocks.io/txns/QxnCNCiaTpNwuJaxiDRuU2jtSN66vKWfU7PX9oLfYjG)), so nobody can upgrade it or move its money. `node app/scripts/deploy.js --lock` refused unless the deployed code was exactly CI's build (code hash `8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC`), swapped the deploy key for a one-time key, checked NEAR Intents holds no key for the account and still lets it pay out, then deleted the one-time key and checked none were left. NEAR Intents' own governance (its DAO and roles) can still pause, freeze or force-move balances held on `intents.near`, and Tether can freeze USDT.
-- **Four rounds of AI-assisted security review before the lock** (5 to 7 November 2026; the third with eight independent auditors: contract, economics, server, on-chain, privacy, front end, integrations and a cold judge; the fourth a fresh review of the live build, which found nothing above Low). They found storage that could run out under a running circle, transfers and callbacks that could run short of gas, a member who never paid still collecting their turn, a relayer anyone could lock up or use for free, invitees choosing their own deposit, and smaller issues. Each fix has a test; what was accepted instead is listed with its reason.
+- **Five rounds of AI-assisted security review before the lock** (5 to 7 November 2026; the third with eight independent auditors: contract, economics, server, on-chain, privacy, front end, integrations and a cold judge; the fourth a re-review of paying ahead and the fee; the fifth a fresh review of the live build, which found nothing above Low). They found storage that could run out under a running circle, transfers and callbacks that could run short of gas, a member who never paid still collecting their turn, a relayer anyone could lock up or use for free, invitees choosing their own deposit, and smaller issues. Each fix has a test; what was accepted instead is listed with its reason.
 - **Every circle can finish.** Members reserve the storage their payouts and credits will need when they join, an empty round closes without a transfer, a round always gets a full period after the one before it, and anyone can settle a late round or release deposits.
 - **What it doesn't promise.** A deposit covers one missed round, so a member who takes an early pot and stops paying can leave later pots short (what anyone still owes at their own turn is held back from it). Random turn order uses NEAR's block seed and is best effort: block producers could bias it.
 
@@ -196,6 +231,19 @@ node dev/server.js
 | `docs/` | [Architecture](docs/ARCHITECTURE.md), [contract methods](docs/METHODS.md), [privacy](docs/PRIVACY.md), [security](docs/SECURITY.md), [fees and gas](docs/FEES.md) |
 
 [DEMO.md](DEMO.md) has the demo script written before the build.
+
+## Built during NEAR HACKATHON
+
+**A new project, all of it written in the hackathon window.** NEAR HACKATHON was announced on 19 October 2026 (HACKATHON.md Q-001). Contri's first commit, `ce44248`, is from 31 October 2026 at 23:00 UTC, midnight on 1 November in Lagos, and the code follows from there. There is no earlier code, baseline, template or boilerplate (Q-002, Q-004, Q-005). Check it with `git log --reverse --format='%h %ad %s' --date=iso | head -3`.
+
+**AI code (Q-005).** The code, tests and docs were written with Claude (Claude Code), directed by the owner, who made the product decisions and did every wallet step and real-money test.
+
+**Libraries and services (Q-005)**, at the versions the lockfiles pin:
+- **Contract (Rust 1.95.0):** `near-sdk` 5.30.0. Tests: `ed25519-dalek` 2. Sandbox end-to-end tests: `near-workspaces` 0.24, `tokio`, `anyhow`, `serde_json`, `sha2`, `bs58`, `base64`, `hex`, and the NEAR Intents contract built from [near/intents](https://github.com/near/intents).
+- **App and server:** no runtime dependencies. Development only: TypeScript 6.0.2, `@types/node` 22, Playwright 1.63.0. Fonts: Instrument Sans and Instrument Serif (SIL Open Font License), served from the site.
+- **Services:** NEAR mainnet RPC (FastNEAR's and near.org's public endpoints), NEAR Intents, the 1Click API with a partner key, Confidential Intents, Vercel (hosting and functions), Upstash Redis through Vercel (shared rate limits), GitHub Actions (CI, keeper, deploys).
+
+The site and app stay up through judging and after (Q-012). License: MIT (Q-014).
 
 ## License
 
