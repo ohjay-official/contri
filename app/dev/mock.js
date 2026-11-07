@@ -59,7 +59,9 @@ const SEAT_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' v
 const balances = { [me0]: 3_200_000n, [me1]: 0n };
 const TOKEN = "nep141:usdt.tether-token.near";
 // The private balance, and a move out of it waiting for its signature.
-let privateHeld = 12_500_000n;
+let privateHeld = process.env.MOCK_EMPTY ? 0n : 12_500_000n;
+// MOCK_EMPTY=1: no circles and an empty private balance, like a fresh mainnet.
+if (process.env.MOCK_EMPTY) circles.length = 0;
 /** @type {{ to: string | null, amount: bigint } | null} */
 let pendingMove = null;
 

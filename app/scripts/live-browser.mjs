@@ -37,12 +37,15 @@ async function open(opts = {}) {
     problems.push(`request failed: ${r.url()} ${r.failure()?.errorText}`);
   });
   page.on("response", (r) => r.status() >= 400 && problems.push(`HTTP ${r.status()}: ${r.request().method()} ${r.url()}`));
-  return { ctx, page, problems };
+  /** @type {string[]} */
+  const trail = [];
+  page.on("framenavigated", (f) => f === page.mainFrame() && trail.push(new URL(f.url()).pathname + new URL(f.url()).hash));
+  return { ctx, page, problems, trail };
 }
 
 /**
  * One screen: run `go`, then report problems seen since the last screen.
- * @param {{ page: import("playwright").Page, problems: string[] }} s @param {string} name @param {() => Promise<unknown>} go
+ * @param {{ page: import("playwright").Page, problems: string[], trail: string[] }} s @param {string} name @param {() => Promise<unknown>} go
  */
 async function screen(s, name, go) {
   s.problems.length = 0;
@@ -54,6 +57,9 @@ async function screen(s, name, go) {
     if (notice) error = `error notice: ${notice}`;
   } catch (e) {
     error = e instanceof Error ? e.message.split("\n")[0] : String(e);
+    // Where the page ended up, and how it got there, to tell a broken screen from a wrong turn.
+    const h1 = await s.page.locator("h1").first().textContent({ timeout: 500 }).catch(() => "");
+    error += ` (at ${new URL(s.page.url()).pathname}${new URL(s.page.url()).hash}, "${h1}"; went through ${s.trail.slice(-6).join(" > ")})`;
   }
   await s.page.screenshot({ path: `${out}/${name}.png`, fullPage: true }).catch(() => null);
   const problems = [...s.problems, ...(error ? [error] : [])];
