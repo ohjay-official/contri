@@ -24,7 +24,7 @@ Only `intents_id` can call these. Members never call them directly: they sign an
 
 | Method | Arguments | Returns |
 | --- | --- | --- |
-| `mt_on_transfer` | `sender_id`, `previous_owner_ids`, `token_ids`, `amounts`, `msg` | Amounts to refund, for example `["0"]`. NEP-245 receiver. `msg` joins, contributes, buys a seat, refills a deposit or backs a circle. A wrong token, amount, message or invite is refunded in full, with the reason in the log. |
+| `mt_on_transfer` | `sender_id`, `previous_owner_ids`, `token_ids`, `amounts`, `msg` | Amounts to refund, for example `["0"]`. NEP-245 receiver. `msg` joins, contributes, pays rounds ahead (`ahead:<circle>:<rounds>`), buys a seat, refills a deposit or backs a circle. A wrong token, amount, message or invite is refunded in full, with the reason in the log. |
 | `on_auth` | `signer_id`, `msg` | Nothing. Runs an `AuthCall` intent. Fails with the reason if the action is not allowed. |
 
 ## Called directly by a NEAR account
@@ -89,7 +89,7 @@ A circle:
   "size": 3,
   "period_secs": 86400,
   "members": [
-    {"account_id": "0xa0…01", "deposit": "5000000", "paid_this_round": true, "defaulted": false, "missed": 0}
+    {"account_id": "0xa0…01", "deposit": "5000000", "paid_this_round": true, "defaulted": false, "missed": 0, "ahead": 0}
   ],
   "listings": [null, "1000000", null],
   "invite_only": true,
@@ -151,11 +151,12 @@ Logged as NEP-297 `EVENT_JSON`.
 | `contri` | `circle_created` | `circle`, `organizer`, `contribution`, `size`, `period_secs`, `invite_only`, `random_order` |
 | `contri` | `joined` | `circle`, `member`, `seat`, `deposit` |
 | `contri` | `circle_started` | `circle`, `first_deadline` |
-| `contri` | `contributed` | `circle`, `round`, `member`, `amount` |
+| `contri` | `contributed` | `circle`, `round`, `member`, `amount`, and `ahead: true` when a round paid ahead paid it |
 | `contri` | `round_settled` | `circle`, `round`, `missed` (accounts), `from_backing` |
 | `contri` | `paid_out` | `circle`, `round`, `to`, `amount`, `shortfall`, `withheld` (what the recipient owed, held back from their pot) |
 | `contri` | `circle_backed` | `circle`, `backer`, `amount`, `backing` |
 | `contri` | `deposit_refilled` | `circle`, `member`, `deposit` |
+| `contri` | `paid_ahead` | `circle`, `member`, `rounds` (later rounds just paid for), `ahead` (later rounds now paid). Each new round then logs `contributed` with `"ahead": true` for every member it takes a round from |
 | `contri` | `payout_failed` | `circle`, `round` |
 | `contri` | `circle_finished` | `circle` |
 | `contri` | `circle_cancelled` | `circle`, `by` |

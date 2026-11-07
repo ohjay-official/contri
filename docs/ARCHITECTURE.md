@@ -89,6 +89,7 @@ Messages are short text, not JSON. Storage on NEAR costs 1 NEAR per 100 KB of co
 | `Transfer` notification or `mt_transfer_call` | `back:<circle>` | Back a circle with at least one contribution (for example from a DAO treasury) |
 | `Transfer` notification | `refill:<circle>` | Top up your own deposit, to at most every round but your own |
 | `Transfer` notification | `contribute:<circle>:<round>` | Pay this round |
+| `Transfer` notification | `ahead:<circle>:<rounds>` | Pay `rounds` contributions at once: this round's if unpaid, then later rounds, which each new round takes one of as it starts |
 | `Transfer` notification | `buy_seat:<circle>:<seat>` | Buy a listed, earlier seat |
 | `AuthCall` | `leave:<circle>` | Leave a circle that has not started; the deposit comes back |
 | `AuthCall` | `list_seat:<circle>:<seat>:<price>` | List your seat for sale |
