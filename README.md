@@ -58,20 +58,19 @@ After every deploy, `.github/workflows/web.yml` checks the live site the way vis
 
 **Watch without paying:** open **Live circles** at https://contri.ng/app#/explore. It shows every open, running or finished circle on the contract, read from the chain through Contri's server.
 
-**Run with real money on 5 November 2026**, on an Android phone (Chrome) and an iPhone (Safari), with real passkeys. Circle 0: $1 a round, 2 members, every 10 minutes. It ran on an earlier version of the contract, before the audit fixes.
+**Run with real money on 7 November 2026**, on an Android phone (Chrome) and an iPhone (Safari), with real passkeys, on the contract code that's deployed now (code hash `8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC`, the same as CI's build). Circle 7: $1 a round, 2 members, every 10 minutes.
 
 | Step | Transaction |
 | --- | --- |
-| Contract deployed | [GzzRpgJ…](https://nearblocks.io/txns/GzzRpgJXzz3hoz3jMUioYpdpu8Q8Ag9fPfCzgP9usWHp) |
-| Circle created, $1 deposit paid from money moved out of the private balance | [BwMEkbX…](https://nearblocks.io/txns/BwMEkbXbqnfnmu4N8NssHbiv2FXbRFQGtKWhQS2Y44jt) |
-| Second member joins, $1 deposit | [Emi3RfF…](https://nearblocks.io/txns/Emi3RfFtsJo8sZaJDLwdKAHg57xNASBA6X99Zt64pfR3) |
-| Round 1: first payment | [CANkBfZ…](https://nearblocks.io/txns/CANkBfZx5LsHoktSJr9MvMN9R3gSjjY5C1VEN9VGbXHe) |
-| Round 1: last payment, and the $2 pot paid to seat 1 in the same transaction | [4r349ov…](https://nearblocks.io/txns/4r349ov6rHvWg43G5dY1ZLiGJ5n6Zn7Xn1MeZ7KDAuTV) |
-| Round 2: first payment | [E38hi5Z…](https://nearblocks.io/txns/E38hi5ZqWPKkWcLY8rEVbjnp3aFGjjoWRjZY3asFbVsT) |
-| Round 2: last payment, and the $2 pot paid to seat 2 | [Gtiv9gp…](https://nearblocks.io/txns/Gtiv9gp1J3hn5NU729dL2d5DK9xURnP98YfrurbbfLCy) |
-| Circle finished, both deposits returned | [5kN1RW3…](https://nearblocks.io/txns/5kN1RW3fT86pbqQJQQLtCBAd1U6u9p67ir9pJN366UdV) |
+| Circle 7 created; the organizer pays the $1 deposit and takes seat 1 | [4ieJcHg…](https://nearblocks.io/txns/4ieJcHgNETzt8NrbU2dB6gKNeQ3ZSFGQD2vbRbpQEgN9) |
+| Second member pays the $1 deposit and joins; the circle starts | [Hou3U9j…](https://nearblocks.io/txns/Hou3U9j1ELZnF22g1QQXmNefiu11zYSUcc8cpAxprriq) |
+| Round 1: first payment | [CbVUzbE…](https://nearblocks.io/txns/CbVUzbEuGUmKNhodPkgzvWk7pKitbuy7YKgU3Qg7fCuf) |
+| Round 1: last payment, and the $2 pot paid to seat 1 in the same transaction | [GVs8hmx…](https://nearblocks.io/txns/GVs8hmxi4ZSQ1jBFNTKf8GbQGYYjynGCHEVttnMe2327) |
+| Round 2: first payment | [3ed96vU…](https://nearblocks.io/txns/3ed96vUENASX8fqn5td9wNGi4hT2XEyXAYunJZyJFSfh) |
+| Round 2: last payment, the $2 pot paid to seat 2, and the circle finished, in one transaction | [CTq2BVe…](https://nearblocks.io/txns/CTq2BVedNKJsaCDSawDPvs83BChmV3ZEhuyP7Ydt1jAJ) |
+| Both $1 deposits sent back by the keeper, six seconds later | [2sugJcU…](https://nearblocks.io/txns/2sugJcUq2MNwLfDGNmq84UFp2rpuwFE2k8ECNWi96vuE) |
 
-Both payouts and both deposits went back to the members, and the contract ended holding $0. Every money path in the app ran: top up to a circle, top up privately, private balance to a circle, circle to private balance, and cash-outs from both.
+Both payouts and both deposits went back to the members, and the contract ended holding $0. Circle 7 stays on the contract, so it is still there under **Live circles**. An earlier run on 5 November used an older contract version.
 
 **Run one yourself** (about $6 in, nearly all of it back; 10 minutes):
 
