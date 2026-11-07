@@ -1,0 +1,106 @@
+Note: `near` CLI configuration is stored in "/home/runner/.config/near-cli/config.toml"
+• Collecting cargo project metadata...
+• done
+
+• Generating ABI
+ │     Updating crates.io index
+ │  Downloading crates ...
+ │   Downloaded serde_derive_internals v0.29.1
+ │   Downloaded schemars v0.8.22
+ │   Downloaded schemars_derive v0.8.22
+ │   Downloaded near-abi v0.4.5
+ │    Compiling proc-macro2 v1.0.107
+ │    Compiling unicode-ident v1.0.27
+ │    Compiling quote v1.0.47
+ │    Compiling typenum v1.20.1
+ │    Compiling equivalent v1.0.3
+ │    Compiling hashbrown v0.17.1
+ │    Compiling zmij v1.0.23
+ │    Compiling serde_core v1.0.229
+ │    Compiling itoa v1.0.18
+ │    Compiling syn v3.0.9
+ │    Compiling syn v2.0.119
+ │    Compiling memchr v2.8.3
+ │    Compiling ident_case v1.0.1
+ │    Compiling winnow v1.0.5
+ │    Compiling hybrid-array v0.4.15
+ │    Compiling indexmap v2.14.2
+ │    Compiling toml_parser v1.1.5+spec-1.1.0
+ │    Compiling serde_json v1.0.154
+ │    Compiling toml_datetime v1.1.3+spec-1.1.0
+ │    Compiling serde v1.0.229
+ │    Compiling toml_edit v0.25.19+spec-1.1.0
+ │    Compiling serde_derive_internals v0.29.1
+ │    Compiling schemars v0.8.22
+ │    Compiling cfg_aliases v0.2.2
+ │    Compiling foldhash v0.2.0
+ │    Compiling schemars_derive v0.8.22
+ │    Compiling borsh v1.8.1
+ │    Compiling proc-macro-crate v3.5.0
+ │    Compiling serde_derive v1.0.229
+ │    Compiling crypto-common v0.2.2
+ │    Compiling block-buffer v0.12.1
+ │    Compiling version_check v0.9.5
+ │    Compiling const-oid v0.10.2
+ │    Compiling once_cell v1.21.4
+ │    Compiling dyn-clone v1.0.20
+ │    Compiling generic-array v0.14.7
+ │    Compiling digest v0.11.3
+ │    Compiling borsh-derive v1.8.1
+ │    Compiling cfg-if v1.0.5
+ │    Compiling strsim v0.11.1
+ │    Compiling darling_core v0.24.1
+ │    Compiling keccak v0.2.2
+ │    Compiling sha3 v0.11.0
+ │    Compiling fnv v1.0.7
+ │    Compiling rustversion v1.0.23
+ │    Compiling darling_core v0.20.11
+ │    Compiling darling_macro v0.24.1
+ │    Compiling darling v0.24.1
+ │    Compiling serde_with_macros v3.24.0
+ │    Compiling crypto-common v0.1.7
+ │    Compiling block-buffer v0.10.4
+ │    Compiling bs58 v0.5.1
+ │    Compiling hex v0.4.3
+ │    Compiling base64 v0.23.1
+ │    Compiling digest v0.10.7
+ │    Compiling darling_macro v0.20.11
+ │    Compiling serde_with v3.24.0
+ │    Compiling near-account-id v3.0.0
+ │    Compiling near-gas v0.3.7
+ │    Compiling near-token v0.3.6
+ │    Compiling cpufeatures v0.3.1
+ │    Compiling base64 v0.22.1
+ │    Compiling near-crypto-hash v0.2.0
+ │    Compiling near-sdk-macros v5.30.1
+ │    Compiling heck v0.5.0
+ │    Compiling sha2 v0.11.1
+ │    Compiling strum_macros v0.26.4
+ │    Compiling darling v0.20.11
+ │    Compiling ripemd v0.1.3
+ │    Compiling near-digest v0.1.5
+ │    Compiling digest-io v0.1.0
+ │    Compiling cfg_eval v0.1.2
+ │    Compiling near-sdk-core v4.4.2
+ │    Compiling semver v1.0.28
+ │    Compiling strum v0.26.3
+ │    Compiling Inflector v0.11.4
+ │    Compiling near-abi v0.4.5
+ │    Compiling near-sdk-env v0.1.9
+ │    Compiling near-global-contracts v0.3.3
+ │    Compiling near-sys v0.4.1
+ │    Compiling hex-literal v1.1.0
+ │    Compiling near-sdk v5.30.1
+ │    Compiling contri-interface v0.1.0 (/home/runner/work/contri/contri/contract/interface)
+ │     Finished `dev` profile [unoptimized] target(s) in 11.88s
+• Extracting ABI...
+• done
+
+✓ ABI Successfully Generated!
+     - ABI: /home/runner/work/contri/contri/contract/interface/target/near/contri_interface_abi.json
+Here is the console command if you ever need to re-run it again:
+cargo near abi
+total 48
+-rw-r--r-- 1 runner runner  1247 Nov  7 03:30 README.md
+-rw-r--r-- 1 runner runner 39715 Nov  7 03:31 contri_abi.json
+-rw-r--r-- 1 runner runner  3529 Nov  7 03:31 contri_abi.zst

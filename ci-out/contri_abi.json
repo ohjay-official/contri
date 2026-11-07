@@ -1,0 +1,1187 @@
+{
+  "schema_version": "0.4.0",
+  "metadata": {
+    "name": "contri",
+    "version": "0.1.0"
+  },
+  "body": {
+    "functions": [
+      {
+        "name": "cancel_circle",
+        "doc": " Cancels a circle that has not started: the organizer at any time, or\n anyone once the circle has stayed unfilled past its `fill_by`.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "claim_credit",
+        "doc": " Direct call: sends the caller money owed after a failed transfer.",
+        "kind": "call"
+      },
+      {
+        "name": "close_circle",
+        "doc": " Anyone: deletes a finished or cancelled circle once all its money has\n gone back, freeing its storage. Members' records stay.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "contract_source_metadata",
+        "kind": "view"
+      },
+      {
+        "name": "create_circle",
+        "doc": " Direct call: creates a circle organized by the caller, who doesn't take\n a seat. Attach 0.01 NEAR for the circle's storage. Returns its id.\n `order` is `join` (default) or `random`. `invite_key` (64 hex\n characters, ed25519) makes the circle invite-only.",
+        "kind": "call",
+        "modifiers": [
+          "payable"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "name",
+              "type_schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "contribution",
+              "type_schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "size",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "period_secs",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "order",
+              "type_schema": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "name": "invite_key",
+              "type_schema": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
+      {
+        "name": "get_circle",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/Circle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "get_circles",
+        "doc": " Circles in id order. `from_index` defaults to 0, `limit` to 50 (at most 100).",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "from_index",
+              "type_schema": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "limit",
+              "type_schema": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Circle"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_circles_for",
+        "doc": " Ids of the circles this account organizes or sits in.",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "account_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      {
+        "name": "get_config",
+        "kind": "view",
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/Config"
+          }
+        }
+      },
+      {
+        "name": "get_credit",
+        "doc": " Amount owed to this account after a failed transfer.",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "account_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "get_record",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "account_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/Record"
+          }
+        }
+      },
+      {
+        "name": "get_round_deadline",
+        "doc": " Deadline of the running round in nanoseconds, or `null`.",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      {
+        "name": "leave_circle",
+        "doc": " Direct call: leave a circle that has not started; the deposit comes back.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "list_seat",
+        "doc": " Direct call: lists the caller's seat for sale at `price`.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "seat",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "price",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "mt_on_transfer",
+        "doc": " NEP-245 receiver, called by NEAR Intents (a signed `Transfer` or an\n account's `mt_transfer_call`). `msg`: `create:...` (with the organizer's\n deposit), `join:<c>[:<invite sig>]`, `contribute:<c>:<round>`, `ahead:<c>:<rounds>`,\n `buy_seat:<c>:<seat>`, `refill:<c>`, `back:<c>`. Returns refunds; bad\n input is refunded in full.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "sender_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            },
+            {
+              "name": "previous_owner_ids",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "name": "token_ids",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "name": "amounts",
+              "type_schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "name": "msg",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "new",
+        "doc": " Sets the NEAR Intents contract and the circle asset. The caller becomes the owner.",
+        "kind": "call",
+        "modifiers": [
+          "init"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "intents_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            },
+            {
+              "name": "token_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "nft_metadata",
+        "kind": "view",
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/NftContractMetadata"
+          }
+        }
+      },
+      {
+        "name": "nft_supply_for_owner",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "account_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "nft_token",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "token_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/Token"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "nft_tokens",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "from_index",
+              "type_schema": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "name": "limit",
+              "type_schema": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Token"
+            }
+          }
+        }
+      },
+      {
+        "name": "nft_tokens_for_owner",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "account_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            },
+            {
+              "name": "from_index",
+              "type_schema": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "name": "limit",
+              "type_schema": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Token"
+            }
+          }
+        }
+      },
+      {
+        "name": "nft_total_supply",
+        "kind": "view",
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "on_auth",
+        "doc": " Called by NEAR Intents for a signed `AuthCall`. `msg`: `leave:<c>`,\n `list_seat:<c>:<seat>:<price>`, `unlist_seat:<c>:<seat>`, `cancel:<c>`,\n `claim_credit`.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "signer_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            },
+            {
+              "name": "msg",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "on_payout",
+        "doc": " Callback after a payout transfer. Closes the round if it succeeded.",
+        "kind": "call",
+        "modifiers": [
+          "private"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "round",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "amount",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "on_sent",
+        "doc": " Callback after any other transfer out. A failed one becomes a claimable credit.",
+        "kind": "call",
+        "modifiers": [
+          "private"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "to",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+                "type": "string"
+              }
+            },
+            {
+              "name": "amount",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "pay_out",
+        "doc": " Anyone: pays the pot when every member has paid, for example after a failed payout.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "release_deposits",
+        "doc": " Anyone, after a circle finished or was cancelled: returns remaining\n deposits, as many as the attached gas allows. Returns how many were sent.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          }
+        }
+      },
+      {
+        "name": "settle_round",
+        "doc": " Anyone, after the round deadline: missed contributions come out of\n deposits, then the pot is paid out.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "unlist_seat",
+        "doc": " Direct call: takes the caller's seat off sale.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "circle_id",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "seat",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "root_schema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "String",
+      "type": "string",
+      "definitions": {
+        "Backer": {
+          "description": "Money a community put behind a circle. It covers missed payments a deposit can't; what is left is split back in proportion when the circle ends.",
+          "type": "object",
+          "required": [
+            "account_id",
+            "amount",
+            "due"
+          ],
+          "properties": {
+            "account_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+              "type": "string"
+            },
+            "amount": {
+              "type": "string"
+            },
+            "due": {
+              "description": "Share of the leftover backing not yet sent back.",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Circle": {
+          "type": "object",
+          "required": [
+            "backers",
+            "backing",
+            "contribution",
+            "created_at",
+            "fill_by",
+            "id",
+            "invite_only",
+            "listings",
+            "members",
+            "name",
+            "organizer",
+            "paying",
+            "payouts",
+            "period_secs",
+            "pot",
+            "random_order",
+            "round",
+            "size",
+            "started_at",
+            "status"
+          ],
+          "properties": {
+            "backers": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Backer"
+              }
+            },
+            "backing": {
+              "description": "Community backing not yet used.",
+              "type": "string"
+            },
+            "contribution": {
+              "description": "Amount each member pays per round, in the token's smallest unit.",
+              "type": "string"
+            },
+            "created_at": {
+              "description": "Nanoseconds.",
+              "type": "string"
+            },
+            "fill_by": {
+              "description": "Nanoseconds. After this, anyone can cancel the circle if it is still open.",
+              "type": "string"
+            },
+            "id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "invite_only": {
+              "description": "Joining needs a signed invite from the circle's invite link.",
+              "type": "boolean"
+            },
+            "listings": {
+              "description": "Asking price per seat, or `null` when the seat is not for sale.",
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "members": {
+              "description": "Index = seat = turn. Seat `n` receives the pot in round `n`.",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Member"
+              }
+            },
+            "name": {
+              "description": "Encrypted by the app with a key from the invite link. The contract stores it as given.",
+              "type": "string"
+            },
+            "organizer": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+              "type": "string"
+            },
+            "paying": {
+              "description": "A payout transfer is in flight.",
+              "type": "boolean"
+            },
+            "payouts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Payout"
+              }
+            },
+            "period_secs": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "pot": {
+              "type": "string"
+            },
+            "random_order": {
+              "description": "Turns are drawn at random when the circle fills.",
+              "type": "boolean"
+            },
+            "round": {
+              "description": "The round being paid now, from 0.",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "round_deadline": {
+              "description": "Deadline of the running round in nanoseconds, or `null`.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "size": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "started_at": {
+              "description": "Nanoseconds. `\"0\"` until the circle fills.",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/definitions/CircleStatus"
+            }
+          },
+          "additionalProperties": false
+        },
+        "CircleStatus": {
+          "oneOf": [
+            {
+              "description": "Waiting for members to join and pay their deposit.",
+              "type": "string",
+              "enum": [
+                "Open"
+              ]
+            },
+            {
+              "description": "Full. Rounds are running.",
+              "type": "string",
+              "enum": [
+                "Active"
+              ]
+            },
+            {
+              "description": "Every member has had their turn.",
+              "type": "string",
+              "enum": [
+                "Finished"
+              ]
+            },
+            {
+              "description": "Cancelled by the organizer before it filled. Deposits are returned.",
+              "type": "string",
+              "enum": [
+                "Cancelled"
+              ]
+            }
+          ]
+        },
+        "Config": {
+          "type": "object",
+          "required": [
+            "circle_count",
+            "intents_id",
+            "owner_id",
+            "token_id"
+          ],
+          "properties": {
+            "circle_count": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "intents_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+              "type": "string"
+            },
+            "owner_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+              "type": "string"
+            },
+            "token_id": {
+              "description": "The circle asset on NEAR Intents, e.g. `nep141:usdt.tether-token.near`.",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Member": {
+          "type": "object",
+          "required": [
+            "account_id",
+            "ahead",
+            "defaulted",
+            "deposit",
+            "missed",
+            "paid_this_round"
+          ],
+          "properties": {
+            "account_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+              "type": "string"
+            },
+            "ahead": {
+              "description": "Later rounds this member has already paid for.",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "defaulted": {
+              "description": "Missed at least one payment in this circle.",
+              "type": "boolean"
+            },
+            "deposit": {
+              "description": "Deposit still held for this member. Covers a missed contribution.",
+              "type": "string"
+            },
+            "missed": {
+              "description": "Payments missed in this circle.",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "paid_this_round": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "NftContractMetadata": {
+          "description": "NEP-177 contract metadata.",
+          "type": "object",
+          "required": [
+            "name",
+            "spec",
+            "symbol"
+          ],
+          "properties": {
+            "base_uri": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "icon": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "name": {
+              "type": "string"
+            },
+            "reference": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "reference_hash": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "spec": {
+              "type": "string"
+            },
+            "symbol": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Payout": {
+          "type": "object",
+          "required": [
+            "amount",
+            "at",
+            "round",
+            "shortfall",
+            "to"
+          ],
+          "properties": {
+            "amount": {
+              "type": "string"
+            },
+            "at": {
+              "description": "Block timestamp in nanoseconds.",
+              "type": "string"
+            },
+            "round": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "shortfall": {
+              "description": "How much less than a full pot (contribution x size) was paid.",
+              "type": "string"
+            },
+            "to": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Record": {
+          "description": "A member's track record across finished circles.",
+          "type": "object",
+          "required": [
+            "completed",
+            "defaults",
+            "missed_payments"
+          ],
+          "properties": {
+            "completed": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "defaults": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "missed_payments": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        "Token": {
+          "description": "A seat as a NEP-171 token. `token_id` is `<circle>:<seat>`.",
+          "type": "object",
+          "required": [
+            "metadata",
+            "owner_id",
+            "token_id"
+          ],
+          "properties": {
+            "metadata": {
+              "$ref": "#/definitions/TokenMetadata"
+            },
+            "owner_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"\u0192elicia.near\".parse::<AccountId>().is_err()); // (\u0192 is not f) ```",
+              "type": "string"
+            },
+            "token_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "TokenMetadata": {
+          "description": "NEP-177 token metadata. `extra` is JSON text: `{\"circle\":0,\"seat\":1,\"payout_round\":1,\"price\":\"1000000\"|null}`.",
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "extra": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "media": {
+              "description": "SVG data URL drawn by the contract from the circle's live state.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  }
+}
