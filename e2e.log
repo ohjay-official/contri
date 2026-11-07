@@ -1,0 +1,513 @@
+    Updating crates.io index
+     Locking 385 packages to latest compatible versions
+      Adding base64 v0.22.1 (available: v0.23.1)
+      Adding ed25519-dalek v2.2.0 (available: v3.0.0)
+      Adding generic-array v0.14.7 (available: v0.14.9)
+      Adding sha2 v0.10.9 (available: v0.11.1)
+ Downloading crates ...
+  Downloaded smallvec v1.16.5
+  Downloaded cc v1.11.1
+  Downloaded toml_datetime v1.1.3+spec-1.1.0
+  Downloaded flate2 v1.1.11
+  Downloaded toml_edit v0.25.19+spec-1.1.0
+   Compiling cc v1.11.1
+   Compiling toml_datetime v1.1.3+spec-1.1.0
+   Compiling smallvec v1.16.5
+   Compiling flate2 v1.1.11
+   Compiling toml_edit v0.25.19+spec-1.1.0
+   Compiling parking_lot_core v0.9.12
+   Compiling parking_lot v0.12.5
+   Compiling icu_normalizer v2.4.0
+   Compiling proc-macro-crate v3.5.0
+   Compiling cmake v0.1.58
+   Compiling tokio v1.54.1
+   Compiling borsh-derive v1.8.1
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling aws-lc-sys v0.47.0
+   Compiling ring v0.17.14
+   Compiling borsh v1.8.1
+   Compiling near-account-id v3.0.0
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling openssl-sys v0.9.118
+   Compiling near-token v0.3.6
+   Compiling secp256k1-sys v0.8.2
+   Compiling near-gas v0.3.7
+   Compiling near-primitives-core v0.38.0
+   Compiling secp256k1 v0.27.0
+   Compiling hyper v1.12.0
+   Compiling openssl v0.10.82
+   Compiling rustls-webpki v0.103.16
+   Compiling hyper-util v0.1.21
+   Compiling near-fmt v0.38.0
+   Compiling near-parameters v0.38.0
+   Compiling zstd-safe v7.4.0
+   Compiling zstd v0.13.4
+   Compiling rustls v0.23.46
+   Compiling native-tls v0.2.18
+   Compiling ordered-float v4.6.0
+   Compiling near-time v0.38.0
+   Compiling tower v0.5.3
+   Compiling url v2.5.8
+   Compiling near-abi v0.4.5
+   Compiling tower-http v0.6.11
+   Compiling tokio-native-tls v0.3.1
+   Compiling near-abi-client-impl v0.1.1
+   Compiling hyper-tls v0.6.0
+   Compiling reqwest v0.12.28
+   Compiling ureq v3.5.1
+   Compiling near-sandbox v0.4.0
+   Compiling near-workspaces v0.24.0
+   Compiling near-abi-client-macros v0.1.1
+   Compiling tokio-retry v0.3.2
+   Compiling contri-sandbox v0.0.0 (/home/runner/work/contri/contri/contract/sandbox)
+   Compiling near-abi-client v0.1.1
+   Compiling aws-lc-rs v1.19.0
+   Compiling near-crypto v0.38.0
+   Compiling near-primitives v0.38.0
+   Compiling tokio-rustls v0.26.6
+   Compiling rustls-platform-verifier v0.7.1
+   Compiling hyper-rustls v0.27.10
+   Compiling reqwest v0.13.5
+   Compiling near-chain-configs v0.38.0
+   Compiling near-indexer-primitives v0.38.0
+   Compiling near-jsonrpc-primitives v0.38.0
+   Compiling near-jsonrpc-client v0.23.0
+warning: unused `ExecutionFinalResult` that must be used
+   --> tests/e2e.rs:243:5
+    |
+243 |     env.call(&ada, "list_seat", json!({"circle_id": 0, "seat": 0, "price": USDT.to_string()})).await?;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: use `into_result()` to handle potential execution errors
+    = note: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+243 |     let _ = env.call(&ada, "list_seat", json!({"circle_id": 0, "seat": 0, "price": USDT.to_string()})).await?;
+    |     +++++++
+
+warning: unused `ExecutionFinalResult` that must be used
+   --> tests/e2e.rs:271:5
+    |
+271 |     env.call(&env.root, "settle_round", json!({"circle_id": 0})).await?;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: use `into_result()` to handle potential execution errors
+help: use `let _ = ...` to ignore the resulting value
+    |
+271 |     let _ = env.call(&env.root, "settle_round", json!({"circle_id": 0})).await?;
+    |     +++++++
+
+warning: unused `ExecutionFinalResult` that must be used
+   --> tests/e2e.rs:288:5
+    |
+288 |     env.call(&env.root, "close_circle", json!({"circle_id": 0})).await?;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: use `into_result()` to handle potential execution errors
+help: use `let _ = ...` to ignore the resulting value
+    |
+288 |     let _ = env.call(&env.root, "close_circle", json!({"circle_id": 0})).await?;
+    |     +++++++
+
+warning: unused `ExecutionFinalResult` that must be used
+   --> tests/e2e.rs:480:9
+    |
+480 |         env.call(&env.root, "settle_round", json!({"circle_id": 0})).await?;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: use `into_result()` to handle potential execution errors
+help: use `let _ = ...` to ignore the resulting value
+    |
+480 |         let _ = env.call(&env.root, "settle_round", json!({"circle_id": 0})).await?;
+    |         +++++++
+
+warning: `contri-sandbox` (test "e2e") generated 4 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 01s
+     Running unittests src/lib.rs (target/debug/deps/contri_sandbox-2d96d843cf8b4b22)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/e2e.rs (target/debug/deps/e2e-52056932e05b3e26)
+
+running 6 tests
+test a_whole_circle_through_near_intents ... token init: 2 Tgas
+intents init: 2 Tgas
+intents registers on the token: 2 Tgas
+contri init: 1 Tgas
+fund ada.test.near: 8 Tgas
+fund bayo.test.near: 8 Tgas
+fund chioma.test.near: 8 Tgas
+ada.test.near pays create:5000000:3:60:join:-:c2VhbGVk: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"ada.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_created","data":[{"circle":0,"organizer":"ada.test.near","contribution":"5000000","size":3,"period_secs":60,"invite_only":false,"random_order":false}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"ada.test.near","seat":0,"deposit":"5000000"}]}
+bayo.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"bayo.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["4999999"]}]}
+    contri: refunding 4999999: deposit must equal one contribution
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"bayo.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["4999999"],"memo":"refund"}]}
+bayo.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"bayo.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"bayo.test.near","seat":1,"deposit":"5000000"}]}
+chioma.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"chioma.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"chioma.test.near","seat":2,"deposit":"5000000"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_started","data":[{"circle":0,"first_deadline":"1794022401894854771"}]}
+ada.test.near calls list_seat: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"seat_listed","data":[{"circle":0,"seat":0,"price":"1000000"}]}
+chioma.test.near pays buy_seat:0:0: 16 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"chioma.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["1000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"seat_sold","data":[{"circle":0,"seat":0,"buyer":"chioma.test.near","seller":"ada.test.near","price":"1000000","seller_new_seat":2}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"ada.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["1000000"],"memo":"contri:0:seat:0"}]}
+ada.test.near pays contribute:0:0: 9 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"ada.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":0,"member":"ada.test.near","amount":"5000000"}]}
+bayo.test.near pays contribute:0:0: 9 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"bayo.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":0,"member":"bayo.test.near","amount":"5000000"}]}
+chioma.test.near pays contribute:0:0: 16 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"chioma.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":0,"member":"chioma.test.near","amount":"5000000"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"chioma.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["15000000"],"memo":"contri:0:0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":0,"to":"chioma.test.near","amount":"15000000","shortfall":"0","withheld":"0"}]}
+ada.test.near pays contribute:0:1: 9 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"ada.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":1,"member":"ada.test.near","amount":"5000000"}]}
+bayo.test.near pays ahead:0:2: 9 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"bayo.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["10000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":1,"member":"bayo.test.near","amount":"5000000"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_ahead","data":[{"circle":0,"member":"bayo.test.near","rounds":1,"ahead":1}]}
+test.near calls settle_round: 8 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":1,"missed":["chioma.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"bayo.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["15000000"],"memo":"contri:0:1"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":1,"to":"bayo.test.near","amount":"15000000","shortfall":"0","withheld":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":2,"member":"bayo.test.near","amount":"5000000","ahead":true}]}
+ada.test.near pays contribute:0:2: 9 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"ada.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":2,"member":"ada.test.near","amount":"5000000"}]}
+chioma.test.near pays contribute:0:2: 17 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"chioma.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":2,"member":"chioma.test.near","amount":"5000000"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"ada.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["15000000"],"memo":"contri:0:2"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":2,"to":"ada.test.near","amount":"15000000","shortfall":"0","withheld":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_finished","data":[{"circle":0}]}
+test.near calls release_deposits: 14 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"deposits_released","data":[{"circle":0,"sent":2}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"bayo.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"],"memo":"contri:0:release"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"ada.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"],"memo":"contri:0:release"}]}
+test.near calls close_circle: 1 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_closed","data":[{"circle":0}]}
+ok
+test members_with_only_a_key_use_signed_intents ... token init: 2 Tgas
+intents init: 2 Tgas
+intents registers on the token: 2 Tgas
+contri init: 1 Tgas
+fund ada.test.near: 8 Tgas
+fund bayo.test.near: 8 Tgas
+fund 197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61: 8 Tgas
+ada.test.near pays create:5000000:3:60:join:-:c2VhbGVk: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"ada.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_created","data":[{"circle":0,"organizer":"ada.test.near","contribution":"5000000","size":3,"period_secs":60,"invite_only":false,"random_order":false}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"ada.test.near","seat":0,"deposit":"5000000"}]}
+signed join: 11 Tgas
+    EVENT_JSON:{"standard":"dip4","version":"0.4.3","event":"transfer","data":[{"intent_hash":"96GorApS7npLAaWP6XhALqVzy3ASbMq7pbbXnKHwPKwT","account_id":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","receiver_id":"contri.test.near","tokens":{"nep141:usdt.test.near":"5000000"}}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","seat":1,"deposit":"5000000"}]}
+signed leave: 12 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"left","data":[{"circle":0,"member":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"],"memo":"contri:0:leave"}]}
+signed join again: 11 Tgas
+    EVENT_JSON:{"standard":"dip4","version":"0.4.3","event":"transfer","data":[{"intent_hash":"JBPXhrLeAKgkApfc6mZwwCWbs4K9KkLdBW6FkJESpEJR","account_id":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","receiver_id":"contri.test.near","tokens":{"nep141:usdt.test.near":"5000000"}}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","seat":1,"deposit":"5000000"}]}
+bayo.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"bayo.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"bayo.test.near","seat":2,"deposit":"5000000"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_started","data":[{"circle":0,"first_deadline":"1794022423113465085"}]}
+ada.test.near pays contribute:0:0: 9 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"ada.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":0,"member":"ada.test.near","amount":"5000000"}]}
+bayo.test.near pays contribute:0:0: 9 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"bayo.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":0,"member":"bayo.test.near","amount":"5000000"}]}
+signed contribution (last one): 17 Tgas
+    EVENT_JSON:{"standard":"dip4","version":"0.4.3","event":"transfer","data":[{"intent_hash":"CtuXhMpM3wZdkfFwaGycd9fZFPrwFqPLAEdzinZ1t4fZ","account_id":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","receiver_id":"contri.test.near","tokens":{"nep141:usdt.test.near":"5000000"}}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":0,"member":"197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61","amount":"5000000"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"ada.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["15000000"],"memo":"contri:0:0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":0,"to":"ada.test.near","amount":"15000000","shortfall":"0","withheld":"0"}]}
+ok
+test the_app_runs_a_circle_through_its_relayer ... token init: 2 Tgas
+intents init: 2 Tgas
+intents registers on the token: 2 Tgas
+contri init: 1 Tgas
+app e2e: three members, one circle, everything through the app's relayer
+  create: circle_created, joined 
+  join with invite: joined 
+  join with invite: joined, circle_started 
+  list seat: seat_listed 
+  buy seat: seat_sold 
+  contribute: contributed 
+  contribute: contributed 
+  contribute (last): contributed, paid_out 
+  contribute: contributed 
+  contribute: contributed 
+  contribute: contributed 
+  contribute: contributed 
+  contribute: contributed, paid_out, circle_finished 
+  cash out: no events 
+app e2e: passed
+
+
+ok
+test the_app_works_in_a_browser ... token init: 2 Tgas
+intents init: 2 Tgas
+intents registers on the token: 2 Tgas
+contri init: 1 Tgas
+Contri on http://localhost:8799/app
+browser e2e: two members, two browsers, one circle
+browser e2e: passed
+
+
+ok
+test the_deploy_script_creates_upgrades_and_locks_the_contract ... token init: 2 Tgas
+intents init: 2 Tgas
+intents registers on the token: 2 Tgas
+contri init: 1 Tgas
+first deploy:
+test.near: 999999939.9786 NEAR. Creating circles.test.near with 1.1542 NEAR
+created, deployed and initialized: 8TjQfsr5haMc2Vira8x6PzmRUQ2QwT3ch4ZhJfkYzwDS
+{"owner_id":"test.near","intents_id":"intents.test.near","token_id":"nep141:usdt.test.near","circle_count":0}
+
+upgrade:
+circles.test.near: 1.1542 NEAR, 107722 bytes stored
+circles.test.near already runs this code (8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC)
+sent 0.1729 NEAR from test.near to circles.test.near for storage: Fu5dyj9T3EhZQkBMdkStXLojBQSTaKmiEEFrZJ2jxUVd; room 25000 bytes
+{"owner_id":"test.near","intents_id":"intents.test.near","token_id":"nep141:usdt.test.near","circle_count":0}
+
+lock:
+swapped 1 key(s) for a one-time key: 39CvseXSFzRcriuM6Kw6H9pZWLQ8fGy6QXb5YFLDNqRN
+locked circles.test.near in 2jMqBfCezqevf47PoFbMK45BPtcLKiwePG956yC1Jkfg: 0 access keys left, 0 keys on intents.test.near, predecessor auth true, code 8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC
+
+ok
+test the_payout_callback_fits_its_gas_floor_in_the_biggest_circle ... token init: 2 Tgas
+intents init: 2 Tgas
+intents registers on the token: 2 Tgas
+contri init: 1 Tgas
+fund m0.test.near: 8 Tgas
+fund m1.test.near: 8 Tgas
+fund m2.test.near: 8 Tgas
+fund m3.test.near: 8 Tgas
+fund m4.test.near: 8 Tgas
+fund m5.test.near: 8 Tgas
+fund m6.test.near: 8 Tgas
+fund m7.test.near: 8 Tgas
+fund m8.test.near: 8 Tgas
+fund m9.test.near: 8 Tgas
+fund m10.test.near: 8 Tgas
+fund m11.test.near: 8 Tgas
+fund m12.test.near: 8 Tgas
+fund m13.test.near: 8 Tgas
+fund m14.test.near: 8 Tgas
+fund m15.test.near: 8 Tgas
+fund m16.test.near: 8 Tgas
+fund m17.test.near: 8 Tgas
+fund m18.test.near: 8 Tgas
+fund m19.test.near: 8 Tgas
+m0.test.near pays create:5000000:20:60:join:-:c2VhbGVk: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m0.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_created","data":[{"circle":0,"organizer":"m0.test.near","contribution":"5000000","size":20,"period_secs":60,"invite_only":false,"random_order":false}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m0.test.near","seat":0,"deposit":"5000000"}]}
+m1.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m1.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m1.test.near","seat":1,"deposit":"5000000"}]}
+m2.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m2.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m2.test.near","seat":2,"deposit":"5000000"}]}
+m3.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m3.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m3.test.near","seat":3,"deposit":"5000000"}]}
+m4.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m4.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m4.test.near","seat":4,"deposit":"5000000"}]}
+m5.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m5.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m5.test.near","seat":5,"deposit":"5000000"}]}
+m6.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m6.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m6.test.near","seat":6,"deposit":"5000000"}]}
+m7.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m7.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m7.test.near","seat":7,"deposit":"5000000"}]}
+m8.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m8.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m8.test.near","seat":8,"deposit":"5000000"}]}
+m9.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m9.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m9.test.near","seat":9,"deposit":"5000000"}]}
+m10.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m10.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m10.test.near","seat":10,"deposit":"5000000"}]}
+m11.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m11.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m11.test.near","seat":11,"deposit":"5000000"}]}
+m12.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m12.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m12.test.near","seat":12,"deposit":"5000000"}]}
+m13.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m13.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m13.test.near","seat":13,"deposit":"5000000"}]}
+m14.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m14.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m14.test.near","seat":14,"deposit":"5000000"}]}
+m15.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m15.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m15.test.near","seat":15,"deposit":"5000000"}]}
+m16.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m16.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m16.test.near","seat":16,"deposit":"5000000"}]}
+m17.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m17.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m17.test.near","seat":17,"deposit":"5000000"}]}
+m18.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m18.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m18.test.near","seat":18,"deposit":"5000000"}]}
+m19.test.near pays join:0: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m19.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"joined","data":[{"circle":0,"member":"m19.test.near","seat":19,"deposit":"5000000"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_started","data":[{"circle":0,"first_deadline":"1794022518561207296"}]}
+test.near calls settle_round: 8 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":0,"missed":["m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"m0.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["95000000"],"memo":"contri:0:0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":0,"to":"m0.test.near","amount":"95000000","shortfall":"0","withheld":"0"}]}
+test.near calls settle_round: 9 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":1,"missed":["m0.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"m1.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"],"memo":"contri:0:1"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":1,"to":"m1.test.near","amount":"5000000","shortfall":"90000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":2,"missed":["m0.test.near","m1.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":2,"to":"m2.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":3,"missed":["m0.test.near","m1.test.near","m2.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":3,"to":"m3.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":4,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":4,"to":"m4.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":5,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":5,"to":"m5.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":6,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":6,"to":"m6.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":7,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":7,"to":"m7.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":8,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":8,"to":"m8.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":9,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":9,"to":"m9.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":10,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":10,"to":"m10.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 2 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":11,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":11,"to":"m11.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 3 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":12,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":12,"to":"m12.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 3 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":13,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":13,"to":"m13.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 3 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":14,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m15.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":14,"to":"m14.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 3 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":15,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m16.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":15,"to":"m15.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 3 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":16,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m17.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":16,"to":"m16.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 3 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":17,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m18.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":17,"to":"m17.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+test.near calls settle_round: 3 Tgas
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"round_settled","data":[{"circle":0,"round":18,"missed":["m0.test.near","m1.test.near","m2.test.near","m3.test.near","m4.test.near","m5.test.near","m6.test.near","m7.test.near","m8.test.near","m9.test.near","m10.test.near","m11.test.near","m12.test.near","m13.test.near","m14.test.near","m15.test.near","m16.test.near","m17.test.near","m19.test.near"],"from_backing":"0"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":18,"to":"m18.test.near","amount":"0","shortfall":"95000000","withheld":"0"}]}
+m0.test.near pays contribute:0:19: 9 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m0.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m0.test.near","amount":"5000000"}]}
+m1.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m1.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m1.test.near","amount":"5000000"}]}
+m2.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m2.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m2.test.near","amount":"5000000"}]}
+m3.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m3.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m3.test.near","amount":"5000000"}]}
+m4.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m4.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m4.test.near","amount":"5000000"}]}
+m5.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m5.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m5.test.near","amount":"5000000"}]}
+m6.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m6.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m6.test.near","amount":"5000000"}]}
+m7.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m7.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m7.test.near","amount":"5000000"}]}
+m8.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m8.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m8.test.near","amount":"5000000"}]}
+m9.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m9.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m9.test.near","amount":"5000000"}]}
+m10.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m10.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m10.test.near","amount":"5000000"}]}
+m11.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m11.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m11.test.near","amount":"5000000"}]}
+m12.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m12.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m12.test.near","amount":"5000000"}]}
+m13.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m13.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m13.test.near","amount":"5000000"}]}
+m14.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m14.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m14.test.near","amount":"5000000"}]}
+m15.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m15.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m15.test.near","amount":"5000000"}]}
+m16.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m16.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m16.test.near","amount":"5000000"}]}
+m17.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m17.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m17.test.near","amount":"5000000"}]}
+m18.test.near pays contribute:0:19: 10 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m18.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m18.test.near","amount":"5000000"}]}
+m19.test.near pays contribute:0:19: 20 Tgas
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"m19.test.near","new_owner_id":"contri.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["5000000"]}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"contributed","data":[{"circle":0,"round":19,"member":"m19.test.near","amount":"5000000"}]}
+    EVENT_JSON:{"standard":"nep245","version":"1.0.0","event":"mt_transfer","data":[{"old_owner_id":"contri.test.near","new_owner_id":"m19.test.near","token_ids":["nep141:usdt.test.near"],"amounts":["10000000"],"memo":"contri:0:19"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"paid_out","data":[{"circle":0,"round":19,"to":"m19.test.near","amount":"10000000","shortfall":"0","withheld":"90000000"}]}
+    EVENT_JSON:{"standard":"contri","version":"1.0.0","event":"circle_finished","data":[{"circle":0}]}
+on_payout: round 0 2.0 Tgas, last round with 20 records 5.5 Tgas
+ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 190.62s
+
+   Doc-tests contri_sandbox
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

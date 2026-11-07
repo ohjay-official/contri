@@ -1,0 +1,23 @@
+
+• Checking the host environment...
+• done
+
+• Building contract
+ │    Compiling contri v0.1.0 (/home/runner/work/contri/contri/contract)
+ │     Finished `release` profile [optimized] target(s) in 1.22s
+
+• Running an optimize for size post-step with wasm-opt --enable-nontrapping-float-to-int --enable-bulk-memory...
+    Finished wasm-opt -O in 345ms
+• done
+
+✓ Contract successfully built! (in CARGO_NEAR_BUILD_ENVIRONMENT=host)
+     -                Binary: /home/runner/work/contri/contri/wasm/contri.wasm
+     -                  Size: 107.4 KB (107428 bytes)
+     - SHA-256 checksum hex : 6b7f6962fffb763e894acb5d4ec18c394ec269ec9b9bf46221404822a07d8239
+     - SHA-256 checksum bs58: 8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC
+    Finished cargo near build in 2s
+Here is the console command if you ever need to re-run it again:
+cargo near build non-reproducible-wasm --no-abi --out-dir /home/runner/work/contri/contri/wasm
+total 1368
+-rw------- 1 runner runner  107428 Nov  7 03:30 contri.wasm
+-rw------- 1 runner runner 1287731 Nov  7 03:30 defuse.wasm

@@ -1,0 +1,30 @@
+ │    Compiling defuse-erc191 v0.1.0 (/home/runner/work/contri/contri/intents/crates/signatures/erc191)
+ │    Compiling defuse-sep53 v0.1.0 (/home/runner/work/contri/contri/intents/crates/signatures/sep53)
+ │    Compiling defuse-tip191 v0.1.0 (/home/runner/work/contri/contri/intents/crates/signatures/tip191)
+ │    Compiling defuse-nep413 v0.1.0 (/home/runner/work/contri/contri/intents/crates/signatures/nep413)
+ │    Compiling defuse-webauthn v0.1.0 (/home/runner/work/contri/contri/intents/crates/signatures/webauthn)
+ │    Compiling defuse-fees v0.1.0 (/home/runner/work/contri/contri/intents/crates/primitives/fees)
+ │    Compiling defuse-token-id v0.1.0 (/home/runner/work/contri/contri/intents/crates/primitives/token-id)
+ │    Compiling defuse-wnear v0.1.0 (/home/runner/work/contri/contri/intents/crates/near/wnear)
+ │    Compiling defuse-near-promise v0.1.0 (/home/runner/work/contri/contri/intents/crates/near/promise)
+ │    Compiling defuse-admin-utils v0.1.0 (/home/runner/work/contri/contri/intents/crates/near/admin-utils)
+ │    Compiling defuse-core v0.1.0 (/home/runner/work/contri/contri/intents/contracts/defuse/core)
+ │    Compiling defuse-auth-call v0.1.0 (/home/runner/work/contri/contri/intents/crates/near/auth-call)
+ │    Compiling defuse-controller v0.1.0 (/home/runner/work/contri/contri/intents/crates/near/controller)
+ │    Compiling defuse v0.4.5 (/home/runner/work/contri/contri/intents/contracts/defuse)
+ │     Finished `release` profile [optimized] target(s) in 32.61s
+ │ warning: the following packages contain code that will be rejected by a future version of Rust: proc-macro-error2 v2.0.1
+ │ note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+
+• Running an optimize for size post-step with wasm-opt --enable-nontrapping-float-to-int --enable-bulk-memory...
+    Finished wasm-opt -O in 3s 880ms
+• done
+
+✓ Contract successfully built! (in CARGO_NEAR_BUILD_ENVIRONMENT=host)
+     -                Binary: /home/runner/work/contri/contri/wasm/defuse.wasm
+     -                  Size: 1.3 MB (1287731 bytes)
+     - SHA-256 checksum hex : c867594858e0682b84fe6526a5db130c0e619c5b4c2a8d37ede71d67d9de6302
+     - SHA-256 checksum bs58: EVHwcwor8NgsFhX7MindF3rLG7qbpx1hgUERqqf6UNHf
+    Finished cargo near build in 38s
+Here is the console command if you ever need to re-run it again:
+cargo near build non-reproducible-wasm --locked --no-abi --out-dir /home/runner/work/contri/contri/wasm --features contract
