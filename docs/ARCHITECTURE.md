@@ -128,4 +128,4 @@ Each turn is a seat token `<circle>:<turn>`, owned by the member's Intents accou
 | Top-up, contribution and cash-out with real money on mainnet | Done on 5 November 2026 (transactions in the README) |
 | Confidential top-up, contribution and cash-out | Done on 5 November 2026 with real money: private top-up, private balance to a circle, circle to private balance, cash-out to BNB Smart Chain |
 | The deploy script's lock deletes every key and leaves none on NEAR Intents | Tested end to end (`the_deploy_script_creates_upgrades_and_locks_the_contract`) |
-| The payout callback has gas to spare in the biggest circle | Measured end to end: 5.4 Tgas of a 30 Tgas floor (`the_payout_callback_fits_its_gas_floor_in_the_biggest_circle`) |
+| The payout callback has gas to spare in the biggest circle | Measured end to end: 5.5 Tgas of a 30 Tgas floor (`the_payout_callback_fits_its_gas_floor_in_the_biggest_circle`) |

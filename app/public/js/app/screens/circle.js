@@ -82,12 +82,14 @@ export async function circleScreen(id, openShare = false) {
     if (left > (due === "pay" ? 1 : 0) && balance >= all) {
       const btn = h("button", { class: "secondary" }, `Pay all ${left} rounds left now: ${usd(all)}`);
       btn.addEventListener("click", () => busy(btn, "Paying", () => act(a.payAhead(id, left, all), "Every round is paid")));
-      primary.push(btn);
+      primary.push(btn, h("p", { class: "hint" }, "Paid ahead, it stays in the circle and pays your later rounds; it can't be taken back."));
     }
   }
+  // Nothing left for this member to pay: no reminders needed.
+  const owesMore = mySeat >= 0 && c.size - c.round - (c.members[mySeat].paid_this_round ? 1 : 0) - (c.members[mySeat].ahead ?? 0) > 0;
   // Reminders: the remaining round deadlines as a calendar file. Made on this phone and sent nowhere by the
   // app, but it holds the circle's name, so a synced calendar carries it (privacy.html says so).
-  if (me && mySeat >= 0 && c.status === "Active") {
+  if (me && mySeat >= 0 && c.status === "Active" && owesMore) {
     const cal = h("button", { class: "secondary", type: "button" }, "Add payment reminders to my calendar");
     cal.addEventListener("click", () => {
       const url = URL.createObjectURL(new Blob([calendar(c, nameOf(id), mySeat)], { type: "text/calendar" }));

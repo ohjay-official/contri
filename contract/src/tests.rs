@@ -2055,6 +2055,11 @@ fn paying_ahead_is_refused_past_the_last_round_or_for_the_wrong_amount() {
     let circle = c.circle_of(0).unwrap();
     assert_eq!(circle.members[0].ahead, 2);
     assert_eq!(circle.pot, U128(CONTRIBUTION));
+    // One round, unpaid this round: a plain contribution, with no paid_ahead event.
+    let mut c = full_circle_of_three();
+    assert_eq!(pay_ahead(&mut c, BAYO, 0, 1, 100), 0);
+    assert!(events().iter().all(|e| e["event"] != "paid_ahead"));
+    assert_eq!(c.circle_of(0).unwrap().members[1].ahead, 0);
     // Not before the circle starts.
     let mut c = setup();
     let id = create(&mut c, 3);

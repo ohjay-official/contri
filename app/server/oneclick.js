@@ -82,6 +82,12 @@ export const confidential = (c) => (c.oneClickKey ? { confidentiality: "basic" }
  */
 export const fee = (c) => (c.feeBps > 0 && c.feeAccount ? { appFees: [{ recipient: c.feeAccount, fee: c.feeBps }] } : {});
 
+/** Contri's fee in hundredths of a percent, or 0 when there is none. @param {Config} c */
+export const feeBpsOf = (c) => (fee(c).appFees ? c.feeBps : 0);
+
+/** Contri's fee on `units` of a token with `decimals`, in that token, rounded up to the cent; null without a fee. @param {Config} c @param {bigint} units @param {number} decimals */
+export const feeAmount = (c, units, decimals) => (feeBpsOf(c) ? formatUnits((units * BigInt(feeBpsOf(c))) / 10_000n, decimals) : null);
+
 /** Contri's fee as members read it ("0.25%"), or null when there is none. @param {Config} c */
 export const feeShown = (c) => (fee(c).appFees ? `${(c.feeBps / 100).toFixed(2).replace(/0$/, "")}%` : null);
 
@@ -95,7 +101,7 @@ export async function topUp(body, c) {
   const n = net(body.network);
   const want = units(body.amount, "amount");
   if (!IMPLICIT_OR_NAMED.test(String(body.account))) throw new RelayError("invalid account");
-  const send = toSend(want, n.decimals);
+  const send = toSend(want, n.decimals, feeBpsOf(c));
   const q = await quote(c, {
     dry: false,
     swapType: "FLEX_INPUT",
@@ -123,6 +129,7 @@ export async function topUp(body, c) {
     minSend: formatUnits(BigInt(q.minAmountIn), n.decimals),
     receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS),
     contriFee: feeShown(c),
+    contriFeeUsd: feeAmount(c, BigInt(q.amountIn), n.decimals),
     deadline: q.deadline,
     seconds: q.timeEstimate,
   };
@@ -165,6 +172,7 @@ export async function cashOut(body, c) {
     receive: formatDown(BigInt(q.amountOut), n.decimals),
     fee: q.withdrawFee ? formatUnits(BigInt(q.withdrawFee), n.decimals) : "0",
     contriFee: feeShown(c),
+    contriFeeUsd: feeAmount(c, amount, TOKEN_DECIMALS),
     seconds: q.timeEstimate,
   };
 }
@@ -202,14 +210,15 @@ export function formatDown(v, decimals) {
 }
 
 /**
- * What to ask a member to send for `want` (token units) to arrive: 0.75% more,
- * so Contri's 0.25% fee and swap and bridge costs don't leave them short, rounded up to whole cents
+ * What to ask a member to send for `want` (token units) to arrive: 0.5% more
+ * for swap and bridge costs, plus Contri's fee (`feeBps`), so neither leaves
+ * them short, rounded up to whole cents
  * so the amount is easy to type, in the sending network's decimals.
- * @param {bigint} want @param {number} decimals
+ * @param {bigint} want @param {number} decimals @param {number} [feeBps]
  */
-export function toSend(want, decimals) {
+export function toSend(want, decimals, feeBps = 0) {
   const CENT = 10n ** BigInt(TOKEN_DECIMALS - 2);
-  const cents = ((want * 10075n) / 10000n + CENT - 1n) / CENT;
+  const cents = ((want * (10_050n + BigInt(feeBps))) / 10_000n + CENT - 1n) / CENT;
   return cents * CENT * 10n ** BigInt(decimals - TOKEN_DECIMALS);
 }
 

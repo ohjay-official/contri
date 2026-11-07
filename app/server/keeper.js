@@ -22,6 +22,31 @@ export { needs };
 const GAS = { settle_round: 150n * TGAS, pay_out: 100n * TGAS, cancel_circle: 30n * TGAS, release_deposits: 250n * TGAS, close_circle: 30n * TGAS };
 
 /**
+ * What to do, in order, for these circles. A pay_out is either a round that
+ * opened already paid (every member paid it ahead), which goes out like any
+ * other task, or a retry of a payout whose transfer failed. Retries come last,
+ * at most two a run, so a circle whose transfers keep failing can't crowd out
+ * the others or burn the relayer's NEAR. A pay_out within an hour of the last
+ * payout counts as a round that opened paid.
+ * @param {Circle[]} circles @param {number} now ms
+ */
+export function plan(circles, now) {
+  const all = circles.map((circle) => ({ circle: circle.id, method: needs(circle, now), fresh: opened(circle, now) })).filter((t) => t.method);
+  const payOuts = all.filter((t) => t.method === "pay_out");
+  return [
+    ...all.filter((t) => t.method !== "pay_out"),
+    ...payOuts.filter((t) => t.fresh),
+    ...payOuts.filter((t) => !t.fresh).slice(0, 2),
+  ].map(({ circle, method }) => ({ circle, method }));
+}
+
+/** Whether the circle's current round opened in the last hour. @param {Circle} c @param {number} now ms */
+function opened(c, now) {
+  const last = c.payouts?.[c.payouts.length - 1];
+  return Boolean(last) && now - Number(BigInt(last.at) / 1_000_000n) < 3_600_000;
+}
+
+/**
  * Checks one circle (`body.circle`) or every circle, and acts where needed.
  * @param {any} body @param {Config} c @param {number} [nowMs] defaults to the latest final block's time
  */
@@ -46,12 +71,7 @@ export async function keep(body, c, nowMs) {
     }
   }
 
-  const all = circles.map((circle) => ({ circle: circle.id, method: needs(circle, now) })).filter((t) => t.method);
-  // A pay_out only retries a payout whose transfer failed. Settling and
-  // releasing come first, and at most two retries a run, so a circle whose
-  // transfers keep failing can't crowd out the others or burn the relayer's NEAR.
-  const retries = all.filter((t) => t.method === "pay_out").slice(0, 2);
-  const todo = [...all.filter((t) => t.method !== "pay_out"), ...retries];
+  const todo = plan(circles, now);
   if (!todo.length) return { done: [] };
   const keeper = await signerFromSecretKey(c.relayerKey, c.relayerId);
   const done = [];

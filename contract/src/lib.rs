@@ -1194,11 +1194,13 @@ impl Contri {
                 format!(r#"{{"circle":{circle_id},"round":{round},"member":"{who}","amount":"{contribution}"}}"#),
             );
         }
-        c.members[seat].ahead += later;
-        emit(
-            "paid_ahead",
-            format!(r#"{{"circle":{circle_id},"member":"{who}","rounds":{later},"ahead":{}}}"#, c.members[seat].ahead),
-        );
+        if later > 0 {
+            c.members[seat].ahead += later;
+            emit(
+                "paid_ahead",
+                format!(r#"{{"circle":{circle_id},"member":"{who}","rounds":{later},"ahead":{}}}"#, c.members[seat].ahead),
+            );
+        }
         let gas_left = env::prepaid_gas().saturating_sub(env::used_gas());
         if c.all_paid() && gas_left.as_gas() >= GAS_FOR_PAYOUT.as_gas() {
             self.start_payout(c);

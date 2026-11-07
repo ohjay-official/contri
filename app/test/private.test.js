@@ -115,6 +115,7 @@ test("adding privately asks 1Click for a deposit that lands on the private ledge
   assert.equal(body.amount, "5040000000000000000", "asks 0.75% over (fees, and Contri's 0.25%), rounded up to the cent, in BSC's 18 decimals");
   assert.deepEqual(body.appFees, [{ recipient: "contring.near", fee: 25 }]);
   assert.equal(q.contriFee, "0.25%");
+  assert.equal(q.contriFeeUsd, "0.02", "0.25% of 5.025 sent, rounded up to the cent");
   assert.equal(q.send, "5.03");
   assert.equal(q.receive, "5.02");
   await assert.rejects(privateTopUp({ network: "nope", vault: vault.accountId, amount: "5000000" }, c), /unsupported network/);

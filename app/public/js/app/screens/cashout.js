@@ -97,7 +97,7 @@ export async function cashOutScreen(from) {
         ? await swap("pmove", { vault: (await vault()).accountId, amount: r.value.toString(), network: r.network, address: r.address, dry: true })
         : await swap("cashout", { account: s?.accountId, amount: r.value.toString(), network: r.network, address: r.address, dry: true });
       const n = NETWORKS.find((x) => x.id === r.network);
-      estimate.textContent = `About ${q.receive} ${n?.symbol} arrives on ${n?.label}, in about ${Math.max(1, Math.round(q.seconds / 60))} minute${q.seconds > 90 ? "s" : ""}. Network fee: ${q.fee} ${n?.symbol}.${q.contriFee ? ` Includes Contri's ${q.contriFee} fee on cash-outs.` : ""}`;
+      estimate.textContent = `About ${q.receive} ${n?.symbol} arrives on ${n?.label}, in about ${Math.max(1, Math.round(q.seconds / 60))} minute${q.seconds > 90 ? "s" : ""}. Network fee: ${q.fee} ${n?.symbol}.${q.contriFee ? ` Contri's ${q.contriFee} cash-out fee: $${q.contriFeeUsd}, shared with 1Click.` : ""} Both are already taken off what arrives.`;
     }),
   );
 

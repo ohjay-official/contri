@@ -41,13 +41,13 @@ export function networkPicker() {
 
 /**
  * Where and how much to send, for a 1Click deposit address.
- * @param {{ depositAddress: string, depositMemo: string | null, send: string, symbol: string, label: string, seconds: number, deadline: string, receive?: string, contriFee?: string | null }} q
+ * @param {{ depositAddress: string, depositMemo: string | null, send: string, symbol: string, label: string, seconds: number, deadline: string, receive?: string, contriFee?: string | null, contriFeeUsd?: string | null }} q
  * @param {string} extra what happens to more or less than asked
  */
 export function depositDetails(q, extra) {
   return [
     h("p", null, `Send `, h("strong", null, `${q.send} ${q.symbol}`), ` on `, h("strong", null, q.label), ` to:`),
-    q.receive ? h("p", { class: "hint" }, `About $${q.receive} arrives after fees${q.contriFee ? `, including Contri's ${q.contriFee} fee on top-ups` : ""}.`) : null,
+    q.receive ? h("p", { class: "hint" }, `About $${q.receive} arrives after fees${q.contriFee ? `, including Contri's ${q.contriFee} top-up fee ($${q.contriFeeUsd}, shared with 1Click)` : ""}.`) : null,
     h("p", { class: "code-block", translate: "no" }, q.depositAddress),
     h("div", { class: "actions row" }, h("button", { class: "secondary", onclick: () => copy(q.depositAddress, "Address copied") }, "Copy address")),
     q.depositMemo ? h("p", null, "Memo, required: ", h("strong", { class: "code" }, q.depositMemo)) : null,
@@ -154,6 +154,7 @@ export async function fundScreen(index) {
     }),
   );
   const aheadBtn = /** @type {HTMLButtonElement} */ (h("button", { class: "secondary", hidden: true }, purpose?.ahead?.button ?? ""));
+  const aheadNote = h("p", { class: "hint", hidden: true }, "Paid ahead, it stays in the circle and pays your later rounds; it can't be taken back.");
   aheadBtn.addEventListener("click", () =>
     busy(aheadBtn, "Signing and sending", async () => {
       const next = await purpose?.ahead?.run();
@@ -179,7 +180,7 @@ export async function fundScreen(index) {
     balanceEl.textContent = usd(balance);
     const need = purpose ? purpose.need - balance : 0n;
     actionBtn.disabled = Boolean(purpose) && need > 0n;
-    aheadBtn.hidden = !purpose?.ahead || balance < purpose.whole;
+    aheadBtn.hidden = aheadNote.hidden = !purpose?.ahead || balance < purpose.whole;
     if (purpose && need <= 0n) progress.textContent = "Your money is here";
   };
 
@@ -263,6 +264,7 @@ export async function fundScreen(index) {
       h("p", { class: "balance-line" }, "In this circle's account: ", balanceEl, purpose ? ` of ${usd(purpose.need)} needed` : null),
       progress,
       h("div", { class: "actions" }, actionBtn, aheadBtn),
+      aheadNote,
       privateBox,
       h("h2", null, "Add money"),
       routes,

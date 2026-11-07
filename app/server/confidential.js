@@ -26,7 +26,7 @@ import { fromBase58, fromBase64, toHex } from "../public/js/lib/bytes.js";
 import { nep413Hash } from "../public/js/lib/intents.js";
 import { verify } from "../public/js/lib/keys.js";
 import { checkPrivateMove } from "../public/js/lib/private.js";
-import { deadline, fee, feeShown, formatDown, formatUnits, IMPLICIT_OR_NAMED, net, quote, TOKEN_DECIMALS, toSend, units } from "./oneclick.js";
+import { deadline, fee, feeAmount, feeBpsOf, feeShown, formatDown, formatUnits, IMPLICIT_OR_NAMED, net, quote, TOKEN_DECIMALS, toSend, units } from "./oneclick.js";
 import { RelayError } from "./relay.js";
 import { issueTicket } from "./ticket.js";
 
@@ -105,7 +105,7 @@ export async function privateTopUp(body, c) {
   const n = net(body.network);
   const vault = account(body.vault);
   const want = units(body.amount, "amount");
-  const send = toSend(want, n.decimals);
+  const send = toSend(want, n.decimals, feeBpsOf(c));
   const q = await quote(c, {
     dry: false,
     swapType: "EXACT_INPUT",
@@ -132,6 +132,7 @@ export async function privateTopUp(body, c) {
     send: formatUnits(BigInt(q.amountIn), n.decimals),
     receive: formatDown(BigInt(q.amountOut), TOKEN_DECIMALS),
     contriFee: feeShown(c),
+    contriFeeUsd: feeAmount(c, BigInt(q.amountIn), n.decimals),
     deadline: q.deadline,
     seconds: q.timeEstimate,
   };
@@ -176,6 +177,7 @@ export async function privateMove(body, c) {
     receive: formatDown(BigInt(q.amountOut), decimals),
     fee: q.withdrawFee ? formatUnits(BigInt(q.withdrawFee), decimals) : "0",
     contriFee: body.to ? null : feeShown(c),
+    contriFeeUsd: body.to ? null : feeAmount(c, amount, TOKEN_DECIMALS),
     seconds: q.timeEstimate,
   };
   if (dry) return estimate;

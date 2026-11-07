@@ -5,7 +5,7 @@ import { actions } from "../public/js/lib/contri.js";
 import { authCall, signIntents, transfer } from "../public/js/lib/intents.js";
 import { signerFromSeed } from "../public/js/lib/keys.js";
 import { toBase58 } from "../public/js/lib/bytes.js";
-import { keep, needs } from "../server/keeper.js";
+import { keep, needs, plan } from "../server/keeper.js";
 import { cashOut, formatUnits, toSend, topUp } from "../server/oneclick.js";
 import { privateHome, privateMove, privateTopUp } from "../server/confidential.js";
 import { allow, useOnce } from "../server/limit.js";
@@ -148,9 +148,11 @@ test("token amounts for people round up to the cent", () => {
 });
 
 test("members are asked to send whole cents, a little over what has to arrive", () => {
-  assert.equal(toSend(3_000_000n, 18), 3_030_000_000_000_000_000n, "$3 arrives from 3.03 USDT on BNB Chain");
-  assert.equal(toSend(1_000_000n, 6), 1_010_000n);
-  assert.equal(toSend(5_000_000n, 6), 5_040_000n);
+  assert.equal(toSend(3_000_000n, 18, 25), 3_030_000_000_000_000_000n, "$3 arrives from 3.03 USDT on BNB Chain");
+  assert.equal(toSend(1_000_000n, 6, 25), 1_010_000n);
+  assert.equal(toSend(5_000_000n, 6, 25), 5_040_000n);
+  assert.equal(toSend(5_000_000n, 6), 5_030_000n, "no fee: 0.5% over");
+  assert.equal(toSend(5_000_000n, 6, 100), 5_080_000n, "a 1% fee is covered too");
 });
 
 test("Contri's fee is on top-ups and cash-outs only, never on moves between a member's own balances", async () => {
@@ -399,4 +401,19 @@ test("the keeper reads every circle, even past a gap left by a closed one", asyn
     globalThis.fetch = real;
   }
   assert.deepEqual(froms, [0, 100], "circle 5 is closed, and circles 100 to 149 are still read");
+});
+
+test("a round every member paid ahead goes out on the keeper's next run, ahead of failed-payout retries", () => {
+  const now = 2_000_000_000_000;
+  const ns = (/** @type {number} */ ms) => String(BigInt(ms) * 1_000_000n);
+  /** @param {number} id @param {number} lastPayoutMs */
+  const paid = (id, lastPayoutMs) => /** @type {any} */ ({ id, status: "Active", paying: false, round: 1, members: [{ paid_this_round: true }, { paid_this_round: true }], payouts: [{ at: ns(lastPayoutMs) }], backers: [] });
+  const late = /** @type {any} */ ({ id: 9, status: "Active", paying: false, round: 1, round_deadline: ns(now - 1), members: [{ paid_this_round: false }], payouts: [], backers: [] });
+  const todo = plan([paid(1, now - 7_200_000), paid(2, now - 7_200_000), paid(3, now - 7_200_000), paid(4, now - 60_000), late], now);
+  assert.deepEqual(todo, [
+    { circle: 9, method: "settle_round" },
+    { circle: 4, method: "pay_out" },
+    { circle: 1, method: "pay_out" },
+    { circle: 2, method: "pay_out" },
+  ]);
 });

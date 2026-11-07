@@ -70,7 +70,7 @@ Gas burnt per action in the end-to-end tests against NEAR Intents (`contract/san
 | Contribute | 9 Tgas |
 | Last contribution, which also pays the pot out | 15–17 Tgas |
 | Settle a round after a missed payment (and pay out) | 8 Tgas |
-| The payout callback in a 20-member circle's last round, the worst case | 5.4 Tgas, against a 30 Tgas floor |
+| The payout callback in a 20-member circle's last round, the worst case | 5.5 Tgas, against a 30 Tgas floor |
 | Buy a seat (and pay the seller) | 15 Tgas |
 | Leave before the start (and get the deposit back) | 12 Tgas |
 | Release deposits (2 transfers) | 13–14 Tgas |
