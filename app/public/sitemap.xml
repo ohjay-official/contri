@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://contri.ng/</loc></url>
-  <url><loc>https://contri.ng/how-it-works</loc></url>
-  <url><loc>https://contri.ng/privacy</loc></url>
-  <url><loc>https://contri.ng/terms</loc></url>
+  <url><loc>https://contri.ng/</loc><lastmod>2026-11-08</lastmod></url>
+  <url><loc>https://contri.ng/demo</loc><lastmod>2026-11-08</lastmod></url>
+  <url><loc>https://contri.ng/app</loc><lastmod>2026-11-08</lastmod></url>
+  <url><loc>https://contri.ng/how-it-works</loc><lastmod>2026-11-08</lastmod></url>
+  <url><loc>https://contri.ng/privacy</loc><lastmod>2026-11-08</lastmod></url>
+  <url><loc>https://contri.ng/terms</loc><lastmod>2026-11-08</lastmod></url>
 </urlset>
