@@ -96,16 +96,11 @@ export const secret = () => {
   return session.secret;
 };
 
-/** When the passkey was last used on this page (not across reloads). */
-let passkeyAt = 0;
-
 export async function signUpWithPasskey() {
   await start(await createPasskey(), "passkey");
-  passkeyAt = Date.now();
 }
 export async function signInWithPasskey() {
   await start(await unlockWithPasskey(), "passkey");
-  passkeyAt = Date.now();
 }
 export async function useThisDevice() {
   const { secret, created } = deviceSecret();
@@ -116,11 +111,12 @@ export async function useThisDevice() {
 export const useRestoredSecret = (s) => start(s, "device");
 
 /**
- * Asks for the passkey again before something that can't be undone: sending
- * money outside Contri, showing the recovery code, and (through
- * confirmRecentPasskey) joining a circle or buying a turn, which commit money
- * to other people. So a phone left unlocked isn't enough to hand the money to
- * someone else. A key kept on the device has nothing to ask for.
+ * Asks for the passkey again before the two things that hand over everything:
+ * sending money outside Contri, and showing the recovery code. So a phone left
+ * unlocked isn't enough to take the money. Joining a circle, buying a turn and
+ * paying a round don't ask: that money goes into a circle the member chose,
+ * and a second prompt locked out a tester whose Samsung phone couldn't answer
+ * it. A key kept on the device has nothing to ask for.
  */
 export async function confirmWithPasskey() {
   if (session?.mode !== "passkey") return;
@@ -137,16 +133,6 @@ export async function confirmWithPasskey() {
   });
   const same = again.length === session.secret.length && again.every((b, i) => b === session?.secret[i]);
   if (!same) throw new Error("That passkey isn't the one you signed in with.");
-  passkeyAt = Date.now();
-}
-
-/**
- * The same, unless the passkey was used on this page in the last two minutes,
- * so someone who has just signed in to join a circle is asked once, not twice.
- */
-export async function confirmRecentPasskey() {
-  if (Date.now() - passkeyAt < 120_000) return;
-  await confirmWithPasskey();
 }
 
 export async function lock() {

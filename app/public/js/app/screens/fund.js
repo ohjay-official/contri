@@ -14,7 +14,7 @@ import { getCircle, getConfig, relay, sign, swap } from "../api.js";
 import { follow, moveOut, privateBalance, STATUS, statusText } from "../private.js";
 import { circleOfSlot, nameOf, usd } from "../state.js";
 import { busy, copy, field, h, notice, show, sleep } from "../ui.js";
-import { balanceOf, confirmRecentPasskey, decodeSecret, local, logMove, remember, signer } from "../wallet.js";
+import { balanceOf, decodeSecret, local, logMove, remember, signer } from "../wallet.js";
 
 /** Networks shown first are the cheapest for small amounts. */
 export const NETWORKS = [
@@ -101,8 +101,6 @@ export async function fundScreen(index) {
       whole: deposit + BigInt(c.contribution) * BigInt(c.size),
       button: `Join and pay ${usd(deposit)} deposit`,
       run: async () => {
-        // Joining commits money to other people: ask for the passkey again.
-        await confirmRecentPasskey();
         const sig = l.secret && c.invite_only ? await signJoin(decodeSecret(l.secret), cfg.contractId, id, s.accountId, deposit) : null;
         const r = await relay([await sign(s, a.join(id, deposit, sig))]);
         if (!findEvent(r.events, "joined")) throw new Error(`${r.notes[0] ?? "You weren't added"}. Your deposit is back in your balance.`);

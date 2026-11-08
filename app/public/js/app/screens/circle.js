@@ -8,7 +8,7 @@ import { getCircle, getConfig, keep, relay, sign, views } from "../api.js";
 import { ring } from "../ring.js";
 import { every, fromNow, nameOf, refresh, slotFor, usd, when } from "../state.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
-import { confirmRecentPasskey, decodeSecret, encodeSecret, labels, local, remember, setLabel } from "../wallet.js";
+import { decodeSecret, encodeSecret, labels, local, remember, setLabel } from "../wallet.js";
 import { demo } from "../demo.js";
 import { standing } from "./home.js";
 
@@ -174,7 +174,6 @@ export async function circleScreen(id, openShare = false) {
       buy.addEventListener("click", () =>
         busy(buy, "Buying", async () => {
           if (balance < BigInt(p)) throw new Error(`Add ${usd(BigInt(p) - balance)} to this circle's account first.`);
-          await confirmRecentPasskey();
           await act(a.buySeat(id, i, p), `Turn ${i + 1} is yours`);
         }),
       );
