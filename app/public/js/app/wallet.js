@@ -15,6 +15,7 @@ import { fromBase58, toBase64Url, fromBase64 } from "../lib/bytes.js";
 import { circleSigner, vaultSigner } from "../lib/keys.js";
 import { createPasskey, deviceSecret, unlockWithPasskey } from "../lib/passkey.js";
 import { forget, keep as keepSession, recall } from "../lib/session.js";
+import { inAppBrowser } from "../lib/support.js";
 import { demo } from "./demo.js";
 
 /** Where this phone's notes go: the browser's storage, or, in the demo, this tab only, so they reset with the pretend chain. */
@@ -123,7 +124,17 @@ export const useRestoredSecret = (s) => start(s, "device");
  */
 export async function confirmWithPasskey() {
   if (session?.mode !== "passkey") return;
-  const again = await unlockWithPasskey();
+  const again = await unlockWithPasskey().catch((e) => {
+    // The prompt was closed, timed out, or this browser couldn't reach the
+    // passkey. The browser's own words for that mean nothing to a member.
+    if (e instanceof DOMException && (e.name === "NotAllowedError" || e.name === "AbortError")) {
+      throw new Error(
+        "Your passkey didn't confirm it was you, so nothing happened. Tap again and confirm with your fingerprint, face or screen lock when asked." +
+          (inAppBrowser() ? " If nothing pops up, open contri.ng/app in Chrome or Safari instead of inside this app." : ""),
+      );
+    }
+    throw e;
+  });
   const same = again.length === session.secret.length && again.every((b, i) => b === session?.secret[i]);
   if (!same) throw new Error("That passkey isn't the one you signed in with.");
   passkeyAt = Date.now();
