@@ -165,6 +165,8 @@ Both payouts and both deposits went back to the members, and the contract ended 
 
 Every circle action is a NEP-413 intent signed on the phone and submitted by Contri's relayer, so neither member ever holds NEAR.
 
+</details>
+
 <p><img src="docs/img/hero.jpg" alt="The Contri landing page on a laptop"></p>
 
 <p>
@@ -176,8 +178,6 @@ Every circle action is a NEP-413 intent signed on the phone and submitted by Con
 </p>
 
 The current app on a phone, with sample circles.
-
-</details>
 
 ## What it does
 
