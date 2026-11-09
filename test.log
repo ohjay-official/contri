@@ -1,0 +1,344 @@
+
+> test
+> node --test "test/*.test.js"
+
+TAP version 13
+# Subtest: base58 matches known values and round-trips
+ok 1 - base58 matches known values and round-trips
+  ---
+  duration_ms: 6.320443
+  type: 'test'
+  ...
+# Subtest: little-endian integers
+ok 2 - little-endian integers
+  ---
+  duration_ms: 0.339604
+  type: 'test'
+  ...
+# Subtest: ed25519 keys from a seed match an independent implementation
+ok 3 - ed25519 keys from a seed match an independent implementation
+  ---
+  duration_ms: 32.873297
+  type: 'test'
+  ...
+# Subtest: a wallet's exported secret key gives the same signer
+ok 4 - a wallet's exported secret key gives the same signer
+  ---
+  duration_ms: 3.728226
+  type: 'test'
+  ...
+# Subtest: each circle gets its own unrelated account from one secret
+ok 5 - each circle gets its own unrelated account from one secret
+  ---
+  duration_ms: 12.543623
+  type: 'test'
+  ...
+# Subtest: NEP-413 signed intents verify against the payload
+ok 6 - NEP-413 signed intents verify against the payload
+  ---
+  duration_ms: 8.605207
+  type: 'test'
+  ...
+# Subtest: contract messages
+ok 7 - contract messages
+  ---
+  duration_ms: 0.771269
+  type: 'test'
+  ...
+# Subtest: amounts
+ok 8 - amounts
+  ---
+  duration_ms: 22.752721
+  type: 'test'
+  ...
+# Subtest: invite links carry a secret that opens the name and signs joins
+ok 9 - invite links carry a secret that opens the name and signs joins
+  ---
+  duration_ms: 9.894999
+  type: 'test'
+  ...
+# Subtest: what a member has to do
+ok 10 - what a member has to do
+  ---
+  duration_ms: 1.014333
+  type: 'test'
+  ...
+# Subtest: transactions encode as borsh
+ok 11 - transactions encode as borsh
+  ---
+  duration_ms: 0.692582
+  type: 'test'
+  ...
+# Subtest: events are read from logs
+ok 12 - events are read from logs
+  ---
+  duration_ms: 0.356185
+  type: 'test'
+  ...
+# Subtest: versioned nonces carry the salt and deadline NEAR Intents checks
+ok 13 - versioned nonces carry the salt and deadline NEAR Intents checks
+  ---
+  duration_ms: 3.65547
+  type: 'test'
+  ...
+# Subtest: account creation actions encode as borsh
+ok 14 - account creation actions encode as borsh
+  ---
+  duration_ms: 0.410085
+  type: 'test'
+  ...
+# Subtest: a late round pushes the rounds after it back, as the contract does
+ok 15 - a late round pushes the rounds after it back, as the contract does
+  ---
+  duration_ms: 0.340655
+  type: 'test'
+  ...
+# Subtest: the private account is the member's own, separate from every circle account
+ok 16 - the private account is the member's own, separate from every circle account
+  ---
+  duration_ms: 17.233053
+  type: 'test'
+  ...
+# Subtest: the phone signs a move only if it is exactly what the member asked
+ok 17 - the phone signs a move only if it is exactly what the member asked
+  ---
+  duration_ms: 2.810744
+  type: 'test'
+  ...
+# Subtest: sign-in passes an empty signed intent to 1Click and returns its session
+ok 18 - sign-in passes an empty signed intent to 1Click and returns its session
+  ---
+  duration_ms: 59.957836
+  type: 'test'
+  ...
+# Subtest: the private balance counts USDT, wrapped or not, and nothing else
+ok 19 - the private balance counts USDT, wrapped or not, and nothing else
+  ---
+  duration_ms: 1.272824
+  type: 'test'
+  ...
+# Subtest: adding privately asks 1Click for a deposit that lands on the private ledger
+ok 20 - adding privately asks 1Click for a deposit that lands on the private ledger
+  ---
+  duration_ms: 2.464859
+  type: 'test'
+  ...
+# Subtest: a move out of the private balance: quote, intent, the phone's signature, submit
+ok 21 - a move out of the private balance: quote, intent, the phone's signature, submit
+  ---
+  duration_ms: 20.915793
+  type: 'test'
+  ...
+# Subtest: a payout goes home to the private balance through a public deposit account
+ok 22 - a payout goes home to the private balance through a public deposit account
+  ---
+  duration_ms: 11.625541
+  type: 'test'
+  ...
+# Subtest: amounts that arrive round down to the cent
+ok 23 - amounts that arrive round down to the cent
+  ---
+  duration_ms: 0.301373
+  type: 'test'
+  ...
+# Subtest: moving money out never takes what the member still owes this circle
+ok 24 - moving money out never takes what the member still owes this circle
+  ---
+  duration_ms: 0.625878
+  type: 'test'
+  ...
+# Subtest: top-ups and cash-outs take the confidential route when Contri has a partner key
+ok 25 - top-ups and cash-outs take the confidential route when Contri has a partner key
+  ---
+  duration_ms: 10.861484
+  type: 'test'
+  ...
+# Subtest: the relayer accepts what members sign
+ok 26 - the relayer accepts what members sign
+  ---
+  duration_ms: 36.124125
+  type: 'test'
+  ...
+# Subtest: money leaves only for a deposit account Contri opened in the last half hour
+ok 27 - money leaves only for a deposit account Contri opened in the last half hour
+  ---
+  duration_ms: 9.263813
+  type: 'test'
+  ...
+# Subtest: the relayer pays only for Contri's token and messages Contri reads
+ok 28 - the relayer pays only for Contri's token and messages Contri reads
+  ---
+  duration_ms: 23.048813
+  type: 'test'
+  ...
+# Subtest: request limits count per caller over a minute
+ok 29 - request limits count per caller over a minute
+  ---
+  duration_ms: 0.578409
+  type: 'test'
+  ...
+# Subtest: the relayer refuses anything else before spending gas
+ok 30 - the relayer refuses anything else before spending gas
+  ---
+  duration_ms: 28.049264
+  type: 'test'
+  ...
+# Subtest: the relayer needs its settings
+ok 31 - the relayer needs its settings
+  ---
+  duration_ms: 0.676102
+  type: 'test'
+  ...
+# Subtest: the read proxy answers only Contri and balance views
+ok 32 - the read proxy answers only Contri and balance views
+  ---
+  duration_ms: 0.527815
+  type: 'test'
+  ...
+# Subtest: the keeper acts only when a circle needs it
+ok 33 - the keeper acts only when a circle needs it
+  ---
+  duration_ms: 0.438438
+  type: 'test'
+  ...
+# Subtest: token amounts for people round up to the cent
+ok 34 - token amounts for people round up to the cent
+  ---
+  duration_ms: 0.449559
+  type: 'test'
+  ...
+# Subtest: members are asked to send whole cents, a little over what has to arrive
+ok 35 - members are asked to send whole cents, a little over what has to arrive
+  ---
+  duration_ms: 0.521964
+  type: 'test'
+  ...
+# Subtest: Contri's fee is on top-ups and cash-outs only, never on moves between a member's own balances
+ok 36 - Contri's fee is on top-ups and cash-outs only, never on moves between a member's own balances
+  ---
+  duration_ms: 51.372759
+  type: 'test'
+  ...
+# Subtest: a busy RPC node falls over to the next one
+ok 37 - a busy RPC node falls over to the next one
+  ---
+  duration_ms: 409.256996
+  type: 'test'
+  ...
+# Subtest: a transaction the node stopped waiting for is followed by hash, not sent again
+ok 38 - a transaction the node stopped waiting for is followed by hash, not sent again
+  ---
+  duration_ms: 3006.186978
+  type: 'test'
+  ...
+# Subtest: the contract's refund reasons reach members in plain words
+ok 39 - the contract's refund reasons reach members in plain words
+  ---
+  duration_ms: 0.438208
+  type: 'test'
+  ...
+# Subtest: the relayer refuses payments the contract would refund, before paying gas
+ok 40 - the relayer refuses payments the contract would refund, before paying gas
+  ---
+  duration_ms: 1.004575
+  type: 'test'
+  ...
+# Subtest: with Redis connected, limits are counted there, shared by every instance
+ok 41 - with Redis connected, limits are counted there, shared by every instance
+  ---
+  duration_ms: 1.724429
+  type: 'test'
+  ...
+# Subtest: requests NEAR Intents would reject don't use up the relayer's cap for everyone
+ok 42 - requests NEAR Intents would reject don't use up the relayer's cap for everyone
+  ---
+  duration_ms: 92.337756
+  type: 'test'
+  ...
+# Subtest: the relayer refuses auth calls the contract would refuse, before paying gas
+ok 43 - the relayer refuses auth calls the contract would refuse, before paying gas
+  ---
+  duration_ms: 0.516734
+  type: 'test'
+  ...
+# Subtest: the keeper reads every circle, even past a gap left by a closed one
+ok 44 - the keeper reads every circle, even past a gap left by a closed one
+  ---
+  duration_ms: 2.331893
+  type: 'test'
+  ...
+# Subtest: a round every member paid ahead goes out on the keeper's next run, ahead of failed-payout retries
+ok 45 - a round every member paid ahead goes out on the keeper's next run, ahead of failed-payout retries
+  ---
+  duration_ms: 0.284081
+  type: 'test'
+  ...
+# Subtest: a short deposit says how much more to send
+ok 46 - a short deposit says how much more to send
+  ---
+  duration_ms: 0.245278
+  type: 'test'
+  ...
+# Subtest: an open circle says how many more people it needs
+ok 47 - an open circle says how many more people it needs
+  ---
+  duration_ms: 2.340176
+  type: 'test'
+  ...
+# Subtest: a member who owes this round is asked to pay before the deadline
+ok 48 - a member who owes this round is asked to pay before the deadline
+  ---
+  duration_ms: 4.458582
+  type: 'test'
+  ...
+# Subtest: after paying, members see when their turn comes
+ok 49 - after paying, members see when their turn comes
+  ---
+  duration_ms: 0.500153
+  type: 'test'
+  ...
+# Subtest: a member who missed the deadline is told the deposit covers it
+ok 50 - a member who missed the deadline is told the deposit covers it
+  ---
+  duration_ms: 0.187991
+  type: 'test'
+  ...
+# Subtest: finished and cancelled circles
+ok 51 - finished and cancelled circles
+  ---
+  duration_ms: 0.261528
+  type: 'test'
+  ...
+# Subtest: schedules read naturally
+ok 52 - schedules read naturally
+  ---
+  duration_ms: 0.282838
+  type: 'test'
+  ...
+# Subtest: an app's built-in browser is told apart from Chrome and Safari
+ok 53 - an app's built-in browser is told apart from Chrome and Safari
+  ---
+  duration_ms: 0.663838
+  type: 'test'
+  ...
+# Subtest: an invite says what the circle is before the link
+ok 54 - an invite says what the circle is before the link
+  ---
+  duration_ms: 2.278592
+  type: 'test'
+  ...
+# Subtest: a circle's name can't add lines to a calendar file
+ok 55 - a circle's name can't add lines to a calendar file
+  ---
+  duration_ms: 0.562068
+  type: 'test'
+  ...
+1..55
+# tests 55
+# suites 0
+# pass 55
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3793.532639
