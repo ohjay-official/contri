@@ -1,0 +1,7 @@
+200 /
+200 /app
+200 /join
+200 /privacy
+200 /terms
+200 /how-it-works
+200 /api/config

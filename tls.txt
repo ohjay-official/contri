@@ -1,0 +1,4 @@
+subject=CN = contri.ng
+issuer=C = US, O = Let's Encrypt, CN = YR1
+notBefore=Nov  5 03:46:40 2026 GMT
+notAfter=Feb  3 03:46:39 2027 GMT

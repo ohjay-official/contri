@@ -1,0 +1,18 @@
+team: Oh-Jay's projects
+contri.ng: already added
+www.contri.ng: already added
+{
+  "records": [
+    {
+      "type": "A",
+      "host": "@",
+      "value": "216.198.79.1"
+    },
+    {
+      "type": "CNAME",
+      "host": "www",
+      "value": "0acd4eec4b3481e3.vercel-dns-017.com"
+    }
+  ],
+  "configured": true
+}

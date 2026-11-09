@@ -1,0 +1,22 @@
+ok   site-home
+ok   site-how
+ok   site-privacy
+ok   site-terms
+ok   site-404
+ok   site-home-dark
+ok   demo
+ok   app-unlock
+ok   app-recovery-code
+ok   app-home
+ok   app-explore
+ok   app-circle
+ok   app-invite
+ok   app-invite-broken
+ok   app-new
+ok   app-fund-address
+ok   app-private-add
+ok   app-move-out
+ok   app-private-cash
+ok   app-settings
+
+every screen is clean
