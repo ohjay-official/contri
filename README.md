@@ -2,6 +2,7 @@
 
 **Àjọ without the collector.** In a rotating savings circle (àjọ, esusu, susu, chit fund), one person often holds everyone's money, and can disappear with it. Contri gives the pot to a locked contract on NEAR that pays each turn by itself, in the same transaction as the round's last payment.
 
+- **Watch it, 54 seconds:** [the demo film, posted on X](https://x.com/Oh_Jay0/status/2119678762388238818)
 - **Try it now, no wallet:** https://contri.ng/demo ([steps just below](#try-it-in-30-seconds))
 - **Live:** https://contri.ng, and the app at https://contri.ng/app. **X:** [@contri_ng](https://x.com/contri_ng)
 - **Check it in 20 seconds:** `node app/scripts/verify.mjs` ([what it checks](#1-one-command-about-20-seconds-node-22-nothing-to-install))
