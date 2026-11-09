@@ -13,7 +13,7 @@
 
 import { fromBase58, toBase64Url, fromBase64 } from "../lib/bytes.js";
 import { circleSigner, vaultSigner } from "../lib/keys.js";
-import { createPasskey, deviceSecret, unlockWithPasskey } from "../lib/passkey.js";
+import { checkPasskey, deviceSecret, unlockWithPasskey } from "../lib/passkey.js";
 import { forget, keep as keepSession, recall } from "../lib/session.js";
 import { inAppBrowser } from "../lib/support.js";
 import { demo } from "./demo.js";
@@ -96,8 +96,9 @@ export const secret = () => {
   return session.secret;
 };
 
-export async function signUpWithPasskey() {
-  await start(await createPasskey(), "passkey");
+/** Opens Contri with a passkey just made, once the phone has found it again. @param {Uint8Array | null} made */
+export async function finishPasskey(made) {
+  await start(await checkPasskey(made), "passkey");
 }
 export async function signInWithPasskey() {
   await start(await unlockWithPasskey(), "passkey");

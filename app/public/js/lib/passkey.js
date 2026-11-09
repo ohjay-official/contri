@@ -31,7 +31,12 @@ function prfResult(cred) {
   return first ? new Uint8Array(first) : null;
 }
 
-/** Creates a new passkey for Contri and returns its secret. */
+/**
+ * Creates a new passkey for Contri. Returns its secret if the passkey gave one
+ * now, or null if it only gives it when used (Samsung Pass does this). Nothing
+ * should be kept behind it until checkPasskey has found it again.
+ * @returns {Promise<Uint8Array | null>}
+ */
 export async function createPasskey() {
   const cred = await navigator.credentials.create({
     publicKey: {
@@ -48,9 +53,25 @@ export async function createPasskey() {
     },
   });
   const ext = /** @type {any} */ (cred)?.getClientExtensionResults?.();
-  if (!ext?.prf?.enabled && !ext?.prf?.results) throw new PrfUnavailable();
-  // Some providers return the value at creation, others only when the passkey is used.
-  return prfResult(cred) ?? unlockWithPasskey();
+  // Some providers say plainly they can't. Others say nothing until the passkey
+  // is used, so checkPasskey decides for them.
+  if (ext?.prf?.enabled === false && !ext?.prf?.results) throw new PrfUnavailable();
+  return prfResult(cred);
+}
+
+/**
+ * Finds the new passkey again, the way signing in will, before any money is
+ * kept behind it. A phone can save a passkey it then can't find (a tester's
+ * Samsung did), which would leave the money behind a key nobody can reach:
+ * this catches it while there's nothing in it.
+ * @param {Uint8Array | null} made what the passkey gave when it was made, if anything
+ */
+export async function checkPasskey(made) {
+  const back = await unlockWithPasskey();
+  if (made && !(made.length === back.length && made.every((b, i) => b === back[i]))) {
+    throw new Error("That's a different Contri passkey. Choose the one you just made.");
+  }
+  return back;
 }
 
 /** Asks for an existing Contri passkey and returns its secret. */

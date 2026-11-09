@@ -1,10 +1,10 @@
 // @ts-check
 // Opening Contri: a passkey, or a key kept on this device.
 
-import { recoveryCode, restoreDeviceSecret, passkeysAvailable, PrfUnavailable } from "../../lib/passkey.js";
+import { createPasskey, recoveryCode, restoreDeviceSecret, passkeysAvailable, PrfUnavailable } from "../../lib/passkey.js";
 import { canUseKeys, inAppBrowser } from "../../lib/support.js";
 import { busy, copy, field, h, notice, show } from "../ui.js";
-import { markRecoverySeen, secret, signInWithPasskey, signUpWithPasskey, useRestoredSecret, useThisDevice } from "../wallet.js";
+import { finishPasskey, markRecoverySeen, secret, signInWithPasskey, useRestoredSecret, useThisDevice } from "../wallet.js";
 
 /** @param {() => void} done what to open once unlocked @param {string} [reason] a line about why, e.g. joining a circle */
 export function unlockScreen(done, reason) {
@@ -15,16 +15,28 @@ export function unlockScreen(done, reason) {
     throw e;
   };
   const create = h("button", { class: "primary" }, "Create a passkey");
-  create.addEventListener("click", () => busy(create, "Waiting for your passkey", () => signUpWithPasskey().then(done, failed)));
+  create.addEventListener("click", () =>
+    busy(create, "Waiting for your passkey", async () => {
+      /** @type {Uint8Array | null} */
+      let made;
+      try {
+        made = await createPasskey();
+      } catch (e) {
+        return failed(e);
+      }
+      // Straight on to finding it again; if the phone wants a fresh tap for that, the check screen asks for one.
+      await finishPasskey(made).then(done, (e) => {
+        if (e instanceof PrfUnavailable) return notice(e.message, "error");
+        if (!closed(e)) notice(e instanceof Error ? e.message : String(e), "error");
+        checkScreen(made, done);
+      });
+    }),
+  );
   const signIn = h("button", { class: "secondary" }, "I already have a Contri passkey");
   signIn.addEventListener("click", () => busy(signIn, "Waiting for your passkey", () => signInWithPasskey().then(done, failed)));
 
   const device = h("button", { class: "text" }, "Keep my key on this device instead");
-  device.addEventListener("click", async () => {
-    const created = await useThisDevice();
-    if (created) recoveryScreen(done);
-    else done();
-  });
+  device.addEventListener("click", () => useDevice(done));
   const restore = h("button", { class: "text" }, "Restore from a recovery code");
   restore.addEventListener("click", () => restoreScreen(done));
 
@@ -52,13 +64,60 @@ export function unlockScreen(done, reason) {
       warning,
       h("p", null, "Contri signs you in with a passkey: the fingerprint, face or screen lock you already use on this phone. There is no email, phone number or password, and Contri's server keeps no record of you beyond rate-limit counts deleted after two minutes."),
       passkeysAvailable()
-        ? h("div", { class: "actions" }, create, signIn)
+        ? h("div", { class: "stack" },
+            h("div", { class: "actions" }, create, signIn),
+            h("p", { class: "hint" }, "A new passkey asks twice: once to make it, and once to check this phone can find it again, before any money goes in."),
+          )
         : h("p", { class: "callout" }, "This browser can't use passkeys. Keep your key on this device below, or open Contri in Chrome or Safari."),
       h("details", { class: "more" },
         h("summary", null, "Other ways in"),
         h("p", null, "Without a passkey, your key stays in this browser only, unencrypted, like a hot wallet: anything that can read this browser's storage can take it. Keep small amounts this way. You'll get a recovery code to write down: it's the only way back in if this phone is lost."),
         h("div", { class: "actions" }, device, restore),
       ),
+    ),
+  );
+}
+
+/** The passkey prompt was closed, timed out, or couldn't find the passkey. @param {unknown} e */
+const closed = (e) => e instanceof DOMException && (e.name === "NotAllowedError" || e.name === "AbortError");
+
+/** @param {() => void} done */
+async function useDevice(done) {
+  const created = await useThisDevice();
+  if (created) recoveryScreen(done);
+  else done();
+}
+
+/**
+ * The new passkey is made but hasn't been found again yet. Nothing is kept
+ * behind it until it is: a phone that can't find it can still use a key kept
+ * on the device, with nothing lost.
+ * @param {Uint8Array | null} made @param {() => void} done
+ */
+function checkScreen(made, done) {
+  let tries = 0;
+  const check = h("button", { class: "primary" }, "Check my passkey");
+  check.addEventListener("click", () =>
+    busy(check, "Waiting for your passkey", () =>
+      finishPasskey(made).then(done, (e) => {
+        if (e instanceof PrfUnavailable) return notice(e.message, "error");
+        if (!closed(e)) throw e;
+        notice(
+          ++tries < 2
+            ? "Your phone didn't confirm it. Tap Check my passkey and use your fingerprint, face or screen lock."
+            : "This phone made the passkey but can't find it again, so Contri won't keep your money behind it. Keep your key on this device instead, or try another browser.",
+          "error",
+        );
+      }),
+    ),
+  );
+  const device = h("button", { class: "secondary" }, "Keep my key on this device instead");
+  device.addEventListener("click", () => useDevice(done));
+  show(
+    h("section", { class: "stack narrow" },
+      h("h1", null, "Check your passkey"),
+      h("p", null, "Your passkey is made. Confirm it once more so Contri knows this phone can find it again. Nothing is in your account yet, so if it can't, nothing is lost."),
+      h("div", { class: "actions" }, check, device),
     ),
   );
 }
