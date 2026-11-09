@@ -1,11 +1,15 @@
 # Contri
 
+**For judges, 30 seconds:** open https://contri.ng/demo, tap **Yaba traders**, tap **Buy turn 3**, then **Pay $5.00**. The pot pays out to you with nobody holding it.
+
+<p align="center"><img src="docs/img/phone-circle.jpg" width="260" alt="A circle in Contri: the pot ring, the members in turn order, and the payouts"></p>
+
 **Àjọ without the collector.** In a rotating savings circle (àjọ, esusu, susu, chit fund), one person often holds everyone's money, and can disappear with it. Contri gives the pot to a locked contract on NEAR that pays each turn by itself, in the same transaction as the round's last payment.
 
 - **Watch it, 54 seconds:** [the demo film, posted on X](https://x.com/Oh_Jay0/status/2119678762388238818)
 - **Try it now, no wallet:** https://contri.ng/demo ([steps just below](#try-it-in-30-seconds))
 - **Live:** https://contri.ng, and the app at https://contri.ng/app. **X:** [@contri_ng](https://x.com/contri_ng)
-- **Check it in 20 seconds:** `node app/scripts/verify.mjs` ([what it checks](#1-one-command-about-20-seconds-node-22-nothing-to-install))
+- **Check it in 20 seconds:** `node app/scripts/verify.mjs` ([what it checks](#more-ways-to-test))
 - Built for NEAR HACKATHON (Nov 1-14, 2026), in the tracks `realworld`, `privacy` and `nfts` ([what fits each, and where to check](#tracks)). [How it was built, with what, and with which AI](#built-during-near-hackathon).
 
 ## Try it in 30 seconds
@@ -33,6 +37,8 @@ A bar on every screen says it's the demo. The real app is at https://contri.ng/a
 - `node app/scripts/verify.mjs` checks all of this, and runs a whole circle offline, in about 20 seconds.
 
 ## What's new here
+
+**Nobody holds the pot: the contract pays it out in the same transaction as the round's last payment.**
 
 Millions of people across Africa, Asia and Latin America save in circles like this. Members sign in with a phone passkey, pay from the chain or exchange where their dollars already are, and the contract pays each turn by itself. Savings circles on a blockchain have been tried before; what Contri adds:
 
@@ -68,7 +74,8 @@ Submitted to three tracks (ids from the organizers' [HACKATHON.md](https://nearh
 
 From quickest to most real. None needs a NEAR account.
 
-### 1. One command (about 20 seconds, Node 22, nothing to install)
+<details>
+<summary><strong>1. One command (about 20 seconds, Node 22, nothing to install)</strong></summary>
 
 ```
 node app/scripts/verify.mjs
@@ -85,7 +92,10 @@ q view_access_key_list   # "keys":[]
 q view_account           # "code_hash":"8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC"
 ```
 
-### 2. The app offline, on your own machine (no money, no chain)
+</details>
+
+<details>
+<summary><strong>2. The app offline, on your own machine (no money, no chain)</strong></summary>
 
 Needs Node 22. No install step: the app and its server have no runtime dependencies.
 
@@ -99,7 +109,10 @@ The mock behaves like the real thing, in memory, and touches no chain: a top-up 
 - **As a member of two sample circles** (one running, one filling up): choose **Other ways in > Restore from a recovery code** and paste `k7Fa-K87W-HGVX-zkao-Hb7C-dVPg-kKDQ-hZ29-VLDe-BVbD-fYn` (the server prints it too). Open the running circle to see the pot, the turn order, your seat NFT and a turn for sale.
 - **As a new member:** choose **Other ways in > Keep my key on this device**, then **Start a circle**, get a deposit address, wait for it to arrive and tap **Create circle**. Open the invite link in a second browser profile to join as the second member.
 
-### 3. The tests
+</details>
+
+<details>
+<summary><strong>3. The tests</strong></summary>
 
 ```
 (cd contract && cargo test)                # 98 contract unit tests, incl. a JSON parser fuzzed against serde_json and an attacker-view audit's tests
@@ -118,7 +131,10 @@ End-to-end, against the real NEAR Intents contract built from [near/intents](htt
 
 After every deploy, `.github/workflows/web.yml` checks the live site the way visitors reach it: every page, file, redirect and API route (`scripts/site-check.mjs`), every screen in a real browser (`app/scripts/live-browser.mjs`), staying signed in through a dropped tab and a browser restart in Chromium, WebKit and Firefox with Android, iPhone and desktop profiles (`app/scripts/live-sessions.mjs`), the 1Click and private-balance calls with an empty account (`scripts/live-check.mjs`), and that no response sets a cookie. Results go to the `web-results` branch.
 
-### 4. On mainnet, with real money
+</details>
+
+<details>
+<summary><strong>4. On mainnet, with real money</strong></summary>
 
 **Watch without paying:** open **Live circles** at https://contri.ng/app#/explore. It shows every open, running or finished circle on the contract, read from the chain through Contri's server.
 
@@ -160,6 +176,8 @@ Every circle action is a NEP-413 intent signed on the phone and submitted by Con
 </p>
 
 The current app on a phone, with sample circles.
+
+</details>
 
 ## What it does
 
