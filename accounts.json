@@ -1,0 +1,31 @@
+{
+  "checkedAt": "2026-11-14T10:50:22.950Z",
+  "contri": {
+    "id": "circles.contring.near",
+    "exists": true,
+    "near": 1.3496,
+    "storage_bytes": 110189,
+    "code": true,
+    "code_hash": "8EdJpNPWkRQZ1ZnkzJwX6M3B984fvfGseh9wtBUvicSC",
+    "keys": 0,
+    "intents_keys": 0,
+    "intents_predecessor_auth": true
+  },
+  "relayer": {
+    "id": "contring.near",
+    "exists": true,
+    "near": 1.6009,
+    "storage_bytes": 182,
+    "code": false,
+    "code_hash": null,
+    "keys": 1,
+    "intents_keys": 0,
+    "intents_predecessor_auth": true
+  },
+  "contract": {
+    "owner_id": "contring.near",
+    "intents_id": "intents.near",
+    "token_id": "nep141:usdt.tether-token.near",
+    "circle_count": 9
+  }
+}
