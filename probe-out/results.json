@@ -1,0 +1,841 @@
+{
+  "ranAt": "2026-11-14T15:20:15.237Z",
+  "authenticated": true,
+  "tokens": [
+    {
+      "assetId": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+      "blockchain": "near",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:eth-0xdac17f958d2ee523a2206206994597c13d831ec7.omft.near",
+      "blockchain": "eth",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near",
+      "blockchain": "eth",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+      "blockchain": "tron",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near",
+      "blockchain": "sol",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:usdt.tether-token.near",
+      "blockchain": "near",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "usdt.tether-token.near",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
+      "blockchain": "arb",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+      "blockchain": "base",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+      "blockchain": "sol",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:gnosis-0x2a22f9c3b484c3629090feed35f17ff8f88f76f0.omft.near",
+      "blockchain": "gnosis",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0x2a22f9c3b484c3629090feed35f17ff8f88f76f0",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:gnosis-0x4ecaba5870353805a9f068101a40e0f32ed605c6.omft.near",
+      "blockchain": "gnosis",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "0x4ecaba5870353805a9f068101a40e0f32ed605c6",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:pol-0x3c499c542cef5e3811e1192ce70d8cc03d5c3359.omdep.near",
+      "blockchain": "pol",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:pol-0xc2132d05d31c914a87c6611c10748aeb04b58e8f.omdep.near",
+      "blockchain": "pol",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:bnb-0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d.omdep.near",
+      "blockchain": "bsc",
+      "symbol": "USDC",
+      "decimals": 18,
+      "contractAddress": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:bnb-0x55d398326f99059ff775485246999027b3197955.omdep.near",
+      "blockchain": "bsc",
+      "symbol": "USDT",
+      "decimals": 18,
+      "contractAddress": "0x55d398326f99059ff775485246999027b3197955",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:aptos-88cb7619440a914fe6400149a12b443c3ac21d59.omft.near",
+      "blockchain": "aptos",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "0x357b0b74bc833e95a115ad22604854d6b0fca151cecd94111770e5d6ffc9dc2b",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:aptos-34ee497f210c5a511e8d5b53bc56d75b63612bb5.omft.near",
+      "blockchain": "aptos",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0xbae207659db88bea0cbead6da0ed00aac12edcdda169e591cd41c94180b46f3b",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep245:v2_1.omni.hot.tg:10_359RPSJVdTxwTJT9TyGssr2rFoWo",
+      "blockchain": "op",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep245:v2_1.omni.hot.tg:10_A2ewyUyDp6qsue1jqZsGypkCxRJ",
+      "blockchain": "op",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0x0b2c639c533813f4aa9d7837caf62653d097ff85",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep141:avax-0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7.omdep.near",
+      "blockchain": "avax",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:avax-0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e.omdep.near",
+      "blockchain": "avax",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep245:v2_1.omni.hot.tg:1117_3tsdfyziyc7EJbP2aULWSKU4toBaAcN4FdTgfm5W1mC4ouR",
+      "blockchain": "ton",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:sui-c1b81ecaf27933252d31a963bc5e9458f13c18ce.omft.near",
+      "blockchain": "sui",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu",
+      "blockchain": "stellar",
+      "symbol": "USDC",
+      "decimals": 7,
+      "contractAddress": "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep245:v2_1.omni.hot.tg:143_2dmLwYWkCQKyTjeUPAsGJuiVLbFx",
+      "blockchain": "monad",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0x754704bc059f8c67012fed69bc8a327a5aafb603",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep245:v2_1.omni.hot.tg:196_2dK9kLNR7Ekq7su8FxNGiUW3djTw",
+      "blockchain": "xlayer",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0x74b7f16337b8972027f6196a17a631ac6de26d22",
+      "price": 0.999643
+    },
+    {
+      "assetId": "nep245:v2_1.omni.hot.tg:534352_4RG3Q2wFsMQmd45m5m89RjsLfupA",
+      "blockchain": "scroll",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "0xf55bec9cafdbe8730f096aa55dad6d22d44099df",
+      "price": 0.999361
+    },
+    {
+      "assetId": "nep141:miden-0x5cb79d29507d3ad17bb6dc60279e89.omft.near",
+      "blockchain": "miden",
+      "symbol": "USDT",
+      "decimals": 6,
+      "contractAddress": "0x5cb79d29507d3ad17bb6dc60279e89",
+      "price": 0.999361
+    },
+    {
+      "assetId": "1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054",
+      "blockchain": "hypercore",
+      "symbol": "USDC",
+      "decimals": 8,
+      "contractAddress": "0x6d1e7cde53ba9467b783cb7c530ce054",
+      "price": 0.999643
+    },
+    {
+      "assetId": "1cs_v1:hypercore:erc20:0xb88339CB7199b77E23DB6E890353E22632Ba630f",
+      "blockchain": "hypercore",
+      "symbol": "USDC",
+      "decimals": 6,
+      "contractAddress": "0xb88339CB7199b77E23DB6E890353E22632Ba630f",
+      "price": 0.999643
+    }
+  ],
+  "quotes": [
+    {
+      "label": "topup 2 USDT tron -> near USDT (INTENTS)",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "2000000",
+        "refundTo": "TPMdr6bdC7XMhvQp3pZnxTajnXoh2vhsUt",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "0x1111111111111111111111111111111111111111",
+        "recipientType": "INTENTS",
+        "deadline": "2026-11-14T15:50:15.687Z"
+      },
+      "status": 400,
+      "response": {
+        "message": "Amount is too low for bridge, try at least 2600462",
+        "correlationId": "1e739ae7-0753-4fdd-a651-1766aad6c38b",
+        "timestamp": "2026-11-14T15:20:16.398Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "label": "topup 10 USDT tron -> near USDT (INTENTS)",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "10000000",
+        "refundTo": "TPMdr6bdC7XMhvQp3pZnxTajnXoh2vhsUt",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "0x1111111111111111111111111111111111111111",
+        "recipientType": "INTENTS",
+        "deadline": "2026-11-14T15:50:16.460Z"
+      },
+      "status": 201,
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.993610000000",
+          "minAmountIn": "10000000",
+          "amountOut": "9997980",
+          "amountOutFormatted": "9.99798",
+          "amountOutUsd": "9.991591290780",
+          "minAmountOut": "9898000",
+          "timeEstimate": 80,
+          "refundFee": "1600462",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "10000000",
+          "refundTo": "TPMdr6bdC7XMhvQp3pZnxTajnXoh2vhsUt",
+          "refundType": "ORIGIN_CHAIN",
+          "recipient": "0x1111111111111111111111111111111111111111",
+          "recipientType": "INTENTS",
+          "deadline": "2026-11-14T15:50:16.460Z",
+          "confidentiality": "public",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:5ytMsyKv2ahTQq9nbkYtcEoDMtRDJB8VYtLf3UF5atQrUTUp6HVxFLr3iiRKNPJdZ9m6WcrNGkvn8cfXoBAb7GWq",
+        "timestamp": "2026-11-14T15:20:16.544Z",
+        "correlationId": "06c2bcc3-ae5d-4a2b-ba1a-0171abf3ce7c"
+      }
+    },
+    {
+      "label": "topup 2 USDT bsc -> near USDT (INTENTS)",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:bnb-0x55d398326f99059ff775485246999027b3197955.omdep.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "2000000000000000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "0x1111111111111111111111111111111111111111",
+        "recipientType": "INTENTS",
+        "deadline": "2026-11-14T15:50:17.007Z"
+      },
+      "status": 201,
+      "response": {
+        "quote": {
+          "amountIn": "2000000000000000000",
+          "amountInFormatted": "2.0",
+          "amountInUsd": "1.998722000000",
+          "minAmountIn": "2000000000000000000",
+          "amountOut": "1999596",
+          "amountOutFormatted": "1.999596",
+          "amountOutUsd": "1.998318258156",
+          "minAmountOut": "1979600",
+          "timeEstimate": 35,
+          "refundFee": "10006394089878175",
+          "withdrawFee": "0"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:bnb-0x55d398326f99059ff775485246999027b3197955.omdep.near",
+          "depositType": "ORIGIN_CHAIN",
+          "destinationAsset": "nep141:usdt.tether-token.near",
+          "amount": "2000000000000000000",
+          "refundTo": "0x1111111111111111111111111111111111111111",
+          "refundType": "ORIGIN_CHAIN",
+          "recipient": "0x1111111111111111111111111111111111111111",
+          "recipientType": "INTENTS",
+          "deadline": "2026-11-14T15:50:17.007Z",
+          "confidentiality": "public",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:UrNrHSfAViFb1vnY9cWoTskQdfK2QUQHh9CaUtVjYhQeEyhHYoE5zbiVe2KpfpnQxunyPyq7SwsvX73qFu5WB4k",
+        "timestamp": "2026-11-14T15:20:17.092Z",
+        "correlationId": "3ea3f913-b536-4aaf-b052-2bd0ee3a8dc0"
+      }
+    },
+    {
+      "label": "cashout 2 USDT near(INTENTS) -> tron",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "amount": "2000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "INTENTS",
+        "recipient": "TPMdr6bdC7XMhvQp3pZnxTajnXoh2vhsUt",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-14T15:50:17.495Z"
+      },
+      "status": 400,
+      "response": {
+        "message": "Amount is too low for bridge, try at least 2629576",
+        "correlationId": "9c9801ee-3fea-4bbe-84d2-82aaf78bec99",
+        "timestamp": "2026-11-14T15:20:18.641Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "label": "cashout 2 USDT near(INTENTS) -> bsc",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:bnb-0x55d398326f99059ff775485246999027b3197955.omdep.near",
+        "amount": "2000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "INTENTS",
+        "recipient": "0x2222222222222222222222222222222222222222",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-14T15:50:18.697Z"
+      },
+      "status": 201,
+      "response": {
+        "quote": {
+          "amountIn": "2000000",
+          "amountInFormatted": "2.0",
+          "amountInUsd": "1.998722000000",
+          "minAmountIn": "2000000",
+          "amountOut": "1989590010408000000",
+          "amountOutFormatted": "1.989590010408",
+          "amountOutUsd": "1.988318662391",
+          "minAmountOut": "1969694110303920000",
+          "timeEstimate": 13,
+          "refundFee": "0",
+          "withdrawFee": "10006394093346373"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "INTENTS",
+          "destinationAsset": "nep141:bnb-0x55d398326f99059ff775485246999027b3197955.omdep.near",
+          "amount": "2000000",
+          "refundTo": "0x1111111111111111111111111111111111111111",
+          "refundType": "INTENTS",
+          "recipient": "0x2222222222222222222222222222222222222222",
+          "recipientType": "DESTINATION_CHAIN",
+          "deadline": "2026-11-14T15:50:18.697Z",
+          "confidentiality": "public",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:2ooi6iKLqxCUtcaafWyrA818sEAodbNxadZ32R4VvGMhG6oxgQXbkKy6GbCL933p6oerZ5WAuGEGchg68VtTVKhG",
+        "timestamp": "2026-11-14T15:20:18.771Z",
+        "correlationId": "75d6dc6c-8907-48ab-ae27-6a61cb292319"
+      }
+    },
+    {
+      "label": "cashout 2 USDT near(INTENTS) -> sol",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near",
+        "amount": "2000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "INTENTS",
+        "recipient": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-14T15:50:19.173Z"
+      },
+      "status": 201,
+      "response": {
+        "quote": {
+          "amountIn": "2000000",
+          "amountInFormatted": "2.0",
+          "amountInUsd": "1.998722000000",
+          "minAmountIn": "2000000",
+          "amountOut": "1989761",
+          "amountOutFormatted": "1.989761",
+          "amountOutUsd": "1.988489542721",
+          "minAmountOut": "1969863",
+          "timeEstimate": 7,
+          "refundFee": "0",
+          "withdrawFee": "10007"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "INTENTS",
+          "destinationAsset": "nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near",
+          "amount": "2000000",
+          "refundTo": "0x1111111111111111111111111111111111111111",
+          "refundType": "INTENTS",
+          "recipient": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+          "recipientType": "DESTINATION_CHAIN",
+          "deadline": "2026-11-14T15:50:19.173Z",
+          "confidentiality": "public",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:3EcagxWWcqrnjgvy4ngLZsmpeRH5HkgeouZGeZcy33yEp6HGZ9EBMUCYw4gsrNdPnGyErAyvhiYUbtt8x6rZ36f6",
+        "timestamp": "2026-11-14T15:20:19.241Z",
+        "correlationId": "ca483dd4-2088-45eb-a05d-4159eeb03e62"
+      }
+    },
+    {
+      "label": "cashout 2 USDT near(INTENTS) -> near",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "2000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "INTENTS",
+        "recipient": "contri-probe.near",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-14T15:50:19.647Z"
+      },
+      "status": 400,
+      "response": {
+        "message": "Internal server error",
+        "correlationId": "94b54472-ff54-4074-965d-c357c49512cf",
+        "timestamp": "2026-11-14T15:20:19.912Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "label": "cashout 10 USDT near(INTENTS) -> tron",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "amount": "10000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "INTENTS",
+        "recipient": "TPMdr6bdC7XMhvQp3pZnxTajnXoh2vhsUt",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-14T15:50:19.972Z"
+      },
+      "status": 201,
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.993610000000",
+          "minAmountIn": "10000000",
+          "amountOut": "8398814",
+          "amountOutFormatted": "8.398814",
+          "amountOutUsd": "8.393447157854",
+          "minAmountOut": "8314825",
+          "timeEstimate": 65,
+          "refundFee": "0",
+          "withdrawFee": "1600462"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "INTENTS",
+          "destinationAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+          "amount": "10000000",
+          "refundTo": "0x1111111111111111111111111111111111111111",
+          "refundType": "INTENTS",
+          "recipient": "TPMdr6bdC7XMhvQp3pZnxTajnXoh2vhsUt",
+          "recipientType": "DESTINATION_CHAIN",
+          "deadline": "2026-11-14T15:50:19.972Z",
+          "confidentiality": "public",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:3arZdUyTXi7pXLzh5TPnHoyzv3rUho5tpthmZncyenU3GhXfx4ZbAF8c9oScYBftpL5gSYVyGZGjakR3d2u2p8NY",
+        "timestamp": "2026-11-14T15:20:20.035Z",
+        "correlationId": "ec6da3d6-b591-4d24-9620-1e2625f757d6"
+      }
+    },
+    {
+      "label": "cashout 10 USDT near(INTENTS) -> bsc",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:bnb-0x55d398326f99059ff775485246999027b3197955.omdep.near",
+        "amount": "10000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "INTENTS",
+        "recipient": "0x2222222222222222222222222222222222222222",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-14T15:50:20.511Z"
+      },
+      "status": 201,
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.993610000000",
+          "minAmountIn": "10000000",
+          "amountOut": "9987974012016000000",
+          "amountOutFormatted": "9.987974012016",
+          "amountOutUsd": "9.981591696622",
+          "minAmountOut": "9888094271895840000",
+          "timeEstimate": 13,
+          "refundFee": "0",
+          "withdrawFee": "10006394093346373"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "INTENTS",
+          "destinationAsset": "nep141:bnb-0x55d398326f99059ff775485246999027b3197955.omdep.near",
+          "amount": "10000000",
+          "refundTo": "0x1111111111111111111111111111111111111111",
+          "refundType": "INTENTS",
+          "recipient": "0x2222222222222222222222222222222222222222",
+          "recipientType": "DESTINATION_CHAIN",
+          "deadline": "2026-11-14T15:50:20.511Z",
+          "confidentiality": "public",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:3ZKwWmFujLyZCfrb3La8jLqDGQR9iPLt7oqFgRsPZkaaMMpbpc559igZsvBVQTVk6qmB9tf89DRZgjPZeYVQqxMF",
+        "timestamp": "2026-11-14T15:20:20.587Z",
+        "correlationId": "2604528e-3c20-47d4-b9e5-3a71752762d3"
+      }
+    },
+    {
+      "label": "cashout 10 USDT near(INTENTS) -> sol",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near",
+        "amount": "10000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "INTENTS",
+        "recipient": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-14T15:50:21.218Z"
+      },
+      "status": 201,
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.993610000000",
+          "minAmountIn": "10000000",
+          "amountOut": "9988835",
+          "amountOutFormatted": "9.988835",
+          "amountOutUsd": "9.982452134435",
+          "minAmountOut": "9888946",
+          "timeEstimate": 7,
+          "refundFee": "0",
+          "withdrawFee": "10007"
+        },
+        "quoteRequest": {
+          "dry": true,
+          "depositMode": "SIMPLE",
+          "swapType": "EXACT_INPUT",
+          "slippageTolerance": 100,
+          "originAsset": "nep141:usdt.tether-token.near",
+          "depositType": "INTENTS",
+          "destinationAsset": "nep141:sol-c800a4bd850783ccb82c2b2c7e84175443606352.omft.near",
+          "amount": "10000000",
+          "refundTo": "0x1111111111111111111111111111111111111111",
+          "refundType": "INTENTS",
+          "recipient": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+          "recipientType": "DESTINATION_CHAIN",
+          "deadline": "2026-11-14T15:50:21.218Z",
+          "confidentiality": "public",
+          "quoteWaitingTimeMs": 0,
+          "insured": false,
+          "appFees": [
+            {
+              "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+              "fee": 1
+            }
+          ]
+        },
+        "signature": "ed25519:66oBnsU1Ws3EMpG5cBKx1uVYePvbgnXVmqMFnoKPy8AVxXG9Fq4qd7stzgwxNQ8kq5YhmGaBECnRqx3rcm4rSiJE",
+        "timestamp": "2026-11-14T15:20:21.297Z",
+        "correlationId": "d6db074a-6d1c-44bc-9313-c1b3518906d0"
+      }
+    },
+    {
+      "label": "cashout 10 USDT near(INTENTS) -> near",
+      "request": {
+        "dry": true,
+        "swapType": "EXACT_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:usdt.tether-token.near",
+        "depositType": "INTENTS",
+        "destinationAsset": "nep141:usdt.tether-token.near",
+        "amount": "10000000",
+        "refundTo": "0x1111111111111111111111111111111111111111",
+        "refundType": "INTENTS",
+        "recipient": "contri-probe.near",
+        "recipientType": "DESTINATION_CHAIN",
+        "deadline": "2026-11-14T15:50:21.698Z"
+      },
+      "status": 400,
+      "response": {
+        "message": "Internal server error",
+        "correlationId": "c199c7b8-2473-43cd-a6e2-ba5de817c140",
+        "timestamp": "2026-11-14T15:20:21.870Z",
+        "path": "/v0/quote"
+      }
+    }
+  ],
+  "bridge": {
+    "status": 201,
+    "body": {
+      "id": 1,
+      "jsonrpc": "2.0",
+      "result": {
+        "tokens": [
+          {
+            "defuse_asset_identifier": "tron:mainnet:native",
+            "origin_chain_address": "native",
+            "near_token_id": "tron.omft.near",
+            "decimals": 6,
+            "asset_name": "TRX",
+            "min_deposit_amount": "4000000",
+            "min_withdrawal_amount": "1",
+            "withdrawal_fee": "290000",
+            "standard": "nep141",
+            "intents_token_id": "nep141:tron.omft.near"
+          },
+          {
+            "defuse_asset_identifier": "tron:mainnet:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+            "origin_chain_address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+            "near_token_id": "tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+            "decimals": 6,
+            "asset_name": "USDT",
+            "min_deposit_amount": "1000000",
+            "min_withdrawal_amount": "1000000",
+            "withdrawal_fee": "1000000",
+            "standard": "nep141",
+            "intents_token_id": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near"
+          }
+        ]
+      }
+    }
+  },
+  "errors": [],
+  "chains": [
+    "abs",
+    "adi",
+    "aleo",
+    "aptos",
+    "arb",
+    "avax",
+    "base",
+    "bch",
+    "bera",
+    "bsc",
+    "btc",
+    "cardano",
+    "dash",
+    "doge",
+    "eth",
+    "fogo",
+    "gnosis",
+    "hood",
+    "hypercore",
+    "ltc",
+    "miden",
+    "monad",
+    "movement",
+    "near",
+    "op",
+    "plasma",
+    "pol",
+    "prl",
+    "qtc",
+    "scroll",
+    "sol",
+    "starknet",
+    "stellar",
+    "sui",
+    "ton",
+    "tron",
+    "xlayer",
+    "xrp",
+    "zec"
+  ]
+}
